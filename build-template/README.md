@@ -1,4 +1,4 @@
-## Salad Khatora
+## 
 
 This source code has been exported from [Caffeine](https://caffeine.ai/)
 

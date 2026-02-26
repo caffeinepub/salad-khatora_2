@@ -1,176 +1,180 @@
 import { useState } from 'react';
-import { Link, useLocation } from '@tanstack/react-router';
+import { Link, useRouter } from '@tanstack/react-router';
+import {
+  LayoutDashboard,
+  Package,
+  UtensilsCrossed,
+  ShoppingCart,
+  Users,
+  CalendarCheck,
+  Bell,
+  Menu,
+  X,
+  LogOut,
+  Truck,
+  ClipboardList,
+  Trash2,
+  Heart,
+  Tag,
+  Settings,
+} from 'lucide-react';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
-import { LayoutDashboard, Package, Menu, X, LogOut, ChevronRight, Leaf } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { useAlerts } from '../hooks/useQueries';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/inventory', label: 'Inventory', icon: Package },
+const navLinks = [
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/menu', label: 'Menu', icon: UtensilsCrossed },
+  { to: '/combos', label: 'Combos', icon: Tag },
+  { to: '/inventory', label: 'Inventory', icon: Package },
+  { to: '/suppliers', label: 'Suppliers', icon: Truck },
+  { to: '/purchase-orders', label: 'Purchase Orders', icon: ClipboardList },
+  { to: '/waste-log', label: 'Waste Log', icon: Trash2 },
+  { to: '/sales', label: 'Sales', icon: ShoppingCart },
+  { to: '/customers', label: 'Customers', icon: Users },
+  { to: '/subscriptions', label: 'Subscriptions', icon: CalendarCheck },
+  { to: '/alerts', label: 'Alerts', icon: Bell },
+  { to: '/admin-settings', label: 'Admin Settings', icon: Settings },
 ];
 
 export default function Layout({ children }: LayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { clear, identity } = useInternetIdentity();
   const queryClient = useQueryClient();
-  const location = useLocation();
+  const router = useRouter();
+  const { data: alerts } = useAlerts();
+
+  const unreadCount = alerts?.filter(a => !a.isRead).length ?? 0;
 
   const handleLogout = async () => {
     await clear();
     queryClient.clear();
+    router.navigate({ to: '/login' });
   };
 
-  const isActive = (path: string) => location.pathname === path;
+  const currentPath = router.state.location.pathname;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-card border-b border-border shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link to="/dashboard" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0 shadow-xs">
-                <img
-                  src="/assets/generated/logo.dim_256x256.png"
-                  alt="Salad Khatora"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    target.style.display = 'none';
-                    const parent = target.parentElement;
-                    if (parent) {
-                      parent.classList.add('bg-primary', 'flex', 'items-center', 'justify-center');
-                      const icon = document.createElement('span');
-                      icon.innerHTML = '🥗';
-                      icon.className = 'text-lg';
-                      parent.appendChild(icon);
-                    }
-                  }}
-                />
-              </div>
-              <div className="flex flex-col leading-none">
-                <span className="font-heading font-800 text-base text-foreground tracking-tight">Salad Khatora</span>
-                <span className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase">Kitchen Manager</span>
-              </div>
-            </Link>
+      <header className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
+        <div className="max-w-screen-xl mx-auto px-4 h-16 flex items-center justify-between">
+          {/* Logo */}
+          <Link to="/dashboard" className="flex items-center gap-2">
+            <img src="/assets/generated/logo.dim_256x256.png" alt="Salad Khatora" className="h-9 w-9 rounded-lg object-cover" />
+            <span className="font-heading font-bold text-lg text-primary hidden sm:block">Salad Khatora</span>
+          </Link>
 
-            {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-1">
-              {navItems.map(({ path, label, icon: Icon }) => (
+          {/* Desktop Nav */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {navLinks.map(({ to, label, icon: Icon }) => {
+              const isActive = currentPath === to || currentPath.startsWith(to + '/');
+              return (
                 <Link
-                  key={path}
-                  to={path}
-                  className={cn(
-                    'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150',
-                    isActive(path)
-                      ? 'bg-primary text-primary-foreground shadow-green'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                  )}
+                  key={to}
+                  to={to}
+                  className={`relative flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="h-4 w-4" />
                   {label}
+                  {label === 'Alerts' && unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
                 </Link>
-              ))}
-            </nav>
+              );
+            })}
+          </nav>
 
-            {/* Right side */}
-            <div className="flex items-center gap-2">
-              {identity && (
-                <div className="hidden sm:flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary rounded-full">
-                    <Leaf className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-xs font-medium text-secondary-foreground">Admin</span>
-                  </div>
-                </div>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="hidden md:flex items-center gap-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </Button>
-
-              {/* Mobile menu button */}
+          {/* Right side */}
+          <div className="flex items-center gap-2">
+            {identity && (
               <button
-                className="md:hidden p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                aria-label="Toggle menu"
+                onClick={handleLogout}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
-                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                <LogOut className="h-4 w-4" />
+                Logout
               </button>
-            </div>
+            )}
+            {/* Mobile menu toggle */}
+            <button
+              className="lg:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Nav */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-border bg-card animate-fade-in">
-            <div className="px-4 py-3 space-y-1">
-              {navItems.map(({ path, label, icon: Icon }) => (
+          <div className="lg:hidden border-t border-border bg-card px-4 py-3 flex flex-col gap-1">
+            {navLinks.map(({ to, label, icon: Icon }) => {
+              const isActive = currentPath === to;
+              return (
                 <Link
-                  key={path}
-                  to={path}
+                  key={to}
+                  to={to}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={cn(
-                    'flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all',
-                    isActive(path)
+                  className={`relative flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
                       ? 'bg-primary text-primary-foreground'
-                      : 'text-foreground hover:bg-accent'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                  {label === 'Alerts' && unreadCount > 0 && (
+                    <span className="ml-auto bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
                   )}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className="w-4 h-4" />
-                    {label}
-                  </div>
-                  <ChevronRight className="w-4 h-4 opacity-50" />
                 </Link>
-              ))}
-              <div className="pt-2 border-t border-border mt-2">
-                <button
-                  onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
-                  className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 transition-all"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </button>
-              </div>
-            </div>
+              );
+            })}
+            {identity && (
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors mt-1 border-t border-border pt-3"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </button>
+            )}
           </div>
         )}
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 max-w-screen-xl mx-auto w-full px-4 py-6">
         {children}
       </main>
 
       {/* Footer */}
       <footer className="border-t border-border bg-card mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-            <span>© {new Date().getFullYear()} Salad Khatora. All rights reserved.</span>
-            <span className="flex items-center gap-1">
-              Built with <span className="text-primary">♥</span> using{' '}
-              <a
-                href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname || 'salad-khatora')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline font-medium"
-              >
-                caffeine.ai
-              </a>
-            </span>
-          </div>
+        <div className="max-w-screen-xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-sm text-muted-foreground">
+          <span>© {new Date().getFullYear()} Salad Khatora. All rights reserved.</span>
+          <span className="flex items-center gap-1">
+            Built with <Heart className="h-3.5 w-3.5 text-destructive fill-destructive" /> using{' '}
+            <a
+              href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline font-medium"
+            >
+              caffeine.ai
+            </a>
+          </span>
         </div>
       </footer>
     </div>

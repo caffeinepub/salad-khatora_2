@@ -10,44 +10,401 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
-export interface InventoryItem {
-  'lowStockThreshold' : number,
-  'supplier' : string,
-  'name' : string,
-  'unit' : string,
-  'quantity' : number,
-  'costPricePerUnit' : number,
+export interface Alert {
+  'id' : bigint,
+  'alertType' : AlertType,
+  'createdAt' : bigint,
+  'isRead' : boolean,
+  'relatedEntityId' : bigint,
+  'message' : string,
 }
-export interface InventoryResponse {
+export type AlertType = { 'other' : null } |
+  { 'expiryWarning' : null } |
+  { 'subscriptionRenewal' : null } |
+  { 'lowStock' : null };
+export interface ComboDeal {
+  'id' : bigint,
+  'totalIndividualPrice' : number,
+  'menuItemIds' : Array<bigint>,
+  'name' : string,
+  'createdAt' : bigint,
+  'isAvailable' : boolean,
+  'description' : string,
+  'bundlePrice' : number,
+  'savings' : number,
+}
+export interface CreateComboDealRequest {
+  'menuItemIds' : Array<bigint>,
+  'name' : string,
+  'description' : string,
+  'bundlePrice' : number,
+}
+export interface CreateIngredientRequest {
   'lowStockThreshold' : number,
-  'totalValue' : number,
-  'supplier' : string,
+  'expiryDate' : [] | [bigint],
   'name' : string,
   'unit' : string,
   'quantity' : number,
-  'costPricePerUnit' : number,
+  'costPrice' : number,
+  'supplierId' : [] | [bigint],
+}
+export interface CreateMenuItemRequest {
+  'availableFromHour' : [] | [bigint],
+  'name' : string,
+  'sellingPrice' : number,
+  'description' : string,
+  'availableDays' : [] | [Array<bigint>],
+  'availableToHour' : [] | [bigint],
+  'ingredients' : Array<[string, number]>,
+}
+export interface CreatePurchaseOrderRequest {
+  'notes' : string,
+  'items' : Array<{ 'quantityOrdered' : number, 'ingredientId' : bigint }>,
+  'supplierId' : bigint,
+}
+export interface CreateSaleOrderRequest {
+  'discountCodeId' : [] | [bigint],
+  'note' : string,
+  'items' : Array<[bigint, bigint]>,
+}
+export interface CreateSupplierRequest {
+  'name' : string,
+  'contactPerson' : string,
+  'email' : string,
+  'leadTimeDays' : bigint,
+  'address' : string,
+  'notes' : string,
+  'phone' : string,
+}
+export interface CreateWasteLogRequest {
+  'quantity' : number,
+  'ingredientId' : bigint,
+  'reason' : string,
+}
+export interface Customer {
+  'id' : bigint,
+  'name' : string,
+  'createdAt' : bigint,
+  'email' : string,
+  'address' : string,
+  'notes' : string,
+  'phone' : string,
+}
+export interface DiscountApplicationResult {
+  'discountCode' : DiscountCode,
+  'discountAmount' : number,
+  'finalTotal' : number,
+}
+export interface DiscountCode {
+  'id' : bigint,
+  'discountValue' : number,
+  'expiresAt' : [] | [bigint],
+  'code' : string,
+  'createdAt' : bigint,
+  'discountType' : DiscountType,
+  'usedCount' : bigint,
+  'description' : string,
+  'isActive' : boolean,
+  'maxUses' : [] | [bigint],
+  'minimumOrderAmount' : number,
+}
+export interface DiscountCodeInput {
+  'discountValue' : number,
+  'expiresAt' : [] | [bigint],
+  'code' : string,
+  'discountType' : DiscountType,
+  'description' : string,
+  'maxUses' : [] | [bigint],
+  'minimumOrderAmount' : number,
+}
+export type DiscountType = { 'fixed' : null } |
+  { 'percentage' : null };
+export interface Ingredient {
+  'id' : bigint,
+  'lowStockThreshold' : number,
+  'expiryDate' : [] | [bigint],
+  'name' : string,
+  'createdAt' : bigint,
+  'unit' : string,
+  'quantity' : number,
+  'costPrice' : number,
+  'supplierId' : [] | [bigint],
+}
+export interface MenuItem {
+  'id' : bigint,
+  'costPerServing' : number,
+  'availableFromHour' : [] | [bigint],
+  'name' : string,
+  'createdAt' : bigint,
+  'isAvailable' : boolean,
+  'sellingPrice' : number,
+  'description' : string,
+  'availableDays' : [] | [Array<bigint>],
+  'availableToHour' : [] | [bigint],
+  'ingredients' : Array<[string, number]>,
+}
+export interface PurchaseOrder {
+  'id' : bigint,
+  'status' : PurchaseOrderStatus,
+  'supplierName' : string,
+  'createdAt' : bigint,
+  'notes' : string,
+  'items' : Array<
+    {
+      'unit' : string,
+      'quantityOrdered' : number,
+      'ingredientName' : string,
+      'ingredientId' : bigint,
+    }
+  >,
+  'supplierId' : bigint,
+}
+export type PurchaseOrderStatus = { 'cancelled' : null } |
+  { 'pending' : null } |
+  { 'received' : null };
+export interface SaleOrder {
+  'id' : bigint,
+  'discountCodeId' : [] | [bigint],
+  'discountAmount' : number,
+  'note' : string,
+  'createdAt' : bigint,
+  'taxTotal' : number,
+  'totalAmount' : number,
+  'taxBreakdown' : Array<TaxBreakdown>,
+  'items' : Array<[bigint, string, bigint, number]>,
+  'subtotal' : number,
+}
+export interface SalesReport {
+  'averageOrderValue' : number,
+  'topSellingItems' : Array<TopSellingItem>,
+  'periodLabel' : string,
+  'totalRevenue' : number,
+  'totalOrdersCount' : bigint,
+}
+export type SalesReportPeriod = { 'daily' : null } |
+  { 'weekly' : null };
+export interface Subscription {
+  'id' : bigint,
+  'status' : SubscriptionStatus,
+  'frequencyDays' : bigint,
+  'nextRenewalDate' : bigint,
+  'menuItemIds' : Array<bigint>,
+  'createdAt' : bigint,
+  'customerId' : bigint,
+  'totalPrice' : number,
+  'planName' : string,
+  'startDate' : bigint,
+}
+export type SubscriptionStatus = { 'active' : null } |
+  { 'cancelled' : null } |
+  { 'paused' : null };
+export interface Supplier {
+  'id' : bigint,
+  'name' : string,
+  'createdAt' : bigint,
+  'contactPerson' : string,
+  'email' : string,
+  'leadTimeDays' : bigint,
+  'address' : string,
+  'notes' : string,
+  'phone' : string,
+}
+export type TaxAppliesTo = { 'all' : null } |
+  { 'menuItems' : null } |
+  { 'combos' : null };
+export interface TaxBreakdown {
+  'name' : string,
+  'rate' : number,
+  'amount' : number,
+}
+export interface TaxCalculationResult {
+  'breakdown' : Array<TaxBreakdown>,
+  'totalTaxAmount' : number,
+}
+export interface TaxConfig {
+  'id' : bigint,
+  'appliesTo' : TaxAppliesTo,
+  'name' : string,
+  'createdAt' : bigint,
+  'rate' : number,
+  'isActive' : boolean,
+}
+export interface TaxConfigInput {
+  'appliesTo' : TaxAppliesTo,
+  'name' : string,
+  'rate' : number,
+}
+export interface TopSellingItem {
+  'revenue' : number,
+  'menuItemName' : string,
+  'quantitySold' : bigint,
+  'menuItemId' : bigint,
+}
+export interface UpdateIngredientRequest {
+  'lowStockThreshold' : number,
+  'expiryDate' : [] | [bigint],
+  'name' : string,
+  'unit' : string,
+  'quantity' : number,
+  'costPrice' : number,
+  'supplierId' : [] | [bigint],
+}
+export interface UpdateMenuItemRequest {
+  'availableFromHour' : [] | [bigint],
+  'name' : string,
+  'isAvailable' : boolean,
+  'sellingPrice' : number,
+  'description' : string,
+  'availableDays' : [] | [Array<bigint>],
+  'availableToHour' : [] | [bigint],
+  'ingredients' : Array<[string, number]>,
 }
 export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
+export interface WasteLog {
+  'id' : bigint,
+  'costLoss' : number,
+  'unit' : string,
+  'quantity' : number,
+  'ingredientName' : string,
+  'ingredientId' : bigint,
+  'loggedAt' : bigint,
+  'reason' : string,
+}
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
-  'addInventoryItem' : ActorMethod<[InventoryItem], undefined>,
+  'applyDiscountCode' : ActorMethod<
+    [string, number],
+    DiscountApplicationResult
+  >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'deleteInventoryItem' : ActorMethod<[string], undefined>,
+  'autoGeneratePurchaseOrders' : ActorMethod<[], Array<bigint>>,
+  'calculateTax' : ActorMethod<[number], TaxCalculationResult>,
+  'cancelSubscription' : ActorMethod<[bigint], undefined>,
+  'claimAdminIfVacant' : ActorMethod<[], undefined>,
+  'createComboDeal' : ActorMethod<[CreateComboDealRequest], bigint>,
+  'createCustomer' : ActorMethod<
+    [string, string, string, string, string],
+    bigint
+  >,
+  'createDiscountCode' : ActorMethod<[DiscountCodeInput], bigint>,
+  'createIngredient' : ActorMethod<[CreateIngredientRequest], bigint>,
+  'createMenuItem' : ActorMethod<[CreateMenuItemRequest], bigint>,
+  'createPurchaseOrder' : ActorMethod<[CreatePurchaseOrderRequest], bigint>,
+  'createSaleOrder' : ActorMethod<[CreateSaleOrderRequest], bigint>,
+  'createSubscription' : ActorMethod<
+    [bigint, string, Array<bigint>, bigint, bigint, number],
+    bigint
+  >,
+  'createSupplier' : ActorMethod<[CreateSupplierRequest], bigint>,
+  'createTaxConfig' : ActorMethod<[TaxConfigInput], bigint>,
+  'createWasteLog' : ActorMethod<[CreateWasteLogRequest], bigint>,
+  'deleteComboDeal' : ActorMethod<[bigint], undefined>,
+  'deleteCustomer' : ActorMethod<[bigint], undefined>,
+  'deleteDiscountCode' : ActorMethod<[bigint], undefined>,
+  'deleteIngredient' : ActorMethod<[bigint], undefined>,
+  'deleteMenuItem' : ActorMethod<[bigint], undefined>,
+  'deleteSupplier' : ActorMethod<[bigint], undefined>,
+  'deleteTaxConfig' : ActorMethod<[bigint], undefined>,
+  'getAdminPrincipal' : ActorMethod<[], string>,
+  'getAlerts' : ActorMethod<[], Array<Alert>>,
+  'getAvailableMenuItems' : ActorMethod<[], Array<MenuItem>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getInventoryStats' : ActorMethod<
+  'getCombo' : ActorMethod<[bigint], [] | [ComboDeal]>,
+  'getCombos' : ActorMethod<[], Array<ComboDeal>>,
+  'getCustomer' : ActorMethod<[bigint], [] | [Customer]>,
+  'getCustomers' : ActorMethod<[bigint, bigint], Array<Customer>>,
+  'getDashboardSalesStats' : ActorMethod<
     [],
-    { 'totalValue' : number, 'lowStockCount' : bigint, 'totalItems' : bigint }
+    {
+      'todaysRevenue' : number,
+      'totalRevenue' : number,
+      'todaysOrdersCount' : bigint,
+      'totalOrdersCount' : bigint,
+    }
   >,
-  'getLowStockItems' : ActorMethod<[], Array<InventoryResponse>>,
+  'getDiscountCode' : ActorMethod<[bigint], [] | [DiscountCode]>,
+  'getDiscountCodes' : ActorMethod<[], Array<DiscountCode>>,
+  'getIngredient' : ActorMethod<[bigint], [] | [Ingredient]>,
+  'getIngredientByName' : ActorMethod<[string], [] | [Ingredient]>,
+  'getMenuItem' : ActorMethod<[bigint], [] | [MenuItem]>,
+  'getMenuItems' : ActorMethod<[], Array<MenuItem>>,
+  'getProfitMargin' : ActorMethod<
+    [bigint],
+    {
+      'costPerServing' : number,
+      'grossProfit' : number,
+      'sellingPrice' : number,
+      'profitMarginPercentage' : number,
+    }
+  >,
+  'getPurchaseOrder' : ActorMethod<[bigint], [] | [PurchaseOrder]>,
+  'getPurchaseOrders' : ActorMethod<[], Array<PurchaseOrder>>,
+  'getSaleOrder' : ActorMethod<[bigint], [] | [SaleOrder]>,
+  'getSaleOrders' : ActorMethod<[bigint, bigint], Array<SaleOrder>>,
+  'getSalesReport' : ActorMethod<[SalesReportPeriod, bigint], SalesReport>,
+  'getSubscription' : ActorMethod<[bigint], [] | [Subscription]>,
+  'getSubscriptions' : ActorMethod<
+    [[] | [bigint], bigint, bigint],
+    Array<Subscription>
+  >,
+  'getSupplier' : ActorMethod<[bigint], [] | [Supplier]>,
+  'getSuppliers' : ActorMethod<[], Array<Supplier>>,
+  'getTaxConfig' : ActorMethod<[bigint], [] | [TaxConfig]>,
+  'getTaxConfigs' : ActorMethod<[], Array<TaxConfig>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'getWasteLog' : ActorMethod<[bigint], [] | [WasteLog]>,
+  'getWasteLogs' : ActorMethod<[], Array<WasteLog>>,
+  'getWasteStats' : ActorMethod<
+    [],
+    {
+      'breakdown' : Array<
+        [bigint, { 'costLoss' : number, 'quantity' : number }]
+      >,
+      'totalWasteCount' : bigint,
+      'totalWasteCost' : number,
+    }
+  >,
   'isCallerAdmin' : ActorMethod<[], boolean>,
-  'listInventory' : ActorMethod<[], Array<InventoryResponse>>,
+  'listIngredients' : ActorMethod<[], Array<Ingredient>>,
+  'markAlertRead' : ActorMethod<[bigint], undefined>,
+  'markAllAlertsRead' : ActorMethod<[], undefined>,
+  'pauseSubscription' : ActorMethod<[bigint], undefined>,
+  'reassignAdmin' : ActorMethod<[Principal], undefined>,
+  'resumeSubscription' : ActorMethod<[bigint], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
-  'updateInventoryItem' : ActorMethod<[string, InventoryItem], undefined>,
+  'toggleComboDealAvailability' : ActorMethod<[bigint], undefined>,
+  'toggleDiscountCodeActive' : ActorMethod<[bigint], undefined>,
+  'toggleMenuItemAvailability' : ActorMethod<[bigint], undefined>,
+  'toggleTaxConfigActive' : ActorMethod<[bigint], undefined>,
+  'updateComboDeal' : ActorMethod<
+    [bigint, string, string, Array<bigint>, number, boolean],
+    undefined
+  >,
+  'updateCustomer' : ActorMethod<
+    [bigint, string, string, string, string, string],
+    undefined
+  >,
+  'updateDiscountCode' : ActorMethod<[bigint, DiscountCodeInput], undefined>,
+  'updateIngredient' : ActorMethod<
+    [bigint, UpdateIngredientRequest],
+    undefined
+  >,
+  'updateMenuItem' : ActorMethod<[bigint, UpdateMenuItemRequest], undefined>,
+  'updatePurchaseOrderStatus' : ActorMethod<
+    [bigint, PurchaseOrderStatus],
+    undefined
+  >,
+  'updateSubscription' : ActorMethod<
+    [bigint, string, Array<bigint>, bigint, number],
+    undefined
+  >,
+  'updateSupplier' : ActorMethod<[bigint, CreateSupplierRequest], undefined>,
+  'updateTaxConfig' : ActorMethod<[bigint, TaxConfigInput], undefined>,
+  'vacateAdmin' : ActorMethod<[], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

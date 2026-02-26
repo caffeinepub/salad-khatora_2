@@ -1,38 +1,60 @@
 import { useState } from 'react';
-import { useAddInventoryItem } from '../hooks/useQueries';
-import type { InventoryItem } from '../backend';
+import { useCreateIngredient, useSuppliers } from '../hooks/useQueries';
+import type { CreateIngredientRequest } from '../backend';
 import { Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface AddIngredientFormProps {
   onSuccess: () => void;
 }
 
-const defaultForm: InventoryItem = {
+interface FormState {
+  name: string;
+  quantity: string;
+  unit: string;
+  costPrice: string;
+  lowStockThreshold: string;
+  supplierId: string;
+  expiryDate: string;
+}
+
+const defaultForm: FormState = {
   name: '',
-  quantity: 0,
+  quantity: '',
   unit: '',
-  costPricePerUnit: 0,
-  supplier: '',
-  lowStockThreshold: 0,
+  costPrice: '',
+  lowStockThreshold: '',
+  supplierId: '',
+  expiryDate: '',
 };
 
 export default function AddIngredientForm({ onSuccess }: AddIngredientFormProps) {
-  const [form, setForm] = useState<InventoryItem>(defaultForm);
-  const [errors, setErrors] = useState<Partial<Record<keyof InventoryItem, string>>>({});
+  const [form, setForm] = useState<FormState>(defaultForm);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [success, setSuccess] = useState(false);
 
-  const addMutation = useAddInventoryItem();
+  const createMutation = useCreateIngredient();
+  const { data: suppliers } = useSuppliers();
 
   const validate = (): boolean => {
-    const newErrors: Partial<Record<keyof InventoryItem, string>> = {};
+    const newErrors: Partial<Record<keyof FormState, string>> = {};
     if (!form.name.trim()) newErrors.name = 'Name is required';
-    if (form.quantity < 0) newErrors.quantity = 'Quantity must be non-negative';
+    if (!form.quantity || isNaN(Number(form.quantity)) || Number(form.quantity) < 0)
+      newErrors.quantity = 'Valid quantity is required';
     if (!form.unit.trim()) newErrors.unit = 'Unit is required';
-    if (form.costPricePerUnit < 0) newErrors.costPricePerUnit = 'Cost price must be non-negative';
-    if (form.lowStockThreshold < 0) newErrors.lowStockThreshold = 'Threshold must be non-negative';
+    if (!form.costPrice || isNaN(Number(form.costPrice)) || Number(form.costPrice) < 0)
+      newErrors.costPrice = 'Valid cost price is required';
+    if (!form.lowStockThreshold || isNaN(Number(form.lowStockThreshold)) || Number(form.lowStockThreshold) < 0)
+      newErrors.lowStockThreshold = 'Valid threshold is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -41,8 +63,20 @@ export default function AddIngredientForm({ onSuccess }: AddIngredientFormProps)
     e.preventDefault();
     if (!validate()) return;
 
+    const payload: CreateIngredientRequest = {
+      name: form.name.trim(),
+      quantity: Number(form.quantity),
+      unit: form.unit.trim(),
+      costPrice: Number(form.costPrice),
+      lowStockThreshold: Number(form.lowStockThreshold),
+      supplierId: form.supplierId ? BigInt(form.supplierId) : undefined,
+      expiryDate: form.expiryDate
+        ? BigInt(new Date(form.expiryDate).getTime() * 1_000_000)
+        : undefined,
+    };
+
     try {
-      await addMutation.mutateAsync(form);
+      await createMutation.mutateAsync(payload);
       setSuccess(true);
       setTimeout(() => {
         setSuccess(false);
@@ -53,20 +87,16 @@ export default function AddIngredientForm({ onSuccess }: AddIngredientFormProps)
     }
   };
 
-  const handleChange = (field: keyof InventoryItem, value: string) => {
-    const numFields: (keyof InventoryItem)[] = ['quantity', 'costPricePerUnit', 'lowStockThreshold'];
-    setForm(prev => ({
-      ...prev,
-      [field]: numFields.includes(field) ? parseFloat(value) || 0 : value,
-    }));
+  const set = (field: keyof FormState, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
   };
 
-  const totalValue = form.quantity * form.costPricePerUnit;
+  const totalValue = Number(form.quantity) * Number(form.costPrice);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {addMutation.isError && (
+      {createMutation.isError && (
         <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm">
           Failed to add ingredient. Please try again.
         </div>
@@ -75,14 +105,14 @@ export default function AddIngredientForm({ onSuccess }: AddIngredientFormProps)
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Name */}
         <div className="sm:col-span-2 space-y-1.5">
-          <Label htmlFor="name" className="text-sm font-medium">
+          <Label htmlFor="add-name" className="text-sm font-medium">
             Ingredient Name <span className="text-destructive">*</span>
           </Label>
           <Input
-            id="name"
+            id="add-name"
             placeholder="e.g. Romaine Lettuce"
             value={form.name}
-            onChange={e => handleChange('name', e.target.value)}
+            onChange={e => set('name', e.target.value)}
             className={errors.name ? 'border-destructive' : 'border-border'}
           />
           {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
@@ -90,17 +120,17 @@ export default function AddIngredientForm({ onSuccess }: AddIngredientFormProps)
 
         {/* Quantity */}
         <div className="space-y-1.5">
-          <Label htmlFor="quantity" className="text-sm font-medium">
+          <Label htmlFor="add-quantity" className="text-sm font-medium">
             Quantity <span className="text-destructive">*</span>
           </Label>
           <Input
-            id="quantity"
+            id="add-quantity"
             type="number"
             step="0.01"
             min="0"
             placeholder="0.00"
-            value={form.quantity || ''}
-            onChange={e => handleChange('quantity', e.target.value)}
+            value={form.quantity}
+            onChange={e => set('quantity', e.target.value)}
             className={errors.quantity ? 'border-destructive' : 'border-border'}
           />
           {errors.quantity && <p className="text-xs text-destructive">{errors.quantity}</p>}
@@ -108,14 +138,14 @@ export default function AddIngredientForm({ onSuccess }: AddIngredientFormProps)
 
         {/* Unit */}
         <div className="space-y-1.5">
-          <Label htmlFor="unit" className="text-sm font-medium">
+          <Label htmlFor="add-unit" className="text-sm font-medium">
             Unit <span className="text-destructive">*</span>
           </Label>
           <Input
-            id="unit"
+            id="add-unit"
             placeholder="e.g. kg, liters, pieces"
             value={form.unit}
-            onChange={e => handleChange('unit', e.target.value)}
+            onChange={e => set('unit', e.target.value)}
             className={errors.unit ? 'border-destructive' : 'border-border'}
           />
           {errors.unit && <p className="text-xs text-destructive">{errors.unit}</p>}
@@ -123,35 +153,35 @@ export default function AddIngredientForm({ onSuccess }: AddIngredientFormProps)
 
         {/* Cost Price */}
         <div className="space-y-1.5">
-          <Label htmlFor="costPricePerUnit" className="text-sm font-medium">
-            Cost Price per Unit ($) <span className="text-destructive">*</span>
+          <Label htmlFor="add-costPrice" className="text-sm font-medium">
+            Cost Price per Unit <span className="text-destructive">*</span>
           </Label>
           <Input
-            id="costPricePerUnit"
+            id="add-costPrice"
             type="number"
             step="0.01"
             min="0"
             placeholder="0.00"
-            value={form.costPricePerUnit || ''}
-            onChange={e => handleChange('costPricePerUnit', e.target.value)}
-            className={errors.costPricePerUnit ? 'border-destructive' : 'border-border'}
+            value={form.costPrice}
+            onChange={e => set('costPrice', e.target.value)}
+            className={errors.costPrice ? 'border-destructive' : 'border-border'}
           />
-          {errors.costPricePerUnit && <p className="text-xs text-destructive">{errors.costPricePerUnit}</p>}
+          {errors.costPrice && <p className="text-xs text-destructive">{errors.costPrice}</p>}
         </div>
 
         {/* Low Stock Threshold */}
         <div className="space-y-1.5">
-          <Label htmlFor="lowStockThreshold" className="text-sm font-medium">
-            Low Stock Threshold
+          <Label htmlFor="add-threshold" className="text-sm font-medium">
+            Low Stock Threshold <span className="text-destructive">*</span>
           </Label>
           <Input
-            id="lowStockThreshold"
+            id="add-threshold"
             type="number"
             step="0.01"
             min="0"
             placeholder="0.00"
-            value={form.lowStockThreshold || ''}
-            onChange={e => handleChange('lowStockThreshold', e.target.value)}
+            value={form.lowStockThreshold}
+            onChange={e => set('lowStockThreshold', e.target.value)}
             className={errors.lowStockThreshold ? 'border-destructive' : 'border-border'}
           />
           {errors.lowStockThreshold && <p className="text-xs text-destructive">{errors.lowStockThreshold}</p>}
@@ -159,24 +189,45 @@ export default function AddIngredientForm({ onSuccess }: AddIngredientFormProps)
 
         {/* Supplier */}
         <div className="sm:col-span-2 space-y-1.5">
-          <Label htmlFor="supplier" className="text-sm font-medium">Supplier</Label>
+          <Label className="text-sm font-medium">Supplier (optional)</Label>
+          <Select
+            value={form.supplierId}
+            onValueChange={val => set('supplierId', val === 'none' ? '' : val)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select supplier..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No supplier</SelectItem>
+              {(suppliers ?? []).map(s => (
+                <SelectItem key={s.id.toString()} value={s.id.toString()}>
+                  {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Expiry Date */}
+        <div className="sm:col-span-2 space-y-1.5">
+          <Label htmlFor="add-expiry" className="text-sm font-medium">Expiry Date (optional)</Label>
           <Input
-            id="supplier"
-            placeholder="e.g. Fresh Farms Co."
-            value={form.supplier}
-            onChange={e => handleChange('supplier', e.target.value)}
+            id="add-expiry"
+            type="date"
+            value={form.expiryDate}
+            onChange={e => set('expiryDate', e.target.value)}
             className="border-border"
           />
         </div>
       </div>
 
       {/* Total Value Preview */}
-      {(form.quantity > 0 || form.costPricePerUnit > 0) && (
+      {(Number(form.quantity) > 0 || Number(form.costPrice) > 0) && (
         <div className="p-3 rounded-xl bg-secondary border border-border">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Calculated Total Value</span>
             <span className="font-semibold text-primary">
-              ${totalValue.toFixed(2)}
+              ₹{isNaN(totalValue) ? '0.00' : totalValue.toFixed(2)}
             </span>
           </div>
         </div>
@@ -189,21 +240,21 @@ export default function AddIngredientForm({ onSuccess }: AddIngredientFormProps)
           variant="outline"
           className="flex-1 border-border hover:bg-accent"
           onClick={onSuccess}
-          disabled={addMutation.isPending}
+          disabled={createMutation.isPending}
         >
           Cancel
         </Button>
         <Button
           type="submit"
-          className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 shadow-green"
-          disabled={addMutation.isPending || success}
+          className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+          disabled={createMutation.isPending || success}
         >
           {success ? (
             <span className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4" />
               Added!
             </span>
-          ) : addMutation.isPending ? (
+          ) : createMutation.isPending ? (
             <span className="flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
               Adding...

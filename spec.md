@@ -1,14 +1,21 @@
 # Specification
 
 ## Summary
-**Goal:** Build Phase 1 of Salad Khatora — an admin-only inventory management app with authentication, ingredient CRUD, and a dashboard with key stats and low-stock alerts.
+**Goal:** Add Discounts & Coupons, Tax Configuration, and Sales Reports features to the Salad Khatora POS system, along with a reorganized Sales navigation dropdown.
 
 **Planned changes:**
-- Admin email/password authentication with session management; all non-auth endpoints protected
-- Login page with email/password form, error handling, and redirect to dashboard on success
-- Inventory data model (name, quantity, unit, cost price, supplier, low-stock threshold) with auto-calculated total value; full CRUD backend functions
-- Inventory Management page with a table showing all ingredient fields, Add/Edit/Delete support, confirmation on delete, and visual highlighting for low-stock rows
-- Dashboard page (default post-login) with stat cards for total ingredient count, total inventory value, and low-stock item count; low-stock alerts section listing affected ingredients
-- White and green theme, sidebar/top navigation between Dashboard and Inventory pages, fully responsive/mobile-friendly layout, logo displayed in navigation header
+- Add `DiscountCode` type and CRUD operations to the backend, including `applyDiscountCode` validation logic (active, not expired, within max uses, minimum order enforced)
+- Add `TaxConfig` type and CRUD operations to the backend, including `calculateTax` query returning per-config breakdowns and total
+- Add `getSalesReport` query to the backend supporting daily and weekly periods, returning total orders, revenue, average order value, and top 10 selling items
+- Update `createSaleOrder` to accept an optional discount code, apply active taxes automatically, and persist discount/tax fields on the order record
+- Add a `migration.mo` that carries over all prior stable state and initialises empty discount/tax collections
+- Add 15 React Query hooks for all new backend operations (discount codes, tax configs, sales report, calculate tax, apply discount)
+- Build a Discounts & Coupons page at `/discounts` with a table, add/edit/delete modal, and inline active toggle
+- Build a Sales Reports page at `/sales-reports` with daily/weekly date pickers, a report card, top-selling items table, and client-side CSV download
+- Build a Tax Configuration page at `/tax-config` with a table, add/edit/delete modal, inline active toggle, and a live tax preview panel
+- Update the New Order form on the Sales page to support promo code application, show a tax breakdown, and display a detailed order total (subtotal → discount → tax lines → grand total)
+- Update expanded order details in Sales History to show discount amount, tax breakdown, and grand total
+- Reorganize the sidebar/header navigation so Sales becomes a collapsible dropdown containing: Sales, Discounts & Coupons, Sales Reports, and Tax Configuration
+- Register the three new routes (`/discounts`, `/sales-reports`, `/tax-config`) in `App.tsx`
 
-**User-visible outcome:** An admin can log in, view a dashboard with inventory stats and low-stock alerts, and manage ingredients (add, edit, delete) with automatic total value calculation and low-stock visual indicators.
+**User-visible outcome:** Admins can create and manage promo/discount codes and tax configurations, view daily/weekly sales reports with CSV export, apply promo codes and see tax breakdowns when creating orders, and navigate all sales-related pages from a unified collapsible "Sales" dropdown in the sidebar.

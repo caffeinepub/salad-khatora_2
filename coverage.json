@@ -1,199 +1,127 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T04:59:17.803Z",
+  "generatedAt": "2026-02-26T08:57:31.344Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 6,
-    "implemented": 4,
+    "total": 10,
+    "implemented": 5,
     "items": [
       {
-        "id": "REQ-1",
-        "summary": "Implement admin authentication in the backend with stored email/password credentials. Provide login and logout functions that return a session token or authenticated state. Protect all non-auth endpoints by requiring a valid session.",
+        "id": "REQ-42",
+        "summary": "Extend the backend actor to support a Discount & Coupon system. Add a `DiscountCode` type with fields: id (Nat), code (Text, unique), description (Text), discountType (variant: #percentage | #fixed), discountValue (Float), minimumOrderAmount (Float), maxUses (optional Nat), usedCount (Nat), isActive (Bool), expiresAt (optional Int Unix timestamp), createdAt (Int). Implement: `createDiscountCode`, `getDiscountCodes` (returns all), `getDiscountCode` (by ID), `updateDiscountCode`, `deleteDiscountCode`, `toggleDiscountCodeActive`, and `applyDiscountCode(code: Text, orderSubtotal: Float)` — which validates the code (active, not expired, not exceeded max uses), increments usedCount, and returns the discount amount and final discounted total. All write operations must be restricted to admin role.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-2",
-        "summary": "Build an admin login screen on the frontend with email and password fields and a Login button. Show error messages for invalid credentials. On successful login, redirect to the dashboard.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/LoginPage.tsx",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/LoginPage.tsx",
-          "frontend/src/App.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Implement an Inventory data model and CRUD operations in the backend. Each ingredient record must store: name (Text), quantity (Float), unit (Text), cost price per unit (Float), supplier (Text), and low-stock threshold (Float). The total value (quantity × cost price) must be auto-calculated and returned in list results. Provide functions to add, update, delete, and list ingredients.",
+        "id": "REQ-43",
+        "summary": "Extend the backend actor to support Tax Configuration. Add a `TaxConfig` type with fields: id (Nat), name (Text — e.g. 'GST', 'VAT'), rate (Float — percentage, e.g. 10.0 for 10%), isActive (Bool), appliesTo (variant: #all | #menuItems | #combos), createdAt (Int). Implement: `createTaxConfig`, `getTaxConfigs` (returns all), `getTaxConfig` (by ID), `updateTaxConfig`, `deleteTaxConfig`, `toggleTaxConfigActive`. Also add a `calculateTax(subtotal: Float)` query that returns an array of applied taxes (name, rate, amount) and total tax amount based on all active tax configs. All write operations must be restricted to admin role.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
-        "id": "REQ-4",
-        "summary": "Build an Inventory Management page on the frontend displaying all ingredients in a table or card list with columns for name, quantity, unit, cost price, supplier, low-stock threshold, and total value. Include an Add Ingredient form/modal with all required fields. Support editing and deleting existing ingredients. Visually highlight rows where current quantity is at or below the low-stock threshold.",
+        "id": "REQ-44",
+        "summary": "Extend the backend actor to support Sales Reports. Add a `getSalesReport(period: variant { #daily | #weekly }, referenceDate: Int })` query that returns: period label (e.g. '2024-06-10' or 'Week of 2024-06-10'), total orders count, total revenue, top-selling menu items (array of { menuItemId: Nat, menuItemName: Text, quantitySold: Nat, revenue: Float } sorted by quantitySold descending, top 10), and average order value. The report is computed dynamically from existing salesOrders data filtered to the requested period (UTC). This is a query — no write restrictions needed.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-45",
+        "summary": "Update the `createSaleOrder` backend function to accept two new optional parameters: `discountCodeId` (optional Nat) and apply active taxes automatically. When a discountCodeId is provided, call the discount validation logic and apply the discount to the subtotal. Then apply all active tax configs via calculateTax to the post-discount subtotal. Persist in SaleOrder: `discountCodeId` (optional Nat), `discountAmount` (Float), `taxBreakdown` (array of { name: Text, rate: Float, amount: Float }), `taxTotal` (Float), and update `totalAmount` to equal subtotal − discountAmount + taxTotal. Generate an updated migration.mo that carries over all prior state and initialises empty collections for discountCodes and taxConfigs with their ID counters.",
+        "status": "unknown",
+        "plannedFiles": [],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-46",
+        "summary": "Add React Query hooks in `frontend/src/hooks/useQueries.ts` for all new backend operations introduced in REQ-42 through REQ-45: `useDiscountCodes` (query), `useDiscountCode` (query by id), `useCreateDiscountCode` (mutation), `useUpdateDiscountCode` (mutation), `useDeleteDiscountCode` (mutation), `useToggleDiscountCodeActive` (mutation), `useApplyDiscountCode` (mutation), `useTaxConfigs` (query), `useTaxConfig` (query by id), `useCreateTaxConfig` (mutation), `useUpdateTaxConfig` (mutation), `useDeleteTaxConfig` (mutation), `useToggleTaxConfigActive` (mutation), `useCalculateTax` (query by subtotal), `useSalesReport` (query by period and referenceDate). Follow the same patterns as existing hooks (actor-based calls, proper query keys, cache invalidation on mutations).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/InventoryPage.tsx",
-          "frontend/src/components/AddIngredientForm.tsx",
-          "frontend/src/components/EditIngredientForm.tsx",
-          "frontend/src/hooks/useInventory.ts",
-          "frontend/src/App.tsx"
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/InventoryPage.tsx",
-          "frontend/src/components/AddIngredientForm.tsx",
-          "frontend/src/components/EditIngredientForm.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/hooks/useQueries.ts"
         ]
       },
       {
-        "id": "REQ-5",
-        "summary": "Build a Dashboard page as the default post-login view. Display key stat cards for: total number of ingredients, total inventory value (sum of all total values), and count of low-stock items. Show a low-stock alerts section listing all ingredients at or below their low-stock threshold with name, current quantity, unit, and threshold. Stats must reflect current backend data.",
+        "id": "REQ-47",
+        "summary": "Build a Discounts & Coupons page accessible at `/discounts`. Display all discount codes in a table with columns for: code, description, type (percentage/fixed), value, minimum order, max uses, used count, expiry date, and status badge (active/inactive). Include an 'Add Discount Code' modal with all required fields: code, description, discount type selector (percentage or fixed), discount value, optional minimum order amount, optional max uses, optional expiry date, and active toggle. Support editing and deleting existing discount codes. Allow toggling active status inline.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/DashboardPage.tsx",
-          "frontend/src/hooks/useDashboardStats.ts",
-          "frontend/src/App.tsx"
+          "frontend/src/pages/DiscountsPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/DashboardPage.tsx",
-          "frontend/src/App.tsx"
+          "frontend/src/pages/DiscountsPage.tsx"
         ]
       },
       {
-        "id": "REQ-6",
-        "summary": "Apply a consistent white and green visual theme across all pages. Include a sidebar or top navigation for routing between Dashboard and Inventory pages. Ensure the entire app is fully responsive and mobile-friendly with readable typography and accessible touch targets. Render the generated logo (frontend/public/assets/generated/logo.png) in the navigation header.",
+        "id": "REQ-48",
+        "summary": "Build a Sales Reports page accessible at `/sales-reports`. At the top, show two date-range pickers: one for 'Daily Report' (single date picker) and one for 'Weekly Report' (week start date picker). On selecting a date and report type, display a report card showing: period label, total orders, total revenue, average order value, and a top-selling items table (item name, quantity sold, revenue). Include a 'Download CSV' button that exports the displayed report data as a CSV file client-side (no backend endpoint needed — construct CSV from the query result in the browser).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/index.css",
-          "frontend/tailwind.config.js",
+          "frontend/src/pages/SalesReportsPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/SalesReportsPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-49",
+        "summary": "Build a Tax Configuration page accessible at `/tax-config`. Display all tax configs in a table with columns for: name, rate (%), applies to, and status badge (active/inactive). Include an 'Add Tax Config' modal with fields: name (e.g. 'GST'), rate (Float, e.g. 10 for 10%), applies to selector (#all / #menuItems / #combos), and active toggle. Support editing and deleting existing tax configs. Allow toggling active status inline. Show a live preview panel that calculates tax on a sample subtotal entered by the user, displaying each active tax line and total tax amount.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/TaxConfigPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/TaxConfigPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-50",
+        "summary": "Update the New Order form on the Sales page (`/sales`, `frontend/src/pages/SalesPage.tsx`) to support discount code application and show a tax breakdown before submission. Add a 'Promo Code' input field with an 'Apply' button that calls `useApplyDiscountCode`; on success show the discount amount deducted. Below the subtotal, display a tax breakdown section listing each active tax line (name, rate, amount) from `useCalculateTax` applied to the post-discount subtotal. Update the order total display to show: Subtotal, Discount (if applied), Tax lines, and Grand Total. Pass the discountCodeId (if applied) when calling createSaleOrder. In the Sales History table, update the order detail expansion to show discount amount, tax breakdown, and the final total.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/SalesPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/SalesPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-51",
+        "summary": "Reorganize the Sales section in the Layout navigation (`frontend/src/components/Layout.tsx`) as a collapsible dropdown group in the sidebar/header. The dropdown label is 'Sales' with a chevron icon. It contains four sub-links: 'Sales' (→ /sales, existing), 'Discounts & Coupons' (→ /discounts), 'Sales Reports' (→ /sales-reports), and 'Tax Configuration' (→ /tax-config). The dropdown should expand automatically when the current route matches any of the four sub-paths. Register the three new routes (/discounts, /sales-reports, /tax-config) in `frontend/src/App.tsx` pointing to their respective new page components.",
+        "status": "missing",
+        "plannedFiles": [
           "frontend/src/components/Layout.tsx",
           "frontend/src/App.tsx"
         ],
-        "matchedFiles": [
-          "frontend/src/index.css",
-          "frontend/tailwind.config.js",
-          "frontend/src/components/Layout.tsx",
-          "frontend/src/App.tsx"
-        ]
+        "matchedFiles": []
       }
     ]
   },
   "changedFiles": [
-    "backend/authorization/MixinAuthorization.mo",
-    "backend/authorization/access-control.mo",
     "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
-    "build-template/Dockerfile",
-    "build-template/LICENSE",
-    "build-template/README.md",
-    "build-template/deploy.sh",
-    "build-template/icp.yaml",
-    "build-template/package.json",
-    "build-template/pnpm-lock.yaml",
-    "build-template/pnpm-workspace.yaml",
-    "build-template/scripts/prune-unused-images.js",
-    "build-template/scripts/resize-images.js",
-    "build-template/src/backend/canister.yaml",
-    "build-template/src/backend/system-idl/aaaaa-aa.did",
-    "build-template/src/frontend/canister.yaml",
-    "build-template/src/frontend/components.json",
-    "build-template/src/frontend/env.json",
-    "build-template/src/frontend/eslint-rules/no-bigint-in-query-keys.js",
-    "build-template/src/frontend/eslint-rules/require-internet-identity-provider.js",
-    "build-template/src/frontend/eslint.config.js",
-    "build-template/src/frontend/package.json",
-    "build-template/src/frontend/postcss.config.js",
-    "build-template/src/frontend/src/components/ui/accordion.tsx",
-    "build-template/src/frontend/src/components/ui/alert-dialog.tsx",
-    "build-template/src/frontend/src/components/ui/alert.tsx",
-    "build-template/src/frontend/src/components/ui/aspect-ratio.tsx",
-    "build-template/src/frontend/src/components/ui/avatar.tsx",
-    "build-template/src/frontend/src/components/ui/badge.tsx",
-    "build-template/src/frontend/src/components/ui/breadcrumb.tsx",
-    "build-template/src/frontend/src/components/ui/button.tsx",
-    "build-template/src/frontend/src/components/ui/calendar.tsx",
-    "build-template/src/frontend/src/components/ui/card.tsx",
-    "build-template/src/frontend/src/components/ui/carousel.tsx",
-    "build-template/src/frontend/src/components/ui/chart.tsx",
-    "build-template/src/frontend/src/components/ui/checkbox.tsx",
-    "build-template/src/frontend/src/components/ui/collapsible.tsx",
-    "build-template/src/frontend/src/components/ui/command.tsx",
-    "build-template/src/frontend/src/components/ui/context-menu.tsx",
-    "build-template/src/frontend/src/components/ui/dialog.tsx",
-    "build-template/src/frontend/src/components/ui/drawer.tsx",
-    "build-template/src/frontend/src/components/ui/dropdown-menu.tsx",
-    "build-template/src/frontend/src/components/ui/form.tsx",
-    "build-template/src/frontend/src/components/ui/hover-card.tsx",
-    "build-template/src/frontend/src/components/ui/input-otp.tsx",
-    "build-template/src/frontend/src/components/ui/input.tsx",
-    "build-template/src/frontend/src/components/ui/label.tsx",
-    "build-template/src/frontend/src/components/ui/menubar.tsx",
-    "build-template/src/frontend/src/components/ui/navigation-menu.tsx",
-    "build-template/src/frontend/src/components/ui/pagination.tsx",
-    "build-template/src/frontend/src/components/ui/popover.tsx",
-    "build-template/src/frontend/src/components/ui/progress.tsx",
-    "build-template/src/frontend/src/components/ui/radio-group.tsx",
-    "build-template/src/frontend/src/components/ui/resizable.tsx",
-    "build-template/src/frontend/src/components/ui/scroll-area.tsx",
-    "build-template/src/frontend/src/components/ui/select.tsx",
-    "build-template/src/frontend/src/components/ui/separator.tsx",
-    "build-template/src/frontend/src/components/ui/sheet.tsx",
-    "build-template/src/frontend/src/components/ui/sidebar.tsx",
-    "build-template/src/frontend/src/components/ui/skeleton.tsx",
-    "build-template/src/frontend/src/components/ui/slider.tsx",
-    "build-template/src/frontend/src/components/ui/sonner.tsx",
-    "build-template/src/frontend/src/components/ui/switch.tsx",
-    "build-template/src/frontend/src/components/ui/table.tsx",
-    "build-template/src/frontend/src/components/ui/tabs.tsx",
-    "build-template/src/frontend/src/components/ui/textarea.tsx",
-    "build-template/src/frontend/src/components/ui/toggle-group.tsx",
-    "build-template/src/frontend/src/components/ui/toggle.tsx",
-    "build-template/src/frontend/src/components/ui/tooltip.tsx",
-    "build-template/src/frontend/src/hooks/use-mobile.tsx",
-    "build-template/src/frontend/src/lib/utils.ts",
-    "build-template/src/frontend/tsconfig.json",
-    "build-template/src/frontend/vite.config.js",
-    "build-template/tsconfig.json",
-    "caffeine.lock.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/index.css",
-    "frontend/index.html",
-    "frontend/public/assets/generated/logo.dim_256x256.png",
-    "frontend/src/App.tsx",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
-    "frontend/src/components/AddIngredientForm.tsx",
-    "frontend/src/components/EditIngredientForm.tsx",
-    "frontend/src/components/Layout.tsx",
-    "frontend/src/components/ProfileSetupModal.tsx",
-    "frontend/src/config.ts",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useActor.ts",
-    "frontend/src/hooks/useInternetIdentity.ts",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/index.css",
-    "frontend/src/lib/utils.ts",
-    "frontend/src/main.tsx",
-    "frontend/src/pages/DashboardPage.tsx",
-    "frontend/src/pages/InventoryPage.tsx",
-    "frontend/src/pages/LoginPage.tsx",
-    "frontend/src/ui-summary.json",
-    "frontend/src/utils/StorageClient.ts",
-    "frontend/src/utils/urlParams.ts",
-    "frontend/tailwind.config.js",
+    "frontend/src/pages/CombosPage.tsx",
+    "frontend/src/pages/DiscountsPage.tsx",
+    "frontend/src/pages/SalesPage.tsx",
+    "frontend/src/pages/SalesReportsPage.tsx",
+    "frontend/src/pages/TaxConfigPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

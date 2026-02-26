@@ -1,96 +1,75 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T04:59:17.799Z",
-  "summary": "The diff implements most of the required features (inventory CRUD backend, inventory management frontend, dashboard with stats, navigation, responsive layout, green theme), but has significant deviations from REQ-1 and REQ-2. The spec requires email/password authentication with stored credentials and session tokens, but the implementation uses Internet Identity (ICP's decentralized auth) instead. The login page has no email/password fields — only an Internet Identity button. Several additional unrequested features (ProfileSetupModal, user profile management, URL parameter utilities) are also present.",
+  "generatedAt": "2026-02-26T08:57:31.337Z",
+  "summary": "The diff implements most of the required features across REQ-42 through REQ-51. Backend additions for discount codes, tax configs, sales reports, and updated createSaleOrder are present. Frontend hooks, new pages (Discounts, SalesReports, TaxConfig), and updates to SalesPage are included. However, several specific requirements cannot be confirmed due to truncated diffs, and some items appear missing or unverifiable.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Implement admin authentication with stored email/password credentials. Provide login and logout functions that return a session token or authenticated state. Protect all non-auth endpoints by requiring a valid session.",
-      "reason": "The backend uses Internet Identity / Principal-based access control (MixinAuthorization, AccessControl) rather than stored email/password credentials. There is no email/password login function, no session token generation, and no stored credential check. The constraint explicitly states 'Only admin authentication via email/password is in scope — no Internet Identity for this phase'.",
+      "id": "REQ-51",
+      "requirement": "Reorganize the Sales section in Layout.tsx as a collapsible dropdown group with chevron icon containing four sub-links; auto-expand when active route matches any of the four sub-paths; responsive mobile support.",
+      "reason": "The frontend-file-summaries.txt describes Layout.tsx as only having an Admin Settings link addition with no mention of a Sales dropdown group or chevron toggle.",
       "evidence": [
-        "backend/main.mo",
-        "frontend/src/hooks/useActor.ts"
+        "frontend/src/components/Layout.tsx",
+        "frontend-file-summaries.txt"
       ]
     },
     {
-      "id": "REQ-2",
-      "requirement": "Build an admin login screen with email and password fields and a Login button. Show error messages for invalid credentials. Login page redirects to dashboard if already authenticated.",
-      "reason": "The LoginPage renders only an Internet Identity sign-in button with no email or password input fields. There is no form with email/password inputs as required. The constraint explicitly excludes Internet Identity for this phase.",
+      "id": "REQ-51",
+      "requirement": "Register the three new routes (/discounts, /sales-reports, /tax-config) in frontend/src/App.tsx pointing to their respective new page components.",
+      "reason": "The frontend-file-summaries.txt describes App.tsx as having all existing routes plus only the new /admin-settings route, with no mention of /discounts, /sales-reports, or /tax-config routes being registered.",
       "evidence": [
-        "frontend/src/pages/LoginPage.tsx"
+        "frontend/src/App.tsx",
+        "frontend-file-summaries.txt"
+      ]
+    },
+    {
+      "id": "REQ-46",
+      "requirement": "useDiscountCode (query by id) hook must be added to useQueries.ts.",
+      "reason": "The useQueries.ts diff is truncated and useDiscountCode (singular, by ID) is not referenced anywhere in the visible diff including DiscountsPage.tsx imports.",
+      "evidence": [
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/DiscountsPage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-46",
+      "requirement": "useTaxConfig (query by id) hook must be added to useQueries.ts.",
+      "reason": "The useQueries.ts diff is truncated and useTaxConfig (singular, by ID) is not referenced in TaxConfigPage.tsx or anywhere in the visible diff.",
+      "evidence": [
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/TaxConfigPage.tsx"
+      ]
+    },
+    {
+      "id": "REQ-50",
+      "requirement": "Expanded order details in Sales History table must show discount amount, tax breakdown, and grand total.",
+      "reason": "The SalesPage.tsx diff is truncated and the Sales History expansion section is not visible. The frontend-file-summaries.txt description of SalesPage.tsx does not mention discount or tax fields in expanded order rows.",
+      "evidence": [
+        "frontend/src/pages/SalesPage.tsx",
+        "frontend-file-summaries.txt"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Internet Identity (ICP) authentication used instead of email/password auth",
-      "reason": "The build request explicitly constrains: 'Only admin authentication via email/password is in scope — no Internet Identity for this phase'. The implementation uses InternetIdentityProvider, useInternetIdentity hook, and AuthClient throughout.",
+      "description": "CombosPage.tsx was modified in this diff without any corresponding requirement requesting combo-related changes.",
+      "reason": "The BuildRequest contains no requirements for modifying CombosPage.tsx; its presence in the modified files list suggests unrelated changes were bundled in.",
       "evidence": [
-        "frontend/src/pages/LoginPage.tsx",
-        "frontend/src/hooks/useInternetIdentity.ts",
-        "frontend/src/main.tsx",
-        "frontend/src/components/Layout.tsx"
-      ]
-    },
-    {
-      "description": "User profile management system (UserProfile type, getCallerUserProfile, saveCallerUserProfile, getUserProfile functions in backend)",
-      "reason": "No user profile management was requested. The spec only requires admin authentication and inventory management.",
-      "evidence": [
-        "backend/main.mo",
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/components/ProfileSetupModal.tsx"
-      ]
-    },
-    {
-      "description": "ProfileSetupModal component that prompts admin to enter their name on first login",
-      "reason": "This feature was not requested in the build spec. No user profile setup flow was specified.",
-      "evidence": [
-        "frontend/src/components/ProfileSetupModal.tsx",
-        "frontend/src/pages/DashboardPage.tsx"
-      ]
-    },
-    {
-      "description": "URL parameter utilities including caffeineAdminToken handling and session storage persistence",
-      "reason": "This utility and token mechanism were not requested in the spec.",
-      "evidence": [
-        "frontend/src/utils/urlParams.ts",
-        "frontend/src/hooks/useActor.ts"
-      ]
-    },
-    {
-      "description": "isCallerAdmin / _initializeAccessControlWithSecret backend functions and principal-based access control mixin architecture",
-      "reason": "The spec requires simple email/password auth, not a principal-based access control system with admin token initialization.",
-      "evidence": [
-        "backend/main.mo",
-        "frontend/src/hooks/useActor.ts",
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/pages/CombosPage.tsx"
       ]
     }
   ],
-  "confidence": 0.92,
+  "confidence": 0.62,
   "changed_files": [
-    "all_files_summary.json",
     "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/index.css",
-    "frontend/index.html",
-    "frontend/src/App.tsx",
-    "frontend/src/components/AddIngredientForm.tsx",
-    "frontend/src/components/EditIngredientForm.tsx",
-    "frontend/src/components/Layout.tsx",
-    "frontend/src/components/ProfileSetupModal.tsx",
-    "frontend/src/hooks/useActor.ts",
-    "frontend/src/hooks/useInternetIdentity.ts",
     "frontend/src/hooks/useQueries.ts",
-    "frontend/src/index.css",
-    "frontend/src/lib/utils.ts",
-    "frontend/src/main.tsx",
-    "frontend/src/pages/DashboardPage.tsx",
-    "frontend/src/pages/InventoryPage.tsx",
-    "frontend/src/pages/LoginPage.tsx",
-    "frontend/src/utils/urlParams.ts",
-    "frontend/tailwind.config.js",
+    "frontend/src/pages/CombosPage.tsx",
+    "frontend/src/pages/DiscountsPage.tsx",
+    "frontend/src/pages/SalesPage.tsx",
+    "frontend/src/pages/SalesReportsPage.tsx",
+    "frontend/src/pages/TaxConfigPage.tsx",
     "project_state.json"
   ]
 }

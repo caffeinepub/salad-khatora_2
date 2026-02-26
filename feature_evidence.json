@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-build-an-admin-login-screen-on-the-frontend-with-email-and-password-fields-and-a-login-button-show-error-messages-for-invalid-credentials-on-successful-login-redirect-to-the-dashboard",
-      "featureTitle": "Build an admin login screen on the frontend with email and password fields and a Login button. Show error messages for invalid credentials. On successful login, redirect to the dashboard.",
+      "featureId": "feature-add-react-query-hooks-in-frontend-src-hooks-usequeries-ts-for-all-new-backend-operations-introduced-in-req-42-through-req-45-usediscountcodes-query-usediscountcode-query-by-id-usecreatediscountcode-mutation-useupdatediscountcode-mutation-usedeletediscountcode-mutation-usetogglediscountcodeactive-mutation-useapplydiscountcode-mutation-usetaxconfigs-query-usetaxconfig-query-by-id-usecreatetaxconfig-mutation-useupdatetaxconfig-mutation-usedeletetaxconfig-mutation-usetoggletaxconfigactive-mutation-usecalculatetax-query-by-subtotal-usesalesreport-query-by-period-and-referencedate-follow-the-same-patterns-as-existing-hooks-actor-based-calls-proper-query-keys-cache-invalidation-on-mutations",
+      "featureTitle": "Add React Query hooks in `frontend/src/hooks/useQueries.ts` for all new backend operations introduced in REQ-42 through REQ-45: `useDiscountCodes` (query), `useDiscountCode` (query by id), `useCreateDiscountCode` (mutation), `useUpdateDiscountCode` (mutation), `useDeleteDiscountCode` (mutation), `useToggleDiscountCodeActive` (mutation), `useApplyDiscountCode` (mutation), `useTaxConfigs` (query), `useTaxConfig` (query by id), `useCreateTaxConfig` (mutation), `useUpdateTaxConfig` (mutation), `useDeleteTaxConfig` (mutation), `useToggleTaxConfigActive` (mutation), `useCalculateTax` (query by subtotal), `useSalesReport` (query by period and referenceDate). Follow the same patterns as existing hooks (actor-based calls, proper query keys, cache invalidation on mutations).",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/pages/LoginPage.tsx"
+        "frontend/src/hooks/useQueries.ts"
       ],
       "components": [
         "authorization@4.0.0",
@@ -17,18 +16,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-2"
+        "REQ-46"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-build-an-inventory-management-page-on-the-frontend-displaying-all-ingredients-in-a-table-or-card-list-with-columns-for-name-quantity-unit-cost-price-supplier-low-stock-threshold-and-total-value-include-an-add-ingredient-form-modal-with-all-required-fields-support-editing-and-deleting-existing-ingredients-visually-highlight-rows-where-current-quantity-is-at-or-below-the-low-stock-threshold",
-      "featureTitle": "Build an Inventory Management page on the frontend displaying all ingredients in a table or card list with columns for name, quantity, unit, cost price, supplier, low-stock threshold, and total value. Include an Add Ingredient form/modal with all required fields. Support editing and deleting existing ingredients. Visually highlight rows where current quantity is at or below the low-stock threshold.",
+      "featureId": "feature-build-a-discounts-coupons-page-accessible-at-discounts-display-all-discount-codes-in-a-table-with-columns-for-code-description-type-percentage-fixed-value-minimum-order-max-uses-used-count-expiry-date-and-status-badge-active-inactive-include-an-add-discount-code-modal-with-all-required-fields-code-description-discount-type-selector-percentage-or-fixed-discount-value-optional-minimum-order-amount-optional-max-uses-optional-expiry-date-and-active-toggle-support-editing-and-deleting-existing-discount-codes-allow-toggling-active-status-inline",
+      "featureTitle": "Build a Discounts & Coupons page accessible at `/discounts`. Display all discount codes in a table with columns for: code, description, type (percentage/fixed), value, minimum order, max uses, used count, expiry date, and status badge (active/inactive). Include an 'Add Discount Code' modal with all required fields: code, description, discount type selector (percentage or fixed), discount value, optional minimum order amount, optional max uses, optional expiry date, and active toggle. Support editing and deleting existing discount codes. Allow toggling active status inline.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/AddIngredientForm.tsx",
-        "frontend/src/components/EditIngredientForm.tsx",
-        "frontend/src/pages/InventoryPage.tsx"
+        "frontend/src/pages/DiscountsPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -39,16 +35,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-4"
+        "REQ-47"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-build-a-dashboard-page-as-the-default-post-login-view-display-key-stat-cards-for-total-number-of-ingredients-total-inventory-value-sum-of-all-total-values-and-count-of-low-stock-items-show-a-low-stock-alerts-section-listing-all-ingredients-at-or-below-their-low-stock-threshold-with-name-current-quantity-unit-and-threshold-stats-must-reflect-current-backend-data",
-      "featureTitle": "Build a Dashboard page as the default post-login view. Display key stat cards for: total number of ingredients, total inventory value (sum of all total values), and count of low-stock items. Show a low-stock alerts section listing all ingredients at or below their low-stock threshold with name, current quantity, unit, and threshold. Stats must reflect current backend data.",
+      "featureId": "feature-build-a-sales-reports-page-accessible-at-sales-reports-at-the-top-show-two-date-range-pickers-one-for-daily-report-single-date-picker-and-one-for-weekly-report-week-start-date-picker-on-selecting-a-date-and-report-type-display-a-report-card-showing-period-label-total-orders-total-revenue-average-order-value-and-a-top-selling-items-table-item-name-quantity-sold-revenue-include-a-download-csv-button-that-exports-the-displayed-report-data-as-a-csv-file-client-side-no-backend-endpoint-needed-construct-csv-from-the-query-result-in-the-browser",
+      "featureTitle": "Build a Sales Reports page accessible at `/sales-reports`. At the top, show two date-range pickers: one for 'Daily Report' (single date picker) and one for 'Weekly Report' (week start date picker). On selecting a date and report type, display a report card showing: period label, total orders, total revenue, average order value, and a top-selling items table (item name, quantity sold, revenue). Include a 'Download CSV' button that exports the displayed report data as a CSV file client-side (no backend endpoint needed — construct CSV from the query result in the browser).",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/pages/DashboardPage.tsx"
+        "frontend/src/pages/SalesReportsPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -59,18 +54,15 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-5"
+        "REQ-48"
       ],
       "confidence": "high"
     },
     {
-      "featureId": "feature-apply-a-consistent-white-and-green-visual-theme-across-all-pages-include-a-sidebar-or-top-navigation-for-routing-between-dashboard-and-inventory-pages-ensure-the-entire-app-is-fully-responsive-and-mobile-friendly-with-readable-typography-and-accessible-touch-targets-render-the-generated-logo-frontend-public-assets-generated-logo-png-in-the-navigation-header",
-      "featureTitle": "Apply a consistent white and green visual theme across all pages. Include a sidebar or top navigation for routing between Dashboard and Inventory pages. Ensure the entire app is fully responsive and mobile-friendly with readable typography and accessible touch targets. Render the generated logo (frontend/public/assets/generated/logo.png) in the navigation header.",
+      "featureId": "feature-build-a-tax-configuration-page-accessible-at-tax-config-display-all-tax-configs-in-a-table-with-columns-for-name-rate-applies-to-and-status-badge-active-inactive-include-an-add-tax-config-modal-with-fields-name-e-g-gst-rate-float-e-g-10-for-10-applies-to-selector-all-menuitems-combos-and-active-toggle-support-editing-and-deleting-existing-tax-configs-allow-toggling-active-status-inline-show-a-live-preview-panel-that-calculates-tax-on-a-sample-subtotal-entered-by-the-user-displaying-each-active-tax-line-and-total-tax-amount",
+      "featureTitle": "Build a Tax Configuration page accessible at `/tax-config`. Display all tax configs in a table with columns for: name, rate (%), applies to, and status badge (active/inactive). Include an 'Add Tax Config' modal with fields: name (e.g. 'GST'), rate (Float, e.g. 10 for 10%), applies to selector (#all / #menuItems / #combos), and active toggle. Support editing and deleting existing tax configs. Allow toggling active status inline. Show a live preview panel that calculates tax on a sample subtotal entered by the user, displaying each active tax line and total tax amount.",
       "files": [
-        "frontend/src/App.tsx",
-        "frontend/src/components/Layout.tsx",
-        "frontend/src/index.css",
-        "frontend/tailwind.config.js"
+        "frontend/src/pages/TaxConfigPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -81,7 +73,26 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-6"
+        "REQ-49"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-the-new-order-form-on-the-sales-page-sales-frontend-src-pages-salespage-tsx-to-support-discount-code-application-and-show-a-tax-breakdown-before-submission-add-a-promo-code-input-field-with-an-apply-button-that-calls-useapplydiscountcode-on-success-show-the-discount-amount-deducted-below-the-subtotal-display-a-tax-breakdown-section-listing-each-active-tax-line-name-rate-amount-from-usecalculatetax-applied-to-the-post-discount-subtotal-update-the-order-total-display-to-show-subtotal-discount-if-applied-tax-lines-and-grand-total-pass-the-discountcodeid-if-applied-when-calling-createsaleorder-in-the-sales-history-table-update-the-order-detail-expansion-to-show-discount-amount-tax-breakdown-and-the-final-total",
+      "featureTitle": "Update the New Order form on the Sales page (`/sales`, `frontend/src/pages/SalesPage.tsx`) to support discount code application and show a tax breakdown before submission. Add a 'Promo Code' input field with an 'Apply' button that calls `useApplyDiscountCode`; on success show the discount amount deducted. Below the subtotal, display a tax breakdown section listing each active tax line (name, rate, amount) from `useCalculateTax` applied to the post-discount subtotal. Update the order total display to show: Subtotal, Discount (if applied), Tax lines, and Grand Total. Pass the discountCodeId (if applied) when calling createSaleOrder. In the Sales History table, update the order detail expansion to show discount amount, tax breakdown, and the final total.",
+      "files": [
+        "frontend/src/pages/SalesPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-50"
       ],
       "confidence": "high"
     }
