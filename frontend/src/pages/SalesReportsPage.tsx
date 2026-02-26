@@ -1,10 +1,9 @@
-import { useState } from 'react';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useSalesReport } from '../hooks/useQueries';
+import { useSalesReport, SalesReportPeriod } from '../hooks/useQueries';
 import {
-  BarChart2, Download, Calendar, TrendingUp, ShoppingBag, DollarSign, Loader2,
+  BarChart2, Download, Calendar, TrendingUp, ShoppingBag, DollarSign,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -18,8 +17,6 @@ function formatCurrency(v: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v);
 }
 
-type ReportPeriod = 'daily' | 'weekly';
-
 export default function SalesReportsPage() {
   const { identity } = useInternetIdentity();
   const navigate = useNavigate();
@@ -28,13 +25,12 @@ export default function SalesReportsPage() {
     if (!identity) navigate({ to: '/login' });
   }, [identity, navigate]);
 
-  const [period, setPeriod] = useState<ReportPeriod>('daily');
+  const [period, setPeriod] = useState<SalesReportPeriod>(SalesReportPeriod.daily);
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
   );
 
-  const referenceDate = selectedDate ? new Date(selectedDate) : null;
-  const { data: report, isLoading, isError, error } = useSalesReport(period, referenceDate);
+  const { data: report, isLoading, isError, error } = useSalesReport(period);
 
   const handleDownloadCSV = () => {
     if (!report) return;
@@ -42,7 +38,7 @@ export default function SalesReportsPage() {
     const rows: string[] = [];
     rows.push('Sales Report');
     rows.push(`Period,"${report.periodLabel}"`);
-    rows.push(`Total Orders,${report.totalOrdersCount.toString()}`);
+    rows.push(`Total Orders,${report.totalOrders.toString()}`);
     rows.push(`Total Revenue,${report.totalRevenue.toFixed(2)}`);
     rows.push(`Average Order Value,${report.averageOrderValue.toFixed(2)}`);
     rows.push('');
@@ -86,7 +82,7 @@ export default function SalesReportsPage() {
             <div className="space-y-1.5">
               <Label>Report Period</Label>
               <div className="flex gap-2">
-                {(['daily', 'weekly'] as ReportPeriod[]).map(p => (
+                {([SalesReportPeriod.daily, SalesReportPeriod.weekly]).map(p => (
                   <button
                     key={p}
                     onClick={() => setPeriod(p)}
@@ -104,7 +100,7 @@ export default function SalesReportsPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="report-date">
-                {period === 'daily' ? 'Select Date' : 'Week Starting Date'}
+                {period === SalesReportPeriod.daily ? 'Select Date' : 'Week Starting Date'}
               </Label>
               <Input
                 id="report-date"
@@ -163,7 +159,7 @@ export default function SalesReportsPage() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground font-medium">Total Orders</p>
-                    <p className="font-bold text-2xl text-foreground">{report.totalOrdersCount.toString()}</p>
+                    <p className="font-bold text-2xl text-foreground">{report.totalOrders.toString()}</p>
                   </div>
                 </div>
               </CardContent>
@@ -234,7 +230,7 @@ export default function SalesReportsPage() {
                     </thead>
                     <tbody>
                       {report.topSellingItems.map((item, idx) => (
-                        <tr key={item.menuItemId.toString()} className="border-b border-border/50 hover:bg-accent/30 transition-colors">
+                        <tr key={`${item.menuItemName}-${idx}`} className="border-b border-border/50 hover:bg-accent/30 transition-colors">
                           <td className="py-3 px-3">
                             <span className={cn(
                               'w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',

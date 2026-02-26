@@ -38,8 +38,8 @@ import {
   useUpdateSupplier,
   useDeleteSupplier,
   useAutoGeneratePurchaseOrders,
+  Supplier,
 } from '../hooks/useQueries';
-import type { Supplier } from '../backend';
 
 interface SupplierFormData {
   name: string;
@@ -83,7 +83,7 @@ export default function SuppliersPage() {
   const [search, setSearch] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [editSupplier, setEditSupplier] = useState<Supplier | null>(null);
-  const [deleteId, setDeleteId] = useState<bigint | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   const [form, setForm] = useState<SupplierFormData>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -121,7 +121,7 @@ export default function SuppliersPage() {
         email: form.email.trim(),
         phone: form.phone.trim(),
         address: form.address.trim(),
-        leadTimeDays: BigInt(Math.round(Number(form.leadTimeDays))),
+        leadTimeDays: Math.round(Number(form.leadTimeDays)),
         notes: form.notes.trim(),
       });
       toast.success('Supplier added successfully');
@@ -139,15 +139,13 @@ export default function SuppliersPage() {
     try {
       await updateSupplier.mutateAsync({
         id: editSupplier.id,
-        item: {
-          name: form.name.trim(),
-          contactPerson: form.contactPerson.trim(),
-          email: form.email.trim(),
-          phone: form.phone.trim(),
-          address: form.address.trim(),
-          leadTimeDays: BigInt(Math.round(Number(form.leadTimeDays))),
-          notes: form.notes.trim(),
-        },
+        name: form.name.trim(),
+        contactPerson: form.contactPerson.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        address: form.address.trim(),
+        leadTimeDays: Math.round(Number(form.leadTimeDays)),
+        notes: form.notes.trim(),
       });
       toast.success('Supplier updated successfully');
       setEditSupplier(null);
@@ -169,12 +167,8 @@ export default function SuppliersPage() {
 
   const handleAutoGenerate = async () => {
     try {
-      const ids = await autoGenerate.mutateAsync();
-      if (ids.length === 0) {
-        toast.info('No low-stock ingredients with suppliers found. No orders generated.');
-      } else {
-        toast.success(`Generated ${ids.length} purchase order(s) for low-stock ingredients`);
-      }
+      await autoGenerate.mutateAsync();
+      toast.success('Purchase orders generated for low-stock ingredients');
     } catch (e: any) {
       toast.error(e?.message ?? 'Failed to generate purchase orders');
     }

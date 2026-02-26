@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useSaveCallerUserProfile } from '../hooks/useQueries';
 import { Leaf, Loader2 } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
@@ -7,12 +6,17 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { UserProfile } from '../hooks/useQueries';
 
-export default function ProfileSetupModal() {
+interface ProfileSetupModalProps {
+  onSave: (profile: UserProfile) => Promise<void>;
+  isSaving: boolean;
+}
+
+export default function ProfileSetupModal({ onSave, isSaving }: ProfileSetupModalProps) {
   const [open, setOpen] = useState(true);
   const [name, setName] = useState('');
   const [error, setError] = useState('');
-  const saveMutation = useSaveCallerUserProfile();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,9 +25,9 @@ export default function ProfileSetupModal() {
       return;
     }
     try {
-      await saveMutation.mutateAsync({ name: name.trim() });
+      await onSave({ name: name.trim() });
       setOpen(false);
-    } catch (err) {
+    } catch {
       setError('Failed to save profile. Please try again.');
     }
   };
@@ -36,7 +40,7 @@ export default function ProfileSetupModal() {
             <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
               <Leaf className="w-4 h-4 text-primary" />
             </div>
-            <DialogTitle className="font-heading">Welcome to Salad Khatora!</DialogTitle>
+            <DialogTitle className="font-heading">Welcome!</DialogTitle>
           </div>
           <DialogDescription>
             Let's set up your admin profile. What should we call you?
@@ -62,9 +66,9 @@ export default function ProfileSetupModal() {
           <Button
             type="submit"
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-green"
-            disabled={saveMutation.isPending}
+            disabled={isSaving}
           >
-            {saveMutation.isPending ? (
+            {isSaving ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Saving...

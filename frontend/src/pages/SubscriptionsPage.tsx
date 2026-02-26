@@ -7,9 +7,9 @@ import {
   usePauseSubscription,
   useResumeSubscription,
   useCancelSubscription,
+  Subscription,
+  SubscriptionStatus,
 } from '../hooks/useQueries';
-import type { Subscription } from '../backend';
-import { SubscriptionStatus } from '../backend';
 import {
   Plus,
   Loader2,
@@ -51,12 +51,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 
-function StatusBadge({ status }: { status: SubscriptionStatus }) {
+function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case SubscriptionStatus.active:
       return <Badge className="bg-primary/15 text-primary border-primary/30 hover:bg-primary/20">Active</Badge>;
     case SubscriptionStatus.paused:
-      return <Badge className="bg-warning/15 text-warning border-warning/30 hover:bg-warning/20">Paused</Badge>;
+      return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Paused</Badge>;
     case SubscriptionStatus.cancelled:
       return <Badge variant="secondary" className="text-muted-foreground">Cancelled</Badge>;
     default:
@@ -64,15 +64,14 @@ function StatusBadge({ status }: { status: SubscriptionStatus }) {
   }
 }
 
-function formatDate(ts: bigint) {
-  const ms = Number(ts) / 1_000_000;
-  return new Date(ms).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+function formatDate(ts: number) {
+  return new Date(ts).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 interface AddSubForm {
   customerId: string;
   planName: string;
-  menuItemIds: bigint[];
+  menuItemIds: number[];
   frequencyDays: string;
   startDate: string;
 }
@@ -98,7 +97,7 @@ export default function SubscriptionsPage() {
   const [formData, setFormData] = useState<AddSubForm>(emptyForm);
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof AddSubForm, string>>>({});
   const [search, setSearch] = useState('');
-  const [pendingAction, setPendingAction] = useState<bigint | null>(null);
+  const [pendingAction, setPendingAction] = useState<number | null>(null);
 
   const availableMenuItems = useMemo(
     () => (menuItems ?? []).filter((m) => m.isAvailable),
@@ -149,22 +148,20 @@ export default function SubscriptionsPage() {
 
   const handleAdd = async () => {
     if (!validate()) return;
-    const startDateMs = new Date(formData.startDate).getTime();
-    const startDateNs = BigInt(startDateMs) * BigInt(1_000_000);
     await createSubscription.mutateAsync({
-      customerId: BigInt(formData.customerId),
+      customerId: parseInt(formData.customerId),
       planName: formData.planName,
       menuItemIds: formData.menuItemIds,
-      frequencyDays: BigInt(parseInt(formData.frequencyDays)),
-      startDate: startDateNs,
-      startPrice: autoPrice,
+      frequencyDays: parseInt(formData.frequencyDays),
+      startDate: new Date(formData.startDate).getTime(),
+      totalPrice: autoPrice,
     });
     setAddOpen(false);
     setFormData(emptyForm);
     setFormErrors({});
   };
 
-  const handleToggleMenuItem = (id: bigint) => {
+  const handleToggleMenuItem = (id: number) => {
     setFormData((prev) => {
       const exists = prev.menuItemIds.some((x) => x === id);
       return {
@@ -177,158 +174,188 @@ export default function SubscriptionsPage() {
     if (formErrors.menuItemIds) setFormErrors((prev) => ({ ...prev, menuItemIds: undefined }));
   };
 
-  const handlePause = async (id: bigint) => {
+  const handlePause = async (id: number) => {
     setPendingAction(id);
     try { await pauseSubscription.mutateAsync(id); } finally { setPendingAction(null); }
   };
 
-  const handleResume = async (id: bigint) => {
+  const handleResume = async (id: number) => {
     setPendingAction(id);
     try { await resumeSubscription.mutateAsync(id); } finally { setPendingAction(null); }
   };
 
-  const handleCancel = async (id: bigint) => {
+  const handleCancel = async (id: number) => {
     setPendingAction(id);
     try { await cancelSubscription.mutateAsync(id); } finally { setPendingAction(null); }
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-foreground flex items-center gap-2">
-            <CalendarClock className="w-6 h-6 text-primary" />
-            Subscriptions
-          </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            Manage recurring subscription plans for your customers
-          </p>
+          <h1 className="text-2xl font-heading font-bold text-foreground">Subscriptions</h1>
+          <p className="text-muted-foreground text-sm mt-1">Manage recurring delivery plans for customers</p>
         </div>
-        <Button onClick={() => { setFormData(emptyForm); setFormErrors({}); setAddOpen(true); }} className="self-start sm:self-auto flex items-center gap-2">
-          <Plus className="w-4 h-4" />
+        <Button onClick={() => setAddOpen(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
           Add Subscription
         </Button>
       </div>
 
       {/* Search */}
       <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search by plan or customer..."
+          placeholder="Search subscriptions..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={e => setSearch(e.target.value)}
           className="pl-9"
         />
       </div>
 
       {/* Table */}
-      <Card className="border-border shadow-card">
+      <Card className="border-border">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-heading font-semibold">All Subscriptions</CardTitle>
-          <CardDescription className="text-xs">
-            {isLoading ? 'Loading...' : `${filtered.length} subscription${filtered.length !== 1 ? 's' : ''} found`}
-          </CardDescription>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+              <CalendarClock className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-base font-heading font-semibold">All Subscriptions</CardTitle>
+              <CardDescription className="text-xs">Active, paused, and cancelled plans</CardDescription>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
-          {error ? (
-            <div className="p-6 text-center text-destructive text-sm">
-              Failed to load subscriptions. You may not have admin access.
+          {isLoading ? (
+            <div className="p-4 space-y-3">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
             </div>
-          ) : isLoading ? (
-            <div className="p-6 space-y-3">
-              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}
-            </div>
+          ) : error ? (
+            <div className="p-8 text-center text-destructive text-sm">Failed to load subscriptions.</div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mb-3">
-                <CalendarClock className="w-6 h-6 text-primary" />
-              </div>
-              <p className="font-medium text-foreground text-sm">No subscriptions yet</p>
+            <div className="p-12 text-center">
+              <CalendarClock className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="font-medium text-foreground text-sm">
+                {search ? 'No subscriptions match your search' : 'No subscriptions yet'}
+              </p>
               <p className="text-muted-foreground text-xs mt-1">
-                {search ? 'No subscriptions match your search.' : 'Create your first subscription plan.'}
+                {search ? 'Try a different search term.' : 'Add your first subscription above.'}
               </p>
             </div>
           ) : (
-            <>
-              {/* Desktop Table */}
-              <div className="hidden lg:block overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-border hover:bg-transparent">
-                      <TableHead className="font-semibold text-foreground">Customer</TableHead>
-                      <TableHead className="font-semibold text-foreground">Plan</TableHead>
-                      <TableHead className="font-semibold text-foreground">Items</TableHead>
-                      <TableHead className="font-semibold text-foreground">Frequency</TableHead>
-                      <TableHead className="font-semibold text-foreground">Next Renewal</TableHead>
-                      <TableHead className="font-semibold text-foreground">Price</TableHead>
-                      <TableHead className="font-semibold text-foreground">Status</TableHead>
-                      <TableHead className="font-semibold text-foreground text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map((sub) => (
-                      <SubscriptionRow
-                        key={sub.id.toString()}
-                        sub={sub}
-                        customerName={customerMap.get(sub.customerId.toString()) ?? `#${sub.customerId}`}
-                        menuItemNames={sub.menuItemIds.map((id) => menuItemMap.get(id.toString()) ?? `#${id}`)}
-                        isPending={pendingAction === sub.id}
-                        onPause={() => handlePause(sub.id)}
-                        onResume={() => handleResume(sub.id)}
-                        onCancel={() => handleCancel(sub.id)}
-                      />
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Mobile Cards */}
-              <div className="lg:hidden divide-y divide-border">
-                {filtered.map((sub) => (
-                  <SubscriptionCard
-                    key={sub.id.toString()}
-                    sub={sub}
-                    customerName={customerMap.get(sub.customerId.toString()) ?? `#${sub.customerId}`}
-                    menuItemNames={sub.menuItemIds.map((id) => menuItemMap.get(id.toString()) ?? `#${id}`)}
-                    isPending={pendingAction === sub.id}
-                    onPause={() => handlePause(sub.id)}
-                    onResume={() => handleResume(sub.id)}
-                    onCancel={() => handleCancel(sub.id)}
-                  />
-                ))}
-              </div>
-            </>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>Items</TableHead>
+                    <TableHead>Frequency</TableHead>
+                    <TableHead>Next Renewal</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((sub: Subscription) => {
+                    const customerName = customerMap.get(sub.customerId.toString()) ?? 'Unknown';
+                    const isPending = pendingAction === sub.id;
+                    return (
+                      <TableRow key={sub.id} className="hover:bg-muted/30">
+                        <TableCell className="font-medium">{customerName}</TableCell>
+                        <TableCell>{sub.planName}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {sub.menuItemIds.map(id => menuItemMap.get(id.toString()) ?? `#${id}`).join(', ')}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          Every {sub.frequencyDays}d
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDate(sub.nextRenewalDate)}
+                        </TableCell>
+                        <TableCell className="font-semibold text-primary">
+                          ${sub.totalPrice.toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={sub.status} />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            {sub.status === SubscriptionStatus.active && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                disabled={isPending}
+                                onClick={() => handlePause(sub.id)}
+                                title="Pause"
+                              >
+                                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />}
+                              </Button>
+                            )}
+                            {sub.status === SubscriptionStatus.paused && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                disabled={isPending}
+                                onClick={() => handleResume(sub.id)}
+                                title="Resume"
+                              >
+                                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                              </Button>
+                            )}
+                            {sub.status !== SubscriptionStatus.cancelled && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                disabled={isPending}
+                                onClick={() => handleCancel(sub.id)}
+                                title="Cancel"
+                              >
+                                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
 
       {/* Add Subscription Dialog */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-heading">Add Subscription</DialogTitle>
-            <DialogDescription>Create a new subscription plan for a customer.</DialogDescription>
+            <DialogTitle>Add Subscription</DialogTitle>
+            <DialogDescription>Create a new recurring delivery plan for a customer.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 py-2">
             {/* Customer */}
             <div className="space-y-1.5">
               <Label>Customer <span className="text-destructive">*</span></Label>
               <Select
                 value={formData.customerId}
-                onValueChange={(v) => {
-                  setFormData((p) => ({ ...p, customerId: v }));
-                  if (formErrors.customerId) setFormErrors((p) => ({ ...p, customerId: undefined }));
+                onValueChange={v => {
+                  setFormData(p => ({ ...p, customerId: v }));
+                  if (formErrors.customerId) setFormErrors(p => ({ ...p, customerId: undefined }));
                 }}
               >
                 <SelectTrigger className={cn(formErrors.customerId && 'border-destructive')}>
                   <SelectValue placeholder="Select a customer" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(customers ?? []).map((c) => (
-                    <SelectItem key={c.id.toString()} value={c.id.toString()}>
-                      {c.name} — {c.email}
-                    </SelectItem>
+                  {(customers ?? []).map(c => (
+                    <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -340,12 +367,12 @@ export default function SubscriptionsPage() {
               <Label htmlFor="planName">Plan Name <span className="text-destructive">*</span></Label>
               <Input
                 id="planName"
-                value={formData.planName}
-                onChange={(e) => {
-                  setFormData((p) => ({ ...p, planName: e.target.value }));
-                  if (formErrors.planName) setFormErrors((p) => ({ ...p, planName: undefined }));
-                }}
                 placeholder="e.g. Weekly Salad Box"
+                value={formData.planName}
+                onChange={e => {
+                  setFormData(p => ({ ...p, planName: e.target.value }));
+                  if (formErrors.planName) setFormErrors(p => ({ ...p, planName: undefined }));
+                }}
                 className={cn(formErrors.planName && 'border-destructive')}
               />
               {formErrors.planName && <p className="text-xs text-destructive">{formErrors.planName}</p>}
@@ -355,44 +382,46 @@ export default function SubscriptionsPage() {
             <div className="space-y-1.5">
               <Label>Menu Items <span className="text-destructive">*</span></Label>
               <div className={cn(
-                'border rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto',
-                formErrors.menuItemIds ? 'border-destructive' : 'border-border'
+                'border rounded-lg p-3 space-y-2 max-h-40 overflow-y-auto',
+                formErrors.menuItemIds && 'border-destructive'
               )}>
                 {availableMenuItems.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No available menu items.</p>
+                  <p className="text-sm text-muted-foreground">No available menu items.</p>
                 ) : (
-                  availableMenuItems.map((item) => (
-                    <div key={item.id.toString()} className="flex items-center gap-2">
+                  availableMenuItems.map(item => (
+                    <div key={item.id} className="flex items-center gap-2">
                       <Checkbox
-                        id={`item-${item.id}`}
-                        checked={formData.menuItemIds.some((x) => x === item.id)}
+                        id={`sub-item-${item.id}`}
+                        checked={formData.menuItemIds.includes(item.id)}
                         onCheckedChange={() => handleToggleMenuItem(item.id)}
                       />
-                      <label
-                        htmlFor={`item-${item.id}`}
-                        className="flex-1 flex items-center justify-between text-sm cursor-pointer"
-                      >
-                        <span>{item.name}</span>
-                        <span className="text-muted-foreground text-xs">${item.sellingPrice.toFixed(2)}</span>
+                      <label htmlFor={`sub-item-${item.id}`} className="text-sm flex-1 cursor-pointer">
+                        {item.name}
                       </label>
+                      <span className="text-xs text-muted-foreground">${item.sellingPrice.toFixed(2)}</span>
                     </div>
                   ))
                 )}
               </div>
               {formErrors.menuItemIds && <p className="text-xs text-destructive">{formErrors.menuItemIds}</p>}
+              {formData.menuItemIds.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Total: <span className="font-semibold text-primary">${autoPrice.toFixed(2)}</span>
+                </p>
+              )}
             </div>
 
             {/* Frequency */}
             <div className="space-y-1.5">
-              <Label htmlFor="frequency">Frequency (days) <span className="text-destructive">*</span></Label>
+              <Label htmlFor="frequencyDays">Delivery Frequency (days) <span className="text-destructive">*</span></Label>
               <Input
-                id="frequency"
+                id="frequencyDays"
                 type="number"
-                min={1}
+                min="1"
                 value={formData.frequencyDays}
-                onChange={(e) => {
-                  setFormData((p) => ({ ...p, frequencyDays: e.target.value }));
-                  if (formErrors.frequencyDays) setFormErrors((p) => ({ ...p, frequencyDays: undefined }));
+                onChange={e => {
+                  setFormData(p => ({ ...p, frequencyDays: e.target.value }));
+                  if (formErrors.frequencyDays) setFormErrors(p => ({ ...p, frequencyDays: undefined }));
                 }}
                 className={cn(formErrors.frequencyDays && 'border-destructive')}
               />
@@ -406,146 +435,26 @@ export default function SubscriptionsPage() {
                 id="startDate"
                 type="date"
                 value={formData.startDate}
-                onChange={(e) => {
-                  setFormData((p) => ({ ...p, startDate: e.target.value }));
-                  if (formErrors.startDate) setFormErrors((p) => ({ ...p, startDate: undefined }));
+                onChange={e => {
+                  setFormData(p => ({ ...p, startDate: e.target.value }));
+                  if (formErrors.startDate) setFormErrors(p => ({ ...p, startDate: undefined }));
                 }}
                 className={cn(formErrors.startDate && 'border-destructive')}
               />
               {formErrors.startDate && <p className="text-xs text-destructive">{formErrors.startDate}</p>}
             </div>
-
-            {/* Total Price (auto-calculated) */}
-            <div className="space-y-1.5">
-              <Label>Total Price (auto-calculated)</Label>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary border border-border">
-                <span className="text-sm font-semibold text-foreground">${autoPrice.toFixed(2)}</span>
-                <span className="text-xs text-muted-foreground">per cycle</span>
-              </div>
-            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => { setAddOpen(false); setFormData(emptyForm); setFormErrors({}); }}>
+              Cancel
+            </Button>
             <Button onClick={handleAdd} disabled={createSubscription.isPending}>
-              {createSubscription.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Create Subscription
+              {createSubscription.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Add Subscription
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-interface RowProps {
-  sub: Subscription;
-  customerName: string;
-  menuItemNames: string[];
-  isPending: boolean;
-  onPause: () => void;
-  onResume: () => void;
-  onCancel: () => void;
-}
-
-function SubscriptionRow({ sub, customerName, menuItemNames, isPending, onPause, onResume, onCancel }: RowProps) {
-  return (
-    <TableRow className="border-border hover:bg-accent/50">
-      <TableCell className="font-medium text-foreground">{customerName}</TableCell>
-      <TableCell className="text-foreground">{sub.planName}</TableCell>
-      <TableCell className="text-muted-foreground text-sm max-w-[160px] truncate" title={menuItemNames.join(', ')}>
-        {menuItemNames.join(', ') || '—'}
-      </TableCell>
-      <TableCell className="text-muted-foreground">{Number(sub.frequencyDays)}d</TableCell>
-      <TableCell className="text-muted-foreground text-sm">{formatDate(sub.nextRenewalDate)}</TableCell>
-      <TableCell className="font-semibold text-foreground">${sub.totalPrice.toFixed(2)}</TableCell>
-      <TableCell><StatusBadge status={sub.status} /></TableCell>
-      <TableCell className="text-right">
-        <div className="flex items-center justify-end gap-1">
-          {isPending ? (
-            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-          ) : (
-            <>
-              {sub.status === SubscriptionStatus.active && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-8 h-8 text-muted-foreground hover:text-warning"
-                  onClick={onPause}
-                  title="Pause"
-                >
-                  <Pause className="w-4 h-4" />
-                </Button>
-              )}
-              {sub.status === SubscriptionStatus.paused && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-8 h-8 text-muted-foreground hover:text-primary"
-                  onClick={onResume}
-                  title="Resume"
-                >
-                  <Play className="w-4 h-4" />
-                </Button>
-              )}
-              {sub.status !== SubscriptionStatus.cancelled && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="w-8 h-8 text-muted-foreground hover:text-destructive"
-                  onClick={onCancel}
-                  title="Cancel"
-                >
-                  <XCircle className="w-4 h-4" />
-                </Button>
-              )}
-            </>
-          )}
-        </div>
-      </TableCell>
-    </TableRow>
-  );
-}
-
-function SubscriptionCard({ sub, customerName, menuItemNames, isPending, onPause, onResume, onCancel }: RowProps) {
-  return (
-    <div className="p-4 hover:bg-accent/50 transition-colors">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <p className="font-semibold text-foreground text-sm">{sub.planName}</p>
-            <StatusBadge status={sub.status} />
-          </div>
-          <p className="text-sm text-muted-foreground">{customerName}</p>
-          <p className="text-xs text-muted-foreground mt-1 truncate">{menuItemNames.join(', ') || '—'}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Every {Number(sub.frequencyDays)}d · Next: {formatDate(sub.nextRenewalDate)}
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-2 flex-shrink-0">
-          <p className="font-bold text-foreground text-sm">${sub.totalPrice.toFixed(2)}</p>
-          {isPending ? (
-            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-          ) : (
-            <div className="flex items-center gap-1">
-              {sub.status === SubscriptionStatus.active && (
-                <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-warning" onClick={onPause}>
-                  <Pause className="w-3.5 h-3.5" />
-                </Button>
-              )}
-              {sub.status === SubscriptionStatus.paused && (
-                <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-primary" onClick={onResume}>
-                  <Play className="w-3.5 h-3.5" />
-                </Button>
-              )}
-              {sub.status !== SubscriptionStatus.cancelled && (
-                <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-destructive" onClick={onCancel}>
-                  <XCircle className="w-3.5 h-3.5" />
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

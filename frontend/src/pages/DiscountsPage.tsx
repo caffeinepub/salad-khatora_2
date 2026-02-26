@@ -8,9 +8,10 @@ import {
   useUpdateDiscountCode,
   useDeleteDiscountCode,
   useToggleDiscountCodeActive,
+  DiscountCode,
+  DiscountCodeInput,
+  DiscountType,
 } from '../hooks/useQueries';
-import type { DiscountCode, DiscountCodeInput } from '../backend';
-import { DiscountType } from '../backend';
 import {
   Tag, Plus, Pencil, Trash2, Loader2, ToggleLeft, ToggleRight,
 } from 'lucide-react';
@@ -53,9 +54,8 @@ function formatCurrency(v: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v);
 }
 
-function formatDate(ts: bigint) {
-  const ms = Number(ts) / 1_000_000;
-  return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(ms));
+function formatDate(ts: number) {
+  return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(ts));
 }
 
 interface FormState {
@@ -89,7 +89,7 @@ function discountToForm(dc: DiscountCode): FormState {
     minimumOrderAmount: dc.minimumOrderAmount.toString(),
     maxUses: dc.maxUses !== undefined && dc.maxUses !== null ? dc.maxUses.toString() : '',
     expiresAt: dc.expiresAt !== undefined && dc.expiresAt !== null
-      ? new Date(Number(dc.expiresAt) / 1_000_000).toISOString().split('T')[0]
+      ? new Date(dc.expiresAt).toISOString().split('T')[0]
       : '',
     isActive: dc.isActive,
   };
@@ -141,9 +141,9 @@ export default function DiscountsPage() {
       discountType: form.discountType === 'percentage' ? DiscountType.percentage : DiscountType.fixed,
       discountValue: val,
       minimumOrderAmount: parseFloat(form.minimumOrderAmount) || 0,
-      maxUses: form.maxUses ? BigInt(parseInt(form.maxUses)) : undefined,
+      maxUses: form.maxUses ? parseInt(form.maxUses) : undefined,
       expiresAt: form.expiresAt
-        ? BigInt(new Date(form.expiresAt).getTime()) * BigInt(1_000_000)
+        ? new Date(form.expiresAt).getTime()
         : undefined,
     };
 
@@ -225,32 +225,28 @@ export default function DiscountsPage() {
                 <thead>
                   <tr className="border-b border-border">
                     {['Code', 'Description', 'Type', 'Value', 'Min Order', 'Max Uses', 'Used', 'Expires', 'Status', 'Actions'].map(h => (
-                      <th key={h} className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{h}</th>
+                      <th key={h} className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {discountCodes.map(dc => (
-                    <tr key={dc.id.toString()} className="border-b border-border/50 hover:bg-accent/30 transition-colors">
+                    <tr key={dc.id} className="border-b border-border/50 hover:bg-accent/30 transition-colors">
                       <td className="py-3 px-3 font-mono font-bold text-primary">{dc.code}</td>
-                      <td className="py-3 px-3 text-foreground max-w-[160px] truncate">{dc.description}</td>
+                      <td className="py-3 px-3 text-muted-foreground max-w-[150px] truncate">{dc.description || '—'}</td>
                       <td className="py-3 px-3">
-                        <Badge variant="outline" className="text-xs">
-                          {dc.discountType === DiscountType.percentage ? 'Percentage' : 'Fixed'}
-                        </Badge>
+                        <Badge variant="outline" className="text-xs capitalize">{dc.discountType}</Badge>
                       </td>
-                      <td className="py-3 px-3 font-semibold text-foreground">
+                      <td className="py-3 px-3 font-semibold">
                         {dc.discountType === DiscountType.percentage
                           ? `${dc.discountValue}%`
                           : formatCurrency(dc.discountValue)}
                       </td>
                       <td className="py-3 px-3 text-muted-foreground">{formatCurrency(dc.minimumOrderAmount)}</td>
+                      <td className="py-3 px-3 text-muted-foreground">{dc.maxUses ?? '∞'}</td>
+                      <td className="py-3 px-3 text-muted-foreground">{dc.usedCount}</td>
                       <td className="py-3 px-3 text-muted-foreground">
-                        {dc.maxUses !== undefined && dc.maxUses !== null ? dc.maxUses.toString() : '∞'}
-                      </td>
-                      <td className="py-3 px-3 text-muted-foreground">{dc.usedCount.toString()}</td>
-                      <td className="py-3 px-3 text-muted-foreground whitespace-nowrap">
-                        {dc.expiresAt !== undefined && dc.expiresAt !== null ? formatDate(dc.expiresAt) : 'No expiry'}
+                        {dc.expiresAt ? formatDate(dc.expiresAt) : '—'}
                       </td>
                       <td className="py-3 px-3">
                         <Badge
@@ -297,105 +293,96 @@ export default function DiscountsPage() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{editingCode ? 'Edit Discount Code' : 'Add Discount Code'}</DialogTitle>
             <DialogDescription>
-              {editingCode ? 'Update the discount code details.' : 'Create a new promo code for orders.'}
+              {editingCode ? 'Update the discount code details.' : 'Create a new promo code for customers.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="dc-code">Code <span className="text-destructive">*</span></Label>
-                <Input
-                  id="dc-code"
-                  placeholder="e.g. SAVE10"
-                  value={form.code}
-                  onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="dc-type">Discount Type</Label>
-                <Select
-                  value={form.discountType}
-                  onValueChange={v => setForm(f => ({ ...f, discountType: v as 'percentage' | 'fixed' }))}
-                >
-                  <SelectTrigger id="dc-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="percentage">Percentage (%)</SelectItem>
-                    <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
             <div className="space-y-1.5">
-              <Label htmlFor="dc-desc">Description <span className="text-destructive">*</span></Label>
+              <Label htmlFor="dc-code">Code <span className="text-destructive">*</span></Label>
+              <Input
+                id="dc-code"
+                placeholder="e.g. SAVE10"
+                value={form.code}
+                onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
+                className="font-mono uppercase"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="dc-description">Description</Label>
               <Textarea
-                id="dc-desc"
-                placeholder="Describe this discount..."
+                id="dc-description"
+                placeholder="Optional description..."
                 value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                 rows={2}
               />
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="dc-value">
-                  Discount Value {form.discountType === 'percentage' ? '(%)' : '($)'} <span className="text-destructive">*</span>
-                </Label>
+                <Label>Discount Type</Label>
+                <Select
+                  value={form.discountType}
+                  onValueChange={v => setForm(f => ({ ...f, discountType: v as 'percentage' | 'fixed' }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percentage">Percentage (%)</SelectItem>
+                    <SelectItem value="fixed">Fixed ($)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="dc-value">Value <span className="text-destructive">*</span></Label>
                 <Input
                   id="dc-value"
                   type="number"
                   min="0.01"
                   step="0.01"
-                  placeholder={form.discountType === 'percentage' ? '10' : '5.00'}
+                  placeholder={form.discountType === 'percentage' ? 'e.g. 10' : 'e.g. 5.00'}
                   value={form.discountValue}
                   onChange={e => setForm(f => ({ ...f, discountValue: e.target.value }))}
                 />
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="dc-min">Minimum Order ($)</Label>
+                <Label htmlFor="dc-min">Min Order ($)</Label>
                 <Input
                   id="dc-min"
                   type="number"
                   min="0"
                   step="0.01"
-                  placeholder="0.00"
                   value={form.minimumOrderAmount}
                   onChange={e => setForm(f => ({ ...f, minimumOrderAmount: e.target.value }))}
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label htmlFor="dc-maxuses">Max Uses (optional)</Label>
+                <Label htmlFor="dc-maxuses">Max Uses</Label>
                 <Input
                   id="dc-maxuses"
                   type="number"
                   min="1"
-                  step="1"
                   placeholder="Unlimited"
                   value={form.maxUses}
                   onChange={e => setForm(f => ({ ...f, maxUses: e.target.value }))}
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="dc-expires">Expiry Date (optional)</Label>
-                <Input
-                  id="dc-expires"
-                  type="date"
-                  value={form.expiresAt}
-                  onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))}
-                />
-              </div>
             </div>
-
+            <div className="space-y-1.5">
+              <Label htmlFor="dc-expires">Expires At</Label>
+              <Input
+                id="dc-expires"
+                type="date"
+                value={form.expiresAt}
+                onChange={e => setForm(f => ({ ...f, expiresAt: e.target.value }))}
+              />
+            </div>
             {formError && (
               <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">{formError}</p>
             )}
@@ -403,7 +390,7 @@ export default function DiscountsPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSubmit} disabled={isPending}>
-              {isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : editingCode ? 'Update Code' : 'Create Code'}
+              {isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving...</> : editingCode ? 'Update' : 'Create'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -415,7 +402,7 @@ export default function DiscountsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Discount Code</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the code <strong>{deleteTarget?.code}</strong>? This action cannot be undone.
+              Are you sure you want to delete <strong>{deleteTarget?.code}</strong>? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

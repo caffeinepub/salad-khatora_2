@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { format } from 'date-fns';
 import { Trash2, TrendingDown, AlertTriangle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -52,7 +51,7 @@ export default function WasteLogPage() {
 
     try {
       await createWasteLog.mutateAsync({
-        ingredientId: BigInt(selectedIngredientId),
+        ingredientId: parseInt(selectedIngredientId),
         quantity: Number(quantity),
         reason,
       });
@@ -65,9 +64,7 @@ export default function WasteLogPage() {
     }
   };
 
-  const sortedLogs = [...(wasteLogs ?? [])].sort((a, b) =>
-    Number(b.loggedAt) - Number(a.loggedAt)
-  );
+  const sortedLogs = [...(wasteLogs ?? [])].sort((a, b) => b.loggedAt - a.loggedAt);
 
   return (
     <div className="space-y-6">
@@ -91,72 +88,65 @@ export default function WasteLogPage() {
               <Skeleton className="h-8 w-24" />
             ) : (
               <p className="text-2xl font-bold text-destructive">
-                ₹{(wasteStats?.totalWasteCost ?? 0).toFixed(2)}
+                ${(wasteStats?.totalCostLoss ?? 0).toFixed(2)}
               </p>
             )}
           </CardContent>
         </Card>
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-yellow-500" />
-              Total Waste Entries
+              <Trash2 className="h-4 w-4 text-muted-foreground" />
+              Total Entries
             </CardTitle>
           </CardHeader>
           <CardContent>
             {statsLoading ? (
               <Skeleton className="h-8 w-16" />
             ) : (
-              <p className="text-2xl font-bold text-foreground">
-                {wasteStats?.totalWasteCount?.toString() ?? '0'}
+              <p className="text-2xl font-bold">
+                {wasteStats?.totalEntries ?? 0}
               </p>
             )}
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Log Waste Form */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Trash2 className="h-4 w-4 text-destructive" />
-              Log Waste
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {formError && (
-              <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{formError}</p>
-            )}
-
+      {/* Log Waste Form */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-heading font-semibold flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-orange-500" />
+            Log Waste
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {formError && (
+            <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{formError}</p>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label>Ingredient *</Label>
-              {ingredientsLoading ? (
-                <Skeleton className="h-10 w-full" />
-              ) : (
-                <Select value={selectedIngredientId} onValueChange={setSelectedIngredientId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select ingredient..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(ingredients ?? []).map(ing => (
-                      <SelectItem key={ing.id.toString()} value={ing.id.toString()}>
-                        {ing.name} ({ing.unit})
+              <Select value={selectedIngredientId} onValueChange={setSelectedIngredientId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select ingredient" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ingredientsLoading ? (
+                    <SelectItem value="loading" disabled>Loading...</SelectItem>
+                  ) : (ingredients ?? []).length === 0 ? (
+                    <SelectItem value="none" disabled>No ingredients</SelectItem>
+                  ) : (
+                    (ingredients ?? []).map(i => (
+                      <SelectItem key={i.id.toString()} value={i.id.toString()}>
+                        {i.name} ({i.unit})
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
             </div>
-
-            {selectedIngredient && (
-              <div className="text-xs text-muted-foreground bg-muted px-3 py-2 rounded-md">
-                Unit: <span className="font-medium">{selectedIngredient.unit}</span> &nbsp;|&nbsp;
-                In stock: <span className="font-medium">{selectedIngredient.quantity}</span> &nbsp;|&nbsp;
-                Cost: <span className="font-medium">₹{selectedIngredient.costPrice}/{selectedIngredient.unit}</span>
-              </div>
-            )}
-
             <div className="space-y-1.5">
               <Label htmlFor="quantity">Quantity *</Label>
               <Input
@@ -166,102 +156,90 @@ export default function WasteLogPage() {
                 step="0.01"
                 value={quantity}
                 onChange={e => setQuantity(e.target.value)}
-                placeholder="Enter quantity"
+                placeholder="e.g. 2.5"
               />
+              {estimatedCostLoss !== null && (
+                <p className="text-xs text-muted-foreground">
+                  Est. cost loss: <span className="text-destructive font-medium">${estimatedCostLoss.toFixed(2)}</span>
+                </p>
+              )}
             </div>
-
             <div className="space-y-1.5">
               <Label>Reason *</Label>
               <Select value={reason} onValueChange={setReason}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select reason..." />
+                  <SelectValue placeholder="Select reason" />
                 </SelectTrigger>
                 <SelectContent>
                   {WASTE_REASONS.map(r => (
-                    <SelectItem key={r} value={r}>
-                      {r.charAt(0).toUpperCase() + r.slice(1)}
-                    </SelectItem>
+                    <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-
-            {estimatedCostLoss !== null && (
-              <div className="bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
-                <p className="text-sm text-destructive font-medium">
-                  Estimated Cost Loss: ₹{estimatedCostLoss.toFixed(2)}
-                </p>
-              </div>
-            )}
-
-            <Button
-              onClick={handleSubmit}
-              disabled={createWasteLog.isPending}
-              className="w-full"
-              variant="destructive"
-            >
-              {createWasteLog.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Record Waste
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Waste History Table */}
-        <div className="lg:col-span-2 space-y-3">
-          <h2 className="text-lg font-heading font-semibold text-foreground">Waste History</h2>
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead>Ingredient</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Cost Loss</TableHead>
-                  <TableHead>Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {logsLoading ? (
-                  Array.from({ length: 4 }).map((_, i) => (
-                    <TableRow key={i}>
-                      {Array.from({ length: 5 }).map((_, j) => (
-                        <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : sortedLogs.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-12">
-                      <div className="flex flex-col items-center gap-2">
-                        <Trash2 className="h-8 w-8 opacity-30" />
-                        <p>No waste logs yet.</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  sortedLogs.map(log => (
-                    <TableRow key={log.id.toString()} className="hover:bg-muted/30">
-                      <TableCell className="font-medium">{log.ingredientName}</TableCell>
-                      <TableCell>
-                        {log.quantity} <span className="text-muted-foreground text-xs">{log.unit}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="capitalize text-sm">{log.reason}</span>
-                      </TableCell>
-                      <TableCell className="text-destructive font-medium">
-                        ₹{log.costLoss.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {format(new Date(Number(log.loggedAt) / 1_000_000), 'MMM d, yyyy HH:mm')}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
           </div>
-        </div>
-      </div>
+          <Button
+            onClick={handleSubmit}
+            disabled={createWasteLog.isPending}
+            className="gap-2"
+          >
+            {createWasteLog.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+            Log Waste
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Waste History */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-heading font-semibold">Waste History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {logsLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
+            </div>
+          ) : sortedLogs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <Trash2 className="h-10 w-10 text-muted-foreground mb-3" />
+              <p className="text-muted-foreground text-sm">No waste logs yet.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Ingredient</TableHead>
+                    <TableHead>Quantity</TableHead>
+                    <TableHead>Reason</TableHead>
+                    <TableHead>Cost Loss</TableHead>
+                    <TableHead>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedLogs.map(log => (
+                    <TableRow key={log.id.toString()}>
+                      <TableCell className="font-medium">{log.ingredientName}</TableCell>
+                      <TableCell>{log.quantity} {log.unit}</TableCell>
+                      <TableCell className="capitalize">{log.reason}</TableCell>
+                      <TableCell className="text-destructive font-medium">${log.costLoss.toFixed(2)}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(log.loggedAt).toLocaleDateString('en-US', {
+                          year: 'numeric', month: 'short', day: 'numeric',
+                        })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

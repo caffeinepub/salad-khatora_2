@@ -1,127 +1,34 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T08:57:31.344Z",
+  "generatedAt": "2026-02-26T10:42:39.125Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 10,
-    "implemented": 5,
+    "total": 1,
+    "implemented": 1,
     "items": [
       {
-        "id": "REQ-42",
-        "summary": "Extend the backend actor to support a Discount & Coupon system. Add a `DiscountCode` type with fields: id (Nat), code (Text, unique), description (Text), discountType (variant: #percentage | #fixed), discountValue (Float), minimumOrderAmount (Float), maxUses (optional Nat), usedCount (Nat), isActive (Bool), expiresAt (optional Int Unix timestamp), createdAt (Int). Implement: `createDiscountCode`, `getDiscountCodes` (returns all), `getDiscountCode` (by ID), `updateDiscountCode`, `deleteDiscountCode`, `toggleDiscountCodeActive`, and `applyDiscountCode(code: Text, orderSubtotal: Float)` — which validates the code (active, not expired, not exceeded max uses), increments usedCount, and returns the discount amount and final discounted total. All write operations must be restricted to admin role.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-43",
-        "summary": "Extend the backend actor to support Tax Configuration. Add a `TaxConfig` type with fields: id (Nat), name (Text — e.g. 'GST', 'VAT'), rate (Float — percentage, e.g. 10.0 for 10%), isActive (Bool), appliesTo (variant: #all | #menuItems | #combos), createdAt (Int). Implement: `createTaxConfig`, `getTaxConfigs` (returns all), `getTaxConfig` (by ID), `updateTaxConfig`, `deleteTaxConfig`, `toggleTaxConfigActive`. Also add a `calculateTax(subtotal: Float)` query that returns an array of applied taxes (name, rate, amount) and total tax amount based on all active tax configs. All write operations must be restricted to admin role.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-44",
-        "summary": "Extend the backend actor to support Sales Reports. Add a `getSalesReport(period: variant { #daily | #weekly }, referenceDate: Int })` query that returns: period label (e.g. '2024-06-10' or 'Week of 2024-06-10'), total orders count, total revenue, top-selling menu items (array of { menuItemId: Nat, menuItemName: Text, quantitySold: Nat, revenue: Float } sorted by quantitySold descending, top 10), and average order value. The report is computed dynamically from existing salesOrders data filtered to the requested period (UTC). This is a query — no write restrictions needed.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-45",
-        "summary": "Update the `createSaleOrder` backend function to accept two new optional parameters: `discountCodeId` (optional Nat) and apply active taxes automatically. When a discountCodeId is provided, call the discount validation logic and apply the discount to the subtotal. Then apply all active tax configs via calculateTax to the post-discount subtotal. Persist in SaleOrder: `discountCodeId` (optional Nat), `discountAmount` (Float), `taxBreakdown` (array of { name: Text, rate: Float, amount: Float }), `taxTotal` (Float), and update `totalAmount` to equal subtotal − discountAmount + taxTotal. Generate an updated migration.mo that carries over all prior state and initialises empty collections for discountCodes and taxConfigs with their ID counters.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-46",
-        "summary": "Add React Query hooks in `frontend/src/hooks/useQueries.ts` for all new backend operations introduced in REQ-42 through REQ-45: `useDiscountCodes` (query), `useDiscountCode` (query by id), `useCreateDiscountCode` (mutation), `useUpdateDiscountCode` (mutation), `useDeleteDiscountCode` (mutation), `useToggleDiscountCodeActive` (mutation), `useApplyDiscountCode` (mutation), `useTaxConfigs` (query), `useTaxConfig` (query by id), `useCreateTaxConfig` (mutation), `useUpdateTaxConfig` (mutation), `useDeleteTaxConfig` (mutation), `useToggleTaxConfigActive` (mutation), `useCalculateTax` (query by subtotal), `useSalesReport` (query by period and referenceDate). Follow the same patterns as existing hooks (actor-based calls, proper query keys, cache invalidation on mutations).",
+        "id": "REQ-69",
+        "summary": "Fix the Admin Settings page (`frontend/src/pages/AdminSettingsPage.tsx`) so that when the current user does not have admin access AND the admin role is vacant (i.e., `getAdminPrincipal` returns an empty/null principal or `claimAdminIfVacant` would succeed), the page displays a 'Claim Admin' button that calls `useClaimAdminIfVacant`. Currently the page only shows 'You do not have admin access' without offering the claim option. The logic should be: (1) if the user IS the admin — show the full admin panel (reassign, vacate); (2) if the user is NOT the admin but the admin role IS vacant — show the 'Claim Admin (if vacant)' button with explanatory text; (3) if the user is NOT the admin and an admin IS already assigned — show the 'You do not have admin access' message only. Show success or error feedback after the claim attempt.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/pages/AdminSettingsPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/pages/AdminSettingsPage.tsx"
         ]
-      },
-      {
-        "id": "REQ-47",
-        "summary": "Build a Discounts & Coupons page accessible at `/discounts`. Display all discount codes in a table with columns for: code, description, type (percentage/fixed), value, minimum order, max uses, used count, expiry date, and status badge (active/inactive). Include an 'Add Discount Code' modal with all required fields: code, description, discount type selector (percentage or fixed), discount value, optional minimum order amount, optional max uses, optional expiry date, and active toggle. Support editing and deleting existing discount codes. Allow toggling active status inline.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/DiscountsPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/DiscountsPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-48",
-        "summary": "Build a Sales Reports page accessible at `/sales-reports`. At the top, show two date-range pickers: one for 'Daily Report' (single date picker) and one for 'Weekly Report' (week start date picker). On selecting a date and report type, display a report card showing: period label, total orders, total revenue, average order value, and a top-selling items table (item name, quantity sold, revenue). Include a 'Download CSV' button that exports the displayed report data as a CSV file client-side (no backend endpoint needed — construct CSV from the query result in the browser).",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/SalesReportsPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/SalesReportsPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-49",
-        "summary": "Build a Tax Configuration page accessible at `/tax-config`. Display all tax configs in a table with columns for: name, rate (%), applies to, and status badge (active/inactive). Include an 'Add Tax Config' modal with fields: name (e.g. 'GST'), rate (Float, e.g. 10 for 10%), applies to selector (#all / #menuItems / #combos), and active toggle. Support editing and deleting existing tax configs. Allow toggling active status inline. Show a live preview panel that calculates tax on a sample subtotal entered by the user, displaying each active tax line and total tax amount.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/TaxConfigPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/TaxConfigPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-50",
-        "summary": "Update the New Order form on the Sales page (`/sales`, `frontend/src/pages/SalesPage.tsx`) to support discount code application and show a tax breakdown before submission. Add a 'Promo Code' input field with an 'Apply' button that calls `useApplyDiscountCode`; on success show the discount amount deducted. Below the subtotal, display a tax breakdown section listing each active tax line (name, rate, amount) from `useCalculateTax` applied to the post-discount subtotal. Update the order total display to show: Subtotal, Discount (if applied), Tax lines, and Grand Total. Pass the discountCodeId (if applied) when calling createSaleOrder. In the Sales History table, update the order detail expansion to show discount amount, tax breakdown, and the final total.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/SalesPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/SalesPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-51",
-        "summary": "Reorganize the Sales section in the Layout navigation (`frontend/src/components/Layout.tsx`) as a collapsible dropdown group in the sidebar/header. The dropdown label is 'Sales' with a chevron icon. It contains four sub-links: 'Sales' (→ /sales, existing), 'Discounts & Coupons' (→ /discounts), 'Sales Reports' (→ /sales-reports), and 'Tax Configuration' (→ /tax-config). The dropdown should expand automatically when the current route matches any of the four sub-paths. Register the three new routes (/discounts, /sales-reports, /tax-config) in `frontend/src/App.tsx` pointing to their respective new page components.",
-        "status": "missing",
-        "plannedFiles": [
-          "frontend/src/components/Layout.tsx",
-          "frontend/src/App.tsx"
-        ],
-        "matchedFiles": []
       }
     ]
   },
   "changedFiles": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/backend.d.ts",
-    "frontend/src/backend.ts",
-    "frontend/src/declarations/backend.did.d.ts",
-    "frontend/src/declarations/backend.did.js",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/CombosPage.tsx",
-    "frontend/src/pages/DiscountsPage.tsx",
-    "frontend/src/pages/SalesPage.tsx",
-    "frontend/src/pages/SalesReportsPage.tsx",
-    "frontend/src/pages/TaxConfigPage.tsx",
+    "frontend/src/pages/AdminSettingsPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

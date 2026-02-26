@@ -8,190 +8,20 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
-export const DiscountType = IDL.Variant({
-  'fixed' : IDL.Null,
-  'percentage' : IDL.Null,
-});
-export const DiscountCode = IDL.Record({
-  'id' : IDL.Nat,
-  'discountValue' : IDL.Float64,
-  'expiresAt' : IDL.Opt(IDL.Int),
-  'code' : IDL.Text,
-  'createdAt' : IDL.Int,
-  'discountType' : DiscountType,
-  'usedCount' : IDL.Nat,
-  'description' : IDL.Text,
-  'isActive' : IDL.Bool,
-  'maxUses' : IDL.Opt(IDL.Nat),
-  'minimumOrderAmount' : IDL.Float64,
-});
-export const DiscountApplicationResult = IDL.Record({
-  'discountCode' : DiscountCode,
-  'discountAmount' : IDL.Float64,
-  'finalTotal' : IDL.Float64,
-});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const SaleOrderItem = IDL.Record({
+  'itemId' : IDL.Nat,
+  'quantity' : IDL.Nat,
+  'price' : IDL.Float64,
+});
 export const TaxBreakdown = IDL.Record({
   'name' : IDL.Text,
   'rate' : IDL.Float64,
   'amount' : IDL.Float64,
-});
-export const TaxCalculationResult = IDL.Record({
-  'breakdown' : IDL.Vec(TaxBreakdown),
-  'totalTaxAmount' : IDL.Float64,
-});
-export const CreateComboDealRequest = IDL.Record({
-  'menuItemIds' : IDL.Vec(IDL.Nat),
-  'name' : IDL.Text,
-  'description' : IDL.Text,
-  'bundlePrice' : IDL.Float64,
-});
-export const DiscountCodeInput = IDL.Record({
-  'discountValue' : IDL.Float64,
-  'expiresAt' : IDL.Opt(IDL.Int),
-  'code' : IDL.Text,
-  'discountType' : DiscountType,
-  'description' : IDL.Text,
-  'maxUses' : IDL.Opt(IDL.Nat),
-  'minimumOrderAmount' : IDL.Float64,
-});
-export const CreateIngredientRequest = IDL.Record({
-  'lowStockThreshold' : IDL.Float64,
-  'expiryDate' : IDL.Opt(IDL.Int),
-  'name' : IDL.Text,
-  'unit' : IDL.Text,
-  'quantity' : IDL.Float64,
-  'costPrice' : IDL.Float64,
-  'supplierId' : IDL.Opt(IDL.Nat),
-});
-export const CreateMenuItemRequest = IDL.Record({
-  'availableFromHour' : IDL.Opt(IDL.Nat),
-  'name' : IDL.Text,
-  'sellingPrice' : IDL.Float64,
-  'description' : IDL.Text,
-  'availableDays' : IDL.Opt(IDL.Vec(IDL.Nat)),
-  'availableToHour' : IDL.Opt(IDL.Nat),
-  'ingredients' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Float64)),
-});
-export const CreatePurchaseOrderRequest = IDL.Record({
-  'notes' : IDL.Text,
-  'items' : IDL.Vec(
-    IDL.Record({ 'quantityOrdered' : IDL.Float64, 'ingredientId' : IDL.Nat })
-  ),
-  'supplierId' : IDL.Nat,
-});
-export const CreateSaleOrderRequest = IDL.Record({
-  'discountCodeId' : IDL.Opt(IDL.Nat),
-  'note' : IDL.Text,
-  'items' : IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Nat)),
-});
-export const CreateSupplierRequest = IDL.Record({
-  'name' : IDL.Text,
-  'contactPerson' : IDL.Text,
-  'email' : IDL.Text,
-  'leadTimeDays' : IDL.Nat,
-  'address' : IDL.Text,
-  'notes' : IDL.Text,
-  'phone' : IDL.Text,
-});
-export const TaxAppliesTo = IDL.Variant({
-  'all' : IDL.Null,
-  'menuItems' : IDL.Null,
-  'combos' : IDL.Null,
-});
-export const TaxConfigInput = IDL.Record({
-  'appliesTo' : TaxAppliesTo,
-  'name' : IDL.Text,
-  'rate' : IDL.Float64,
-});
-export const CreateWasteLogRequest = IDL.Record({
-  'quantity' : IDL.Float64,
-  'ingredientId' : IDL.Nat,
-  'reason' : IDL.Text,
-});
-export const AlertType = IDL.Variant({
-  'other' : IDL.Null,
-  'expiryWarning' : IDL.Null,
-  'subscriptionRenewal' : IDL.Null,
-  'lowStock' : IDL.Null,
-});
-export const Alert = IDL.Record({
-  'id' : IDL.Nat,
-  'alertType' : AlertType,
-  'createdAt' : IDL.Int,
-  'isRead' : IDL.Bool,
-  'relatedEntityId' : IDL.Nat,
-  'message' : IDL.Text,
-});
-export const MenuItem = IDL.Record({
-  'id' : IDL.Nat,
-  'costPerServing' : IDL.Float64,
-  'availableFromHour' : IDL.Opt(IDL.Nat),
-  'name' : IDL.Text,
-  'createdAt' : IDL.Int,
-  'isAvailable' : IDL.Bool,
-  'sellingPrice' : IDL.Float64,
-  'description' : IDL.Text,
-  'availableDays' : IDL.Opt(IDL.Vec(IDL.Nat)),
-  'availableToHour' : IDL.Opt(IDL.Nat),
-  'ingredients' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Float64)),
-});
-export const UserProfile = IDL.Record({ 'name' : IDL.Text });
-export const ComboDeal = IDL.Record({
-  'id' : IDL.Nat,
-  'totalIndividualPrice' : IDL.Float64,
-  'menuItemIds' : IDL.Vec(IDL.Nat),
-  'name' : IDL.Text,
-  'createdAt' : IDL.Int,
-  'isAvailable' : IDL.Bool,
-  'description' : IDL.Text,
-  'bundlePrice' : IDL.Float64,
-  'savings' : IDL.Float64,
-});
-export const Customer = IDL.Record({
-  'id' : IDL.Nat,
-  'name' : IDL.Text,
-  'createdAt' : IDL.Int,
-  'email' : IDL.Text,
-  'address' : IDL.Text,
-  'notes' : IDL.Text,
-  'phone' : IDL.Text,
-});
-export const Ingredient = IDL.Record({
-  'id' : IDL.Nat,
-  'lowStockThreshold' : IDL.Float64,
-  'expiryDate' : IDL.Opt(IDL.Int),
-  'name' : IDL.Text,
-  'createdAt' : IDL.Int,
-  'unit' : IDL.Text,
-  'quantity' : IDL.Float64,
-  'costPrice' : IDL.Float64,
-  'supplierId' : IDL.Opt(IDL.Nat),
-});
-export const PurchaseOrderStatus = IDL.Variant({
-  'cancelled' : IDL.Null,
-  'pending' : IDL.Null,
-  'received' : IDL.Null,
-});
-export const PurchaseOrder = IDL.Record({
-  'id' : IDL.Nat,
-  'status' : PurchaseOrderStatus,
-  'supplierName' : IDL.Text,
-  'createdAt' : IDL.Int,
-  'notes' : IDL.Text,
-  'items' : IDL.Vec(
-    IDL.Record({
-      'unit' : IDL.Text,
-      'quantityOrdered' : IDL.Float64,
-      'ingredientName' : IDL.Text,
-      'ingredientId' : IDL.Nat,
-    })
-  ),
-  'supplierId' : IDL.Nat,
 });
 export const SaleOrder = IDL.Record({
   'id' : IDL.Nat,
@@ -202,449 +32,69 @@ export const SaleOrder = IDL.Record({
   'taxTotal' : IDL.Float64,
   'totalAmount' : IDL.Float64,
   'taxBreakdown' : IDL.Vec(TaxBreakdown),
-  'items' : IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Text, IDL.Nat, IDL.Float64)),
+  'customerId' : IDL.Opt(IDL.Nat),
+  'items' : IDL.Vec(SaleOrderItem),
   'subtotal' : IDL.Float64,
 });
-export const SalesReportPeriod = IDL.Variant({
-  'daily' : IDL.Null,
-  'weekly' : IDL.Null,
-});
-export const TopSellingItem = IDL.Record({
-  'revenue' : IDL.Float64,
-  'menuItemName' : IDL.Text,
-  'quantitySold' : IDL.Nat,
-  'menuItemId' : IDL.Nat,
-});
-export const SalesReport = IDL.Record({
-  'averageOrderValue' : IDL.Float64,
-  'topSellingItems' : IDL.Vec(TopSellingItem),
-  'periodLabel' : IDL.Text,
-  'totalRevenue' : IDL.Float64,
-  'totalOrdersCount' : IDL.Nat,
-});
-export const SubscriptionStatus = IDL.Variant({
-  'active' : IDL.Null,
-  'cancelled' : IDL.Null,
-  'paused' : IDL.Null,
-});
-export const Subscription = IDL.Record({
+export const LoyaltyTransaction = IDL.Record({
   'id' : IDL.Nat,
-  'status' : SubscriptionStatus,
-  'frequencyDays' : IDL.Nat,
-  'nextRenewalDate' : IDL.Int,
-  'menuItemIds' : IDL.Vec(IDL.Nat),
   'createdAt' : IDL.Int,
   'customerId' : IDL.Nat,
-  'totalPrice' : IDL.Float64,
-  'planName' : IDL.Text,
-  'startDate' : IDL.Int,
-});
-export const Supplier = IDL.Record({
-  'id' : IDL.Nat,
-  'name' : IDL.Text,
-  'createdAt' : IDL.Int,
-  'contactPerson' : IDL.Text,
-  'email' : IDL.Text,
-  'leadTimeDays' : IDL.Nat,
-  'address' : IDL.Text,
-  'notes' : IDL.Text,
-  'phone' : IDL.Text,
-});
-export const TaxConfig = IDL.Record({
-  'id' : IDL.Nat,
-  'appliesTo' : TaxAppliesTo,
-  'name' : IDL.Text,
-  'createdAt' : IDL.Int,
-  'rate' : IDL.Float64,
-  'isActive' : IDL.Bool,
-});
-export const WasteLog = IDL.Record({
-  'id' : IDL.Nat,
-  'costLoss' : IDL.Float64,
-  'unit' : IDL.Text,
-  'quantity' : IDL.Float64,
-  'ingredientName' : IDL.Text,
-  'ingredientId' : IDL.Nat,
-  'loggedAt' : IDL.Int,
+  'points' : IDL.Int,
   'reason' : IDL.Text,
-});
-export const UpdateIngredientRequest = IDL.Record({
-  'lowStockThreshold' : IDL.Float64,
-  'expiryDate' : IDL.Opt(IDL.Int),
-  'name' : IDL.Text,
-  'unit' : IDL.Text,
-  'quantity' : IDL.Float64,
-  'costPrice' : IDL.Float64,
-  'supplierId' : IDL.Opt(IDL.Nat),
-});
-export const UpdateMenuItemRequest = IDL.Record({
-  'availableFromHour' : IDL.Opt(IDL.Nat),
-  'name' : IDL.Text,
-  'isAvailable' : IDL.Bool,
-  'sellingPrice' : IDL.Float64,
-  'description' : IDL.Text,
-  'availableDays' : IDL.Opt(IDL.Vec(IDL.Nat)),
-  'availableToHour' : IDL.Opt(IDL.Nat),
-  'ingredients' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Float64)),
 });
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-  'applyDiscountCode' : IDL.Func(
-      [IDL.Text, IDL.Float64],
-      [DiscountApplicationResult],
-      [],
-    ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'autoGeneratePurchaseOrders' : IDL.Func([], [IDL.Vec(IDL.Nat)], []),
-  'calculateTax' : IDL.Func([IDL.Float64], [TaxCalculationResult], ['query']),
-  'cancelSubscription' : IDL.Func([IDL.Nat], [], []),
-  'claimAdminIfVacant' : IDL.Func([], [], []),
-  'createComboDeal' : IDL.Func([CreateComboDealRequest], [IDL.Nat], []),
-  'createCustomer' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+  'createSaleOrder' : IDL.Func(
+      [
+        IDL.Vec(SaleOrderItem),
+        IDL.Float64,
+        IDL.Float64,
+        IDL.Float64,
+        IDL.Vec(TaxBreakdown),
+        IDL.Float64,
+        IDL.Text,
+        IDL.Opt(IDL.Nat),
+        IDL.Opt(IDL.Nat),
+      ],
       [IDL.Nat],
       [],
     ),
-  'createDiscountCode' : IDL.Func([DiscountCodeInput], [IDL.Nat], []),
-  'createIngredient' : IDL.Func([CreateIngredientRequest], [IDL.Nat], []),
-  'createMenuItem' : IDL.Func([CreateMenuItemRequest], [IDL.Nat], []),
-  'createPurchaseOrder' : IDL.Func([CreatePurchaseOrderRequest], [IDL.Nat], []),
-  'createSaleOrder' : IDL.Func([CreateSaleOrderRequest], [IDL.Nat], []),
-  'createSubscription' : IDL.Func(
-      [IDL.Nat, IDL.Text, IDL.Vec(IDL.Nat), IDL.Nat, IDL.Int, IDL.Float64],
-      [IDL.Nat],
-      [],
-    ),
-  'createSupplier' : IDL.Func([CreateSupplierRequest], [IDL.Nat], []),
-  'createTaxConfig' : IDL.Func([TaxConfigInput], [IDL.Nat], []),
-  'createWasteLog' : IDL.Func([CreateWasteLogRequest], [IDL.Nat], []),
-  'deleteComboDeal' : IDL.Func([IDL.Nat], [], []),
-  'deleteCustomer' : IDL.Func([IDL.Nat], [], []),
-  'deleteDiscountCode' : IDL.Func([IDL.Nat], [], []),
-  'deleteIngredient' : IDL.Func([IDL.Nat], [], []),
-  'deleteMenuItem' : IDL.Func([IDL.Nat], [], []),
-  'deleteSupplier' : IDL.Func([IDL.Nat], [], []),
-  'deleteTaxConfig' : IDL.Func([IDL.Nat], [], []),
-  'getAdminPrincipal' : IDL.Func([], [IDL.Text], ['query']),
-  'getAlerts' : IDL.Func([], [IDL.Vec(Alert)], ['query']),
-  'getAvailableMenuItems' : IDL.Func([], [IDL.Vec(MenuItem)], ['query']),
-  'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-  'getCombo' : IDL.Func([IDL.Nat], [IDL.Opt(ComboDeal)], ['query']),
-  'getCombos' : IDL.Func([], [IDL.Vec(ComboDeal)], ['query']),
-  'getCustomer' : IDL.Func([IDL.Nat], [IDL.Opt(Customer)], ['query']),
-  'getCustomers' : IDL.Func([IDL.Nat, IDL.Nat], [IDL.Vec(Customer)], ['query']),
-  'getDashboardSalesStats' : IDL.Func(
-      [],
-      [
-        IDL.Record({
-          'todaysRevenue' : IDL.Float64,
-          'totalRevenue' : IDL.Float64,
-          'todaysOrdersCount' : IDL.Nat,
-          'totalOrdersCount' : IDL.Nat,
-        }),
-      ],
-      ['query'],
-    ),
-  'getDiscountCode' : IDL.Func([IDL.Nat], [IDL.Opt(DiscountCode)], ['query']),
-  'getDiscountCodes' : IDL.Func([], [IDL.Vec(DiscountCode)], ['query']),
-  'getIngredient' : IDL.Func([IDL.Nat], [IDL.Opt(Ingredient)], ['query']),
-  'getIngredientByName' : IDL.Func(
-      [IDL.Text],
-      [IDL.Opt(Ingredient)],
-      ['query'],
-    ),
-  'getMenuItem' : IDL.Func([IDL.Nat], [IDL.Opt(MenuItem)], ['query']),
-  'getMenuItems' : IDL.Func([], [IDL.Vec(MenuItem)], ['query']),
-  'getProfitMargin' : IDL.Func(
+  'getCustomerOrderHistory' : IDL.Func(
       [IDL.Nat],
-      [
-        IDL.Record({
-          'costPerServing' : IDL.Float64,
-          'grossProfit' : IDL.Float64,
-          'sellingPrice' : IDL.Float64,
-          'profitMarginPercentage' : IDL.Float64,
-        }),
-      ],
-      ['query'],
-    ),
-  'getPurchaseOrder' : IDL.Func([IDL.Nat], [IDL.Opt(PurchaseOrder)], ['query']),
-  'getPurchaseOrders' : IDL.Func([], [IDL.Vec(PurchaseOrder)], ['query']),
-  'getSaleOrder' : IDL.Func([IDL.Nat], [IDL.Opt(SaleOrder)], ['query']),
-  'getSaleOrders' : IDL.Func(
-      [IDL.Nat, IDL.Nat],
       [IDL.Vec(SaleOrder)],
       ['query'],
     ),
-  'getSalesReport' : IDL.Func(
-      [SalesReportPeriod, IDL.Int],
-      [SalesReport],
-      ['query'],
-    ),
-  'getSubscription' : IDL.Func([IDL.Nat], [IDL.Opt(Subscription)], ['query']),
-  'getSubscriptions' : IDL.Func(
-      [IDL.Opt(IDL.Nat), IDL.Nat, IDL.Nat],
-      [IDL.Vec(Subscription)],
-      ['query'],
-    ),
-  'getSupplier' : IDL.Func([IDL.Nat], [IDL.Opt(Supplier)], ['query']),
-  'getSuppliers' : IDL.Func([], [IDL.Vec(Supplier)], ['query']),
-  'getTaxConfig' : IDL.Func([IDL.Nat], [IDL.Opt(TaxConfig)], ['query']),
-  'getTaxConfigs' : IDL.Func([], [IDL.Vec(TaxConfig)], ['query']),
-  'getUserProfile' : IDL.Func(
-      [IDL.Principal],
-      [IDL.Opt(UserProfile)],
-      ['query'],
-    ),
-  'getWasteLog' : IDL.Func([IDL.Nat], [IDL.Opt(WasteLog)], ['query']),
-  'getWasteLogs' : IDL.Func([], [IDL.Vec(WasteLog)], ['query']),
-  'getWasteStats' : IDL.Func(
-      [],
-      [
-        IDL.Record({
-          'breakdown' : IDL.Vec(
-            IDL.Tuple(
-              IDL.Nat,
-              IDL.Record({
-                'costLoss' : IDL.Float64,
-                'quantity' : IDL.Float64,
-              }),
-            )
-          ),
-          'totalWasteCount' : IDL.Nat,
-          'totalWasteCost' : IDL.Float64,
-        }),
-      ],
+  'getLoyaltyBalance' : IDL.Func([IDL.Nat], [IDL.Nat], ['query']),
+  'getLoyaltyTransactions' : IDL.Func(
+      [IDL.Nat],
+      [IDL.Vec(LoyaltyTransaction)],
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-  'listIngredients' : IDL.Func([], [IDL.Vec(Ingredient)], ['query']),
-  'markAlertRead' : IDL.Func([IDL.Nat], [], []),
-  'markAllAlertsRead' : IDL.Func([], [], []),
-  'pauseSubscription' : IDL.Func([IDL.Nat], [], []),
-  'reassignAdmin' : IDL.Func([IDL.Principal], [], []),
-  'resumeSubscription' : IDL.Func([IDL.Nat], [], []),
-  'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-  'toggleComboDealAvailability' : IDL.Func([IDL.Nat], [], []),
-  'toggleDiscountCodeActive' : IDL.Func([IDL.Nat], [], []),
-  'toggleMenuItemAvailability' : IDL.Func([IDL.Nat], [], []),
-  'toggleTaxConfigActive' : IDL.Func([IDL.Nat], [], []),
-  'updateComboDeal' : IDL.Func(
-      [IDL.Nat, IDL.Text, IDL.Text, IDL.Vec(IDL.Nat), IDL.Float64, IDL.Bool],
-      [],
-      [],
-    ),
-  'updateCustomer' : IDL.Func(
-      [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
-      [],
-      [],
-    ),
-  'updateDiscountCode' : IDL.Func([IDL.Nat, DiscountCodeInput], [], []),
-  'updateIngredient' : IDL.Func([IDL.Nat, UpdateIngredientRequest], [], []),
-  'updateMenuItem' : IDL.Func([IDL.Nat, UpdateMenuItemRequest], [], []),
-  'updatePurchaseOrderStatus' : IDL.Func(
-      [IDL.Nat, PurchaseOrderStatus],
-      [],
-      [],
-    ),
-  'updateSubscription' : IDL.Func(
-      [IDL.Nat, IDL.Text, IDL.Vec(IDL.Nat), IDL.Nat, IDL.Float64],
-      [],
-      [],
-    ),
-  'updateSupplier' : IDL.Func([IDL.Nat, CreateSupplierRequest], [], []),
-  'updateTaxConfig' : IDL.Func([IDL.Nat, TaxConfigInput], [], []),
-  'vacateAdmin' : IDL.Func([], [], []),
+  'redeemLoyaltyPoints' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Float64], [], []),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
-  const DiscountType = IDL.Variant({
-    'fixed' : IDL.Null,
-    'percentage' : IDL.Null,
-  });
-  const DiscountCode = IDL.Record({
-    'id' : IDL.Nat,
-    'discountValue' : IDL.Float64,
-    'expiresAt' : IDL.Opt(IDL.Int),
-    'code' : IDL.Text,
-    'createdAt' : IDL.Int,
-    'discountType' : DiscountType,
-    'usedCount' : IDL.Nat,
-    'description' : IDL.Text,
-    'isActive' : IDL.Bool,
-    'maxUses' : IDL.Opt(IDL.Nat),
-    'minimumOrderAmount' : IDL.Float64,
-  });
-  const DiscountApplicationResult = IDL.Record({
-    'discountCode' : DiscountCode,
-    'discountAmount' : IDL.Float64,
-    'finalTotal' : IDL.Float64,
-  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
+  const SaleOrderItem = IDL.Record({
+    'itemId' : IDL.Nat,
+    'quantity' : IDL.Nat,
+    'price' : IDL.Float64,
+  });
   const TaxBreakdown = IDL.Record({
     'name' : IDL.Text,
     'rate' : IDL.Float64,
     'amount' : IDL.Float64,
-  });
-  const TaxCalculationResult = IDL.Record({
-    'breakdown' : IDL.Vec(TaxBreakdown),
-    'totalTaxAmount' : IDL.Float64,
-  });
-  const CreateComboDealRequest = IDL.Record({
-    'menuItemIds' : IDL.Vec(IDL.Nat),
-    'name' : IDL.Text,
-    'description' : IDL.Text,
-    'bundlePrice' : IDL.Float64,
-  });
-  const DiscountCodeInput = IDL.Record({
-    'discountValue' : IDL.Float64,
-    'expiresAt' : IDL.Opt(IDL.Int),
-    'code' : IDL.Text,
-    'discountType' : DiscountType,
-    'description' : IDL.Text,
-    'maxUses' : IDL.Opt(IDL.Nat),
-    'minimumOrderAmount' : IDL.Float64,
-  });
-  const CreateIngredientRequest = IDL.Record({
-    'lowStockThreshold' : IDL.Float64,
-    'expiryDate' : IDL.Opt(IDL.Int),
-    'name' : IDL.Text,
-    'unit' : IDL.Text,
-    'quantity' : IDL.Float64,
-    'costPrice' : IDL.Float64,
-    'supplierId' : IDL.Opt(IDL.Nat),
-  });
-  const CreateMenuItemRequest = IDL.Record({
-    'availableFromHour' : IDL.Opt(IDL.Nat),
-    'name' : IDL.Text,
-    'sellingPrice' : IDL.Float64,
-    'description' : IDL.Text,
-    'availableDays' : IDL.Opt(IDL.Vec(IDL.Nat)),
-    'availableToHour' : IDL.Opt(IDL.Nat),
-    'ingredients' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Float64)),
-  });
-  const CreatePurchaseOrderRequest = IDL.Record({
-    'notes' : IDL.Text,
-    'items' : IDL.Vec(
-      IDL.Record({ 'quantityOrdered' : IDL.Float64, 'ingredientId' : IDL.Nat })
-    ),
-    'supplierId' : IDL.Nat,
-  });
-  const CreateSaleOrderRequest = IDL.Record({
-    'discountCodeId' : IDL.Opt(IDL.Nat),
-    'note' : IDL.Text,
-    'items' : IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Nat)),
-  });
-  const CreateSupplierRequest = IDL.Record({
-    'name' : IDL.Text,
-    'contactPerson' : IDL.Text,
-    'email' : IDL.Text,
-    'leadTimeDays' : IDL.Nat,
-    'address' : IDL.Text,
-    'notes' : IDL.Text,
-    'phone' : IDL.Text,
-  });
-  const TaxAppliesTo = IDL.Variant({
-    'all' : IDL.Null,
-    'menuItems' : IDL.Null,
-    'combos' : IDL.Null,
-  });
-  const TaxConfigInput = IDL.Record({
-    'appliesTo' : TaxAppliesTo,
-    'name' : IDL.Text,
-    'rate' : IDL.Float64,
-  });
-  const CreateWasteLogRequest = IDL.Record({
-    'quantity' : IDL.Float64,
-    'ingredientId' : IDL.Nat,
-    'reason' : IDL.Text,
-  });
-  const AlertType = IDL.Variant({
-    'other' : IDL.Null,
-    'expiryWarning' : IDL.Null,
-    'subscriptionRenewal' : IDL.Null,
-    'lowStock' : IDL.Null,
-  });
-  const Alert = IDL.Record({
-    'id' : IDL.Nat,
-    'alertType' : AlertType,
-    'createdAt' : IDL.Int,
-    'isRead' : IDL.Bool,
-    'relatedEntityId' : IDL.Nat,
-    'message' : IDL.Text,
-  });
-  const MenuItem = IDL.Record({
-    'id' : IDL.Nat,
-    'costPerServing' : IDL.Float64,
-    'availableFromHour' : IDL.Opt(IDL.Nat),
-    'name' : IDL.Text,
-    'createdAt' : IDL.Int,
-    'isAvailable' : IDL.Bool,
-    'sellingPrice' : IDL.Float64,
-    'description' : IDL.Text,
-    'availableDays' : IDL.Opt(IDL.Vec(IDL.Nat)),
-    'availableToHour' : IDL.Opt(IDL.Nat),
-    'ingredients' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Float64)),
-  });
-  const UserProfile = IDL.Record({ 'name' : IDL.Text });
-  const ComboDeal = IDL.Record({
-    'id' : IDL.Nat,
-    'totalIndividualPrice' : IDL.Float64,
-    'menuItemIds' : IDL.Vec(IDL.Nat),
-    'name' : IDL.Text,
-    'createdAt' : IDL.Int,
-    'isAvailable' : IDL.Bool,
-    'description' : IDL.Text,
-    'bundlePrice' : IDL.Float64,
-    'savings' : IDL.Float64,
-  });
-  const Customer = IDL.Record({
-    'id' : IDL.Nat,
-    'name' : IDL.Text,
-    'createdAt' : IDL.Int,
-    'email' : IDL.Text,
-    'address' : IDL.Text,
-    'notes' : IDL.Text,
-    'phone' : IDL.Text,
-  });
-  const Ingredient = IDL.Record({
-    'id' : IDL.Nat,
-    'lowStockThreshold' : IDL.Float64,
-    'expiryDate' : IDL.Opt(IDL.Int),
-    'name' : IDL.Text,
-    'createdAt' : IDL.Int,
-    'unit' : IDL.Text,
-    'quantity' : IDL.Float64,
-    'costPrice' : IDL.Float64,
-    'supplierId' : IDL.Opt(IDL.Nat),
-  });
-  const PurchaseOrderStatus = IDL.Variant({
-    'cancelled' : IDL.Null,
-    'pending' : IDL.Null,
-    'received' : IDL.Null,
-  });
-  const PurchaseOrder = IDL.Record({
-    'id' : IDL.Nat,
-    'status' : PurchaseOrderStatus,
-    'supplierName' : IDL.Text,
-    'createdAt' : IDL.Int,
-    'notes' : IDL.Text,
-    'items' : IDL.Vec(
-      IDL.Record({
-        'unit' : IDL.Text,
-        'quantityOrdered' : IDL.Float64,
-        'ingredientName' : IDL.Text,
-        'ingredientId' : IDL.Nat,
-      })
-    ),
-    'supplierId' : IDL.Nat,
   });
   const SaleOrder = IDL.Record({
     'id' : IDL.Nat,
@@ -655,272 +105,50 @@ export const idlFactory = ({ IDL }) => {
     'taxTotal' : IDL.Float64,
     'totalAmount' : IDL.Float64,
     'taxBreakdown' : IDL.Vec(TaxBreakdown),
-    'items' : IDL.Vec(IDL.Tuple(IDL.Nat, IDL.Text, IDL.Nat, IDL.Float64)),
+    'customerId' : IDL.Opt(IDL.Nat),
+    'items' : IDL.Vec(SaleOrderItem),
     'subtotal' : IDL.Float64,
   });
-  const SalesReportPeriod = IDL.Variant({
-    'daily' : IDL.Null,
-    'weekly' : IDL.Null,
-  });
-  const TopSellingItem = IDL.Record({
-    'revenue' : IDL.Float64,
-    'menuItemName' : IDL.Text,
-    'quantitySold' : IDL.Nat,
-    'menuItemId' : IDL.Nat,
-  });
-  const SalesReport = IDL.Record({
-    'averageOrderValue' : IDL.Float64,
-    'topSellingItems' : IDL.Vec(TopSellingItem),
-    'periodLabel' : IDL.Text,
-    'totalRevenue' : IDL.Float64,
-    'totalOrdersCount' : IDL.Nat,
-  });
-  const SubscriptionStatus = IDL.Variant({
-    'active' : IDL.Null,
-    'cancelled' : IDL.Null,
-    'paused' : IDL.Null,
-  });
-  const Subscription = IDL.Record({
+  const LoyaltyTransaction = IDL.Record({
     'id' : IDL.Nat,
-    'status' : SubscriptionStatus,
-    'frequencyDays' : IDL.Nat,
-    'nextRenewalDate' : IDL.Int,
-    'menuItemIds' : IDL.Vec(IDL.Nat),
     'createdAt' : IDL.Int,
     'customerId' : IDL.Nat,
-    'totalPrice' : IDL.Float64,
-    'planName' : IDL.Text,
-    'startDate' : IDL.Int,
-  });
-  const Supplier = IDL.Record({
-    'id' : IDL.Nat,
-    'name' : IDL.Text,
-    'createdAt' : IDL.Int,
-    'contactPerson' : IDL.Text,
-    'email' : IDL.Text,
-    'leadTimeDays' : IDL.Nat,
-    'address' : IDL.Text,
-    'notes' : IDL.Text,
-    'phone' : IDL.Text,
-  });
-  const TaxConfig = IDL.Record({
-    'id' : IDL.Nat,
-    'appliesTo' : TaxAppliesTo,
-    'name' : IDL.Text,
-    'createdAt' : IDL.Int,
-    'rate' : IDL.Float64,
-    'isActive' : IDL.Bool,
-  });
-  const WasteLog = IDL.Record({
-    'id' : IDL.Nat,
-    'costLoss' : IDL.Float64,
-    'unit' : IDL.Text,
-    'quantity' : IDL.Float64,
-    'ingredientName' : IDL.Text,
-    'ingredientId' : IDL.Nat,
-    'loggedAt' : IDL.Int,
+    'points' : IDL.Int,
     'reason' : IDL.Text,
-  });
-  const UpdateIngredientRequest = IDL.Record({
-    'lowStockThreshold' : IDL.Float64,
-    'expiryDate' : IDL.Opt(IDL.Int),
-    'name' : IDL.Text,
-    'unit' : IDL.Text,
-    'quantity' : IDL.Float64,
-    'costPrice' : IDL.Float64,
-    'supplierId' : IDL.Opt(IDL.Nat),
-  });
-  const UpdateMenuItemRequest = IDL.Record({
-    'availableFromHour' : IDL.Opt(IDL.Nat),
-    'name' : IDL.Text,
-    'isAvailable' : IDL.Bool,
-    'sellingPrice' : IDL.Float64,
-    'description' : IDL.Text,
-    'availableDays' : IDL.Opt(IDL.Vec(IDL.Nat)),
-    'availableToHour' : IDL.Opt(IDL.Nat),
-    'ingredients' : IDL.Vec(IDL.Tuple(IDL.Text, IDL.Float64)),
   });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-    'applyDiscountCode' : IDL.Func(
-        [IDL.Text, IDL.Float64],
-        [DiscountApplicationResult],
-        [],
-      ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'autoGeneratePurchaseOrders' : IDL.Func([], [IDL.Vec(IDL.Nat)], []),
-    'calculateTax' : IDL.Func([IDL.Float64], [TaxCalculationResult], ['query']),
-    'cancelSubscription' : IDL.Func([IDL.Nat], [], []),
-    'claimAdminIfVacant' : IDL.Func([], [], []),
-    'createComboDeal' : IDL.Func([CreateComboDealRequest], [IDL.Nat], []),
-    'createCustomer' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+    'createSaleOrder' : IDL.Func(
+        [
+          IDL.Vec(SaleOrderItem),
+          IDL.Float64,
+          IDL.Float64,
+          IDL.Float64,
+          IDL.Vec(TaxBreakdown),
+          IDL.Float64,
+          IDL.Text,
+          IDL.Opt(IDL.Nat),
+          IDL.Opt(IDL.Nat),
+        ],
         [IDL.Nat],
         [],
       ),
-    'createDiscountCode' : IDL.Func([DiscountCodeInput], [IDL.Nat], []),
-    'createIngredient' : IDL.Func([CreateIngredientRequest], [IDL.Nat], []),
-    'createMenuItem' : IDL.Func([CreateMenuItemRequest], [IDL.Nat], []),
-    'createPurchaseOrder' : IDL.Func(
-        [CreatePurchaseOrderRequest],
-        [IDL.Nat],
-        [],
-      ),
-    'createSaleOrder' : IDL.Func([CreateSaleOrderRequest], [IDL.Nat], []),
-    'createSubscription' : IDL.Func(
-        [IDL.Nat, IDL.Text, IDL.Vec(IDL.Nat), IDL.Nat, IDL.Int, IDL.Float64],
-        [IDL.Nat],
-        [],
-      ),
-    'createSupplier' : IDL.Func([CreateSupplierRequest], [IDL.Nat], []),
-    'createTaxConfig' : IDL.Func([TaxConfigInput], [IDL.Nat], []),
-    'createWasteLog' : IDL.Func([CreateWasteLogRequest], [IDL.Nat], []),
-    'deleteComboDeal' : IDL.Func([IDL.Nat], [], []),
-    'deleteCustomer' : IDL.Func([IDL.Nat], [], []),
-    'deleteDiscountCode' : IDL.Func([IDL.Nat], [], []),
-    'deleteIngredient' : IDL.Func([IDL.Nat], [], []),
-    'deleteMenuItem' : IDL.Func([IDL.Nat], [], []),
-    'deleteSupplier' : IDL.Func([IDL.Nat], [], []),
-    'deleteTaxConfig' : IDL.Func([IDL.Nat], [], []),
-    'getAdminPrincipal' : IDL.Func([], [IDL.Text], ['query']),
-    'getAlerts' : IDL.Func([], [IDL.Vec(Alert)], ['query']),
-    'getAvailableMenuItems' : IDL.Func([], [IDL.Vec(MenuItem)], ['query']),
-    'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-    'getCombo' : IDL.Func([IDL.Nat], [IDL.Opt(ComboDeal)], ['query']),
-    'getCombos' : IDL.Func([], [IDL.Vec(ComboDeal)], ['query']),
-    'getCustomer' : IDL.Func([IDL.Nat], [IDL.Opt(Customer)], ['query']),
-    'getCustomers' : IDL.Func(
-        [IDL.Nat, IDL.Nat],
-        [IDL.Vec(Customer)],
-        ['query'],
-      ),
-    'getDashboardSalesStats' : IDL.Func(
-        [],
-        [
-          IDL.Record({
-            'todaysRevenue' : IDL.Float64,
-            'totalRevenue' : IDL.Float64,
-            'todaysOrdersCount' : IDL.Nat,
-            'totalOrdersCount' : IDL.Nat,
-          }),
-        ],
-        ['query'],
-      ),
-    'getDiscountCode' : IDL.Func([IDL.Nat], [IDL.Opt(DiscountCode)], ['query']),
-    'getDiscountCodes' : IDL.Func([], [IDL.Vec(DiscountCode)], ['query']),
-    'getIngredient' : IDL.Func([IDL.Nat], [IDL.Opt(Ingredient)], ['query']),
-    'getIngredientByName' : IDL.Func(
-        [IDL.Text],
-        [IDL.Opt(Ingredient)],
-        ['query'],
-      ),
-    'getMenuItem' : IDL.Func([IDL.Nat], [IDL.Opt(MenuItem)], ['query']),
-    'getMenuItems' : IDL.Func([], [IDL.Vec(MenuItem)], ['query']),
-    'getProfitMargin' : IDL.Func(
+    'getCustomerOrderHistory' : IDL.Func(
         [IDL.Nat],
-        [
-          IDL.Record({
-            'costPerServing' : IDL.Float64,
-            'grossProfit' : IDL.Float64,
-            'sellingPrice' : IDL.Float64,
-            'profitMarginPercentage' : IDL.Float64,
-          }),
-        ],
-        ['query'],
-      ),
-    'getPurchaseOrder' : IDL.Func(
-        [IDL.Nat],
-        [IDL.Opt(PurchaseOrder)],
-        ['query'],
-      ),
-    'getPurchaseOrders' : IDL.Func([], [IDL.Vec(PurchaseOrder)], ['query']),
-    'getSaleOrder' : IDL.Func([IDL.Nat], [IDL.Opt(SaleOrder)], ['query']),
-    'getSaleOrders' : IDL.Func(
-        [IDL.Nat, IDL.Nat],
         [IDL.Vec(SaleOrder)],
         ['query'],
       ),
-    'getSalesReport' : IDL.Func(
-        [SalesReportPeriod, IDL.Int],
-        [SalesReport],
-        ['query'],
-      ),
-    'getSubscription' : IDL.Func([IDL.Nat], [IDL.Opt(Subscription)], ['query']),
-    'getSubscriptions' : IDL.Func(
-        [IDL.Opt(IDL.Nat), IDL.Nat, IDL.Nat],
-        [IDL.Vec(Subscription)],
-        ['query'],
-      ),
-    'getSupplier' : IDL.Func([IDL.Nat], [IDL.Opt(Supplier)], ['query']),
-    'getSuppliers' : IDL.Func([], [IDL.Vec(Supplier)], ['query']),
-    'getTaxConfig' : IDL.Func([IDL.Nat], [IDL.Opt(TaxConfig)], ['query']),
-    'getTaxConfigs' : IDL.Func([], [IDL.Vec(TaxConfig)], ['query']),
-    'getUserProfile' : IDL.Func(
-        [IDL.Principal],
-        [IDL.Opt(UserProfile)],
-        ['query'],
-      ),
-    'getWasteLog' : IDL.Func([IDL.Nat], [IDL.Opt(WasteLog)], ['query']),
-    'getWasteLogs' : IDL.Func([], [IDL.Vec(WasteLog)], ['query']),
-    'getWasteStats' : IDL.Func(
-        [],
-        [
-          IDL.Record({
-            'breakdown' : IDL.Vec(
-              IDL.Tuple(
-                IDL.Nat,
-                IDL.Record({
-                  'costLoss' : IDL.Float64,
-                  'quantity' : IDL.Float64,
-                }),
-              )
-            ),
-            'totalWasteCount' : IDL.Nat,
-            'totalWasteCost' : IDL.Float64,
-          }),
-        ],
+    'getLoyaltyBalance' : IDL.Func([IDL.Nat], [IDL.Nat], ['query']),
+    'getLoyaltyTransactions' : IDL.Func(
+        [IDL.Nat],
+        [IDL.Vec(LoyaltyTransaction)],
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-    'listIngredients' : IDL.Func([], [IDL.Vec(Ingredient)], ['query']),
-    'markAlertRead' : IDL.Func([IDL.Nat], [], []),
-    'markAllAlertsRead' : IDL.Func([], [], []),
-    'pauseSubscription' : IDL.Func([IDL.Nat], [], []),
-    'reassignAdmin' : IDL.Func([IDL.Principal], [], []),
-    'resumeSubscription' : IDL.Func([IDL.Nat], [], []),
-    'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-    'toggleComboDealAvailability' : IDL.Func([IDL.Nat], [], []),
-    'toggleDiscountCodeActive' : IDL.Func([IDL.Nat], [], []),
-    'toggleMenuItemAvailability' : IDL.Func([IDL.Nat], [], []),
-    'toggleTaxConfigActive' : IDL.Func([IDL.Nat], [], []),
-    'updateComboDeal' : IDL.Func(
-        [IDL.Nat, IDL.Text, IDL.Text, IDL.Vec(IDL.Nat), IDL.Float64, IDL.Bool],
-        [],
-        [],
-      ),
-    'updateCustomer' : IDL.Func(
-        [IDL.Nat, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
-        [],
-        [],
-      ),
-    'updateDiscountCode' : IDL.Func([IDL.Nat, DiscountCodeInput], [], []),
-    'updateIngredient' : IDL.Func([IDL.Nat, UpdateIngredientRequest], [], []),
-    'updateMenuItem' : IDL.Func([IDL.Nat, UpdateMenuItemRequest], [], []),
-    'updatePurchaseOrderStatus' : IDL.Func(
-        [IDL.Nat, PurchaseOrderStatus],
-        [],
-        [],
-      ),
-    'updateSubscription' : IDL.Func(
-        [IDL.Nat, IDL.Text, IDL.Vec(IDL.Nat), IDL.Nat, IDL.Float64],
-        [],
-        [],
-      ),
-    'updateSupplier' : IDL.Func([IDL.Nat, CreateSupplierRequest], [], []),
-    'updateTaxConfig' : IDL.Func([IDL.Nat, TaxConfigInput], [], []),
-    'vacateAdmin' : IDL.Func([], [], []),
+    'redeemLoyaltyPoints' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Float64], [], []),
   });
 };
 

@@ -1,75 +1,39 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T08:57:31.337Z",
-  "summary": "The diff implements most of the required features across REQ-42 through REQ-51. Backend additions for discount codes, tax configs, sales reports, and updated createSaleOrder are present. Frontend hooks, new pages (Discounts, SalesReports, TaxConfig), and updates to SalesPage are included. However, several specific requirements cannot be confirmed due to truncated diffs, and some items appear missing or unverifiable.",
+  "generatedAt": "2026-02-26T10:42:39.121Z",
+  "summary": "The diff modifies `frontend/src/pages/AdminSettingsPage.tsx` to add `useClaimAdminIfVacant` import and a `handleClaim` function with success/error toast feedback. However, the truncated diff does not show the conditional rendering logic that distinguishes between (1) user IS admin, (2) user is NOT admin but role is vacant, and (3) user is NOT admin and role is already assigned. The key question is whether the vacant-admin detection and conditional UI branching are implemented in the truncated portion of the file.",
   "missing_requirements": [
     {
-      "id": "REQ-51",
-      "requirement": "Reorganize the Sales section in Layout.tsx as a collapsible dropdown group with chevron icon containing four sub-links; auto-expand when active route matches any of the four sub-paths; responsive mobile support.",
-      "reason": "The frontend-file-summaries.txt describes Layout.tsx as only having an Admin Settings link addition with no mention of a Sales dropdown group or chevron toggle.",
+      "id": "REQ-69",
+      "requirement": "The vacant-admin detection logic uses the value returned by useAdminPrincipal — if it is empty, null, or an empty string, the role is considered vacant — and the page conditionally shows the Claim Admin button only when vacant",
+      "reason": "The diff shows useAdminPrincipal is called and isCallerAdmin is cast directly to a boolean (isCurrentUserAdmin = !!isCallerAdmin). There is no visible logic that checks whether the admin principal is an empty/null/empty-string value to determine vacancy. The truncated portion may contain this logic, but it cannot be confirmed from the available diff.",
       "evidence": [
-        "frontend/src/components/Layout.tsx",
-        "frontend-file-summaries.txt"
+        "frontend/src/pages/AdminSettingsPage.tsx"
       ]
     },
     {
-      "id": "REQ-51",
-      "requirement": "Register the three new routes (/discounts, /sales-reports, /tax-config) in frontend/src/App.tsx pointing to their respective new page components.",
-      "reason": "The frontend-file-summaries.txt describes App.tsx as having all existing routes plus only the new /admin-settings route, with no mention of /discounts, /sales-reports, or /tax-config routes being registered.",
+      "id": "REQ-69",
+      "requirement": "When the user is NOT the admin and the admin role IS vacant, show the Claim Admin (if vacant) button with explanatory text instead of or in addition to the You do not have admin access message",
+      "reason": "The handleClaim function is defined but the conditional rendering branch that displays the claim button when the role is vacant is in the truncated portion of the file and cannot be confirmed from the available diff.",
       "evidence": [
-        "frontend/src/App.tsx",
-        "frontend-file-summaries.txt"
+        "frontend/src/pages/AdminSettingsPage.tsx"
       ]
     },
     {
-      "id": "REQ-46",
-      "requirement": "useDiscountCode (query by id) hook must be added to useQueries.ts.",
-      "reason": "The useQueries.ts diff is truncated and useDiscountCode (singular, by ID) is not referenced anywhere in the visible diff including DiscountsPage.tsx imports.",
+      "id": "REQ-69",
+      "requirement": "When the user is NOT the admin and an admin IS already assigned, show only the You do not have admin access message with no claim button",
+      "reason": "This conditional branch is not visible in the available non-truncated portion of the diff; it would be in the truncated JSX return section.",
       "evidence": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/DiscountsPage.tsx"
-      ]
-    },
-    {
-      "id": "REQ-46",
-      "requirement": "useTaxConfig (query by id) hook must be added to useQueries.ts.",
-      "reason": "The useQueries.ts diff is truncated and useTaxConfig (singular, by ID) is not referenced in TaxConfigPage.tsx or anywhere in the visible diff.",
-      "evidence": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/TaxConfigPage.tsx"
-      ]
-    },
-    {
-      "id": "REQ-50",
-      "requirement": "Expanded order details in Sales History table must show discount amount, tax breakdown, and grand total.",
-      "reason": "The SalesPage.tsx diff is truncated and the Sales History expansion section is not visible. The frontend-file-summaries.txt description of SalesPage.tsx does not mention discount or tax fields in expanded order rows.",
-      "evidence": [
-        "frontend/src/pages/SalesPage.tsx",
-        "frontend-file-summaries.txt"
+        "frontend/src/pages/AdminSettingsPage.tsx"
       ]
     }
   ],
-  "hallucinated_features": [
-    {
-      "description": "CombosPage.tsx was modified in this diff without any corresponding requirement requesting combo-related changes.",
-      "reason": "The BuildRequest contains no requirements for modifying CombosPage.tsx; its presence in the modified files list suggests unrelated changes were bundled in.",
-      "evidence": [
-        "frontend/src/pages/CombosPage.tsx"
-      ]
-    }
-  ],
-  "confidence": 0.62,
+  "hallucinated_features": [],
+  "confidence": 0.4,
   "changed_files": [
-    "backend/main.mo",
-    "backend/migration.mo",
     "frontend-file-summaries.txt",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/pages/CombosPage.tsx",
-    "frontend/src/pages/DiscountsPage.tsx",
-    "frontend/src/pages/SalesPage.tsx",
-    "frontend/src/pages/SalesReportsPage.tsx",
-    "frontend/src/pages/TaxConfigPage.tsx",
+    "frontend/src/pages/AdminSettingsPage.tsx",
     "project_state.json"
   ]
 }

@@ -1,16 +1,17 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 15,
-  "summary": "Salad Khatora app — Phase 4 (Operations & Inventory) and Menu & Customization features deployed. Now planning Phase 3 Sales & Revenue features: Discount & Coupon system, Daily/Weekly Sales Reports, and Tax Configuration — all grouped under the Sales tab as a dropdown.",
+  "projectStateVersion": 21,
+  "summary": "Salad Khatora app — Phase 3 (Sales & Revenue: Discounts, Tax Config, Sales Reports) deployed. Now building Phase 4 Customer & Subscriptions features: Customer loyalty points (earn per order, redeem for discounts), Subscription delivery calendar (visual schedule of upcoming deliveries), and Customer order history (full purchase timeline on customer profiles).",
   "architectural_notes": [
     "White and green UI theme, fully mobile-friendly",
     "App is named Salad Khatora",
     "Sales & Revenue features (Discounts, Reports, Tax Config) are grouped under a Sales dropdown in the navigation"
   ],
   "known_issues": [
-    "Admin access is tied to Internet Identity principal; users may lose access if they switch login methods or devices"
+    "Admin access is tied to Internet Identity principal; users may lose access if they switch login methods or devices",
+    "Admin access page shows 'no admin access' error without offering the 'Claim Admin' option when admin role is vacant"
   ],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "existing_features": [
     {
       "id": "feature-build-an-admin-login-screen-on-the-frontend-with-email-and-password-fields-and-a-login-button-show-error-messages-for-invalid-credentials-on-successful-login-redirect-to-the-dashboard",
@@ -233,6 +234,70 @@
       "title": "Update the New Order form on the Sales page (`/sales`, `frontend/src/pages/SalesPage.tsx`) to support discount code application and show a tax breakdown before submission. Add a 'Promo Code' input field with an 'Apply' button that calls `useApplyDiscountCode`; on success show the discount amount deducted. Below the subtotal, display a tax breakdown section listing each active tax line (name, rate, amount) from `useCalculateTax` applied to the post-discount subtotal. Update the order total display to show: Subtotal, Discount (if applied), Tax lines, and Grand Total. Pass the discountCodeId (if applied) when calling createSaleOrder. In the Sales History table, update the order detail expansion to show discount amount, tax breakdown, and the final total.",
       "reqIds": [
         "REQ-50"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-verify-and-fix-the-react-query-hooks-in-frontend-src-hooks-usequeries-ts-for-all-discount-tax-and-sales-report-operations-usediscountcodes-usediscountcode-usecreatediscountcode-useupdatediscountcode-usedeletediscountcode-usetogglediscountcodeactive-useapplydiscountcode-usetaxconfigs-usetaxconfig-usecreatetaxconfig-useupdatetaxconfig-usedeletetaxconfig-usetoggletaxconfigactive-usecalculatetax-and-usesalesreport-ensure-each-hook-correctly-calls-the-corresponding-actor-method-uses-the-right-query-keys-and-mutations-invalidate-relevant-queries-on-success",
+      "title": "Verify and fix the React Query hooks in `frontend/src/hooks/useQueries.ts` for all discount, tax, and sales report operations: `useDiscountCodes`, `useDiscountCode`, `useCreateDiscountCode`, `useUpdateDiscountCode`, `useDeleteDiscountCode`, `useToggleDiscountCodeActive`, `useApplyDiscountCode`, `useTaxConfigs`, `useTaxConfig`, `useCreateTaxConfig`, `useUpdateTaxConfig`, `useDeleteTaxConfig`, `useToggleTaxConfigActive`, `useCalculateTax`, and `useSalesReport`. Ensure each hook correctly calls the corresponding actor method, uses the right query keys, and mutations invalidate relevant queries on success.",
+      "reqIds": [
+        "REQ-56"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-verify-and-fix-the-salesreportspage-tsx-page-at-sales-reports-to-correctly-call-usesalesreport-with-the-selected-period-daily-or-weekly-and-referencedate-as-a-unix-timestamp-int-ensure-the-report-card-renders-period-label-total-orders-total-revenue-average-order-value-and-the-top-selling-items-table-ensure-the-csv-export-constructs-the-csv-client-side-from-the-query-result-and-triggers-a-download",
+      "title": "Verify and fix the `SalesReportsPage.tsx` page at `/sales-reports` to correctly call `useSalesReport` with the selected period (#daily or #weekly) and referenceDate (as a Unix timestamp Int). Ensure the report card renders: period label, total orders, total revenue, average order value, and the top-selling items table. Ensure the CSV export constructs the CSV client-side from the query result and triggers a download.",
+      "reqIds": [
+        "REQ-59"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-verify-and-fix-the-salespage-tsx-promo-code-and-tax-breakdown-wiring-ensure-the-apply-button-correctly-calls-useapplydiscountcode-with-the-entered-code-and-current-subtotal-displays-the-returned-discount-amount-and-stores-the-discountcodeid-ensure-usecalculatetax-is-called-with-the-post-discount-subtotal-and-each-returned-tax-line-is-displayed-ensure-usecreatesaleorder-is-called-with-the-discountcodeid-if-applied-ensure-the-sales-history-order-detail-expansion-shows-discountamount-taxbreakdown-lines-and-the-final-total",
+      "title": "Verify and fix the `SalesPage.tsx` promo code and tax breakdown wiring. Ensure the 'Apply' button correctly calls `useApplyDiscountCode` with the entered code and current subtotal, displays the returned discount amount, and stores the discountCodeId. Ensure `useCalculateTax` is called with the post-discount subtotal and each returned tax line is displayed. Ensure `useCreateSaleOrder` is called with the discountCodeId (if applied). Ensure the Sales History order detail expansion shows discountAmount, taxBreakdown lines, and the final total.",
+      "reqIds": [
+        "REQ-60"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-react-query-hooks-in-frontend-src-hooks-usequeries-ts-for-all-new-backend-operations-introduced-in-req-61-through-req-63-useloyaltybalance-query-by-customerid-useloyaltytransactions-query-by-customerid-useredeemloyaltypoints-mutation-takes-customerid-points-discountamount-useupcomingdeliveries-query-takes-optional-customerid-and-daysahead-usecustomerorderhistory-query-by-customerid-follow-the-same-patterns-as-existing-hooks-actor-based-calls-proper-query-keys-cache-invalidation-on-mutations-useredeemloyaltypoints-should-invalidate-loyaltybalance-customerid-loyaltytransactions-customerid-and-customers-on-success",
+      "title": "Add React Query hooks in `frontend/src/hooks/useQueries.ts` for all new backend operations introduced in REQ-61 through REQ-63: `useLoyaltyBalance` (query by customerId), `useLoyaltyTransactions` (query by customerId), `useRedeemLoyaltyPoints` (mutation — takes customerId, points, discountAmount), `useUpcomingDeliveries` (query — takes optional customerId and daysAhead), `useCustomerOrderHistory` (query by customerId). Follow the same patterns as existing hooks (actor-based calls, proper query keys, cache invalidation on mutations). `useRedeemLoyaltyPoints` should invalidate `['loyaltyBalance', customerId]`, `['loyaltyTransactions', customerId]`, and `['customers']` on success.",
+      "reqIds": [
+        "REQ-65"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-extend-the-customer-detail-view-frontend-src-components-customerdetailview-tsx-to-include-a-order-history-tab-or-section-showing-the-customer-s-full-purchase-timeline-sourced-from-usecustomerorderhistory-display-each-order-in-a-timeline-table-with-columns-order-id-date-time-items-summary-subtotal-discount-tax-and-total-amount-each-row-should-be-expandable-to-show-full-order-details-all-items-with-quantities-and-unit-prices-discount-code-if-applied-tax-breakdown-lines-also-add-a-loyalty-points-section-showing-the-current-points-balance-from-useloyaltybalance-and-a-transaction-history-list-from-useloyaltytransactions-with-columns-date-reason-and-points-colour-coded-green-for-earned-red-for-redeemed-include-a-redeem-points-button-that-opens-a-small-dialog-accepting-a-points-amount-and-discount-value-then-calls-useredeemloyaltypoints",
+      "title": "Extend the Customer Detail view (`frontend/src/components/CustomerDetailView.tsx`) to include a 'Order History' tab or section showing the customer's full purchase timeline sourced from `useCustomerOrderHistory`. Display each order in a timeline/table with columns: Order ID, Date/Time, Items Summary, Subtotal, Discount, Tax, and Total Amount. Each row should be expandable to show full order details (all items with quantities and unit prices, discount code if applied, tax breakdown lines). Also add a 'Loyalty Points' section showing the current points balance (from `useLoyaltyBalance`) and a transaction history list (from `useLoyaltyTransactions`) with columns: Date, Reason, and Points (colour-coded green for earned, red for redeemed). Include a 'Redeem Points' button that opens a small dialog accepting a points amount and discount value, then calls `useRedeemLoyaltyPoints`.",
+      "reqIds": [
+        "REQ-66"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-subscription-delivery-calendar-page-accessible-at-delivery-calendar-display-a-monthly-calendar-view-or-week-view-toggle-showing-upcoming-deliveries-for-all-customers-each-day-cell-should-list-the-customer-name-s-and-plan-name-s-with-deliveries-due-on-that-date-sourced-from-useupcomingdeliveries-with-a-60-day-lookahead-clicking-a-delivery-entry-should-show-a-popover-tooltip-with-full-details-customer-name-plan-name-menu-items-names-and-frequency-include-a-customer-filter-dropdown-at-the-top-to-narrow-the-calendar-to-a-specific-customer-s-deliveries-add-a-delivery-calendar-navigation-link-in-the-layout-sidebar-under-the-subscriptions-section",
+      "title": "Build a Subscription Delivery Calendar page accessible at `/delivery-calendar`. Display a monthly calendar view (or week view toggle) showing upcoming deliveries for all customers. Each day cell should list the customer name(s) and plan name(s) with deliveries due on that date, sourced from `useUpcomingDeliveries` with a 60-day lookahead. Clicking a delivery entry should show a popover/tooltip with full details: customer name, plan name, menu items (names), and frequency. Include a customer filter dropdown at the top to narrow the calendar to a specific customer's deliveries. Add a 'Delivery Calendar' navigation link in the Layout sidebar under the Subscriptions section.",
+      "reqIds": [
+        "REQ-67"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-new-order-form-on-the-sales-page-frontend-src-pages-salespage-tsx-to-include-an-optional-customer-selector-dropdown-populated-from-usecustomers-so-that-a-sale-order-can-be-attributed-to-a-specific-customer-when-a-customer-is-selected-display-their-current-loyalty-points-balance-from-useloyaltybalance-pass-the-selected-customerid-when-calling-usecreatesaleorder-after-a-successful-order-submission-display-a-toast-confirming-how-many-loyalty-points-were-awarded-calculated-as-the-integer-part-of-the-order-s-totalamount",
+      "title": "Update the New Order form on the Sales page (`frontend/src/pages/SalesPage.tsx`) to include an optional Customer selector dropdown (populated from `useCustomers`) so that a sale order can be attributed to a specific customer. When a customer is selected, display their current loyalty points balance (from `useLoyaltyBalance`). Pass the selected customerId when calling `useCreateSaleOrder`. After a successful order submission, display a toast confirming how many loyalty points were awarded (calculated as the integer part of the order's totalAmount).",
+      "reqIds": [
+        "REQ-68"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-admin-settings-page-frontend-src-pages-adminsettingspage-tsx-so-that-when-the-current-user-does-not-have-admin-access-and-the-admin-role-is-vacant-i-e-getadminprincipal-returns-an-empty-null-principal-or-claimadminifvacant-would-succeed-the-page-displays-a-claim-admin-button-that-calls-useclaimadminifvacant-currently-the-page-only-shows-you-do-not-have-admin-access-without-offering-the-claim-option-the-logic-should-be-1-if-the-user-is-the-admin-show-the-full-admin-panel-reassign-vacate-2-if-the-user-is-not-the-admin-but-the-admin-role-is-vacant-show-the-claim-admin-if-vacant-button-with-explanatory-text-3-if-the-user-is-not-the-admin-and-an-admin-is-already-assigned-show-the-you-do-not-have-admin-access-message-only-show-success-or-error-feedback-after-the-claim-attempt",
+      "title": "Fix the Admin Settings page (`frontend/src/pages/AdminSettingsPage.tsx`) so that when the current user does not have admin access AND the admin role is vacant (i.e., `getAdminPrincipal` returns an empty/null principal or `claimAdminIfVacant` would succeed), the page displays a 'Claim Admin' button that calls `useClaimAdminIfVacant`. Currently the page only shows 'You do not have admin access' without offering the claim option. The logic should be: (1) if the user IS the admin — show the full admin panel (reassign, vacate); (2) if the user is NOT the admin but the admin role IS vacant — show the 'Claim Admin (if vacant)' button with explanatory text; (3) if the user is NOT the admin and an admin IS already assigned — show the 'You do not have admin access' message only. Show success or error feedback after the claim attempt.",
+      "reqIds": [
+        "REQ-69"
       ],
       "version": 1
     }
@@ -499,6 +564,104 @@
       "summary": "Reorganize the Sales section in the Layout navigation (`frontend/src/components/Layout.tsx`) as a collapsible dropdown group in the sidebar/header. The dropdown label is 'Sales' with a chevron icon. It contains four sub-links: 'Sales' (→ /sales, existing), 'Discounts & Coupons' (→ /discounts), 'Sales Reports' (→ /sales-reports), and 'Tax Configuration' (→ /tax-config). The dropdown should expand automatically when the current route matches any of the four sub-paths. Register the three new routes (/discounts, /sales-reports, /tax-config) in `frontend/src/App.tsx` pointing to their respective new page components.",
       "reqIds": [
         "REQ-51"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-53",
+      "summary": "Ensure the backend actor fully implements the Discount & Coupon system as specified: `createDiscountCode`, `getDiscountCodes`, `getDiscountCode` (by ID), `updateDiscountCode`, `deleteDiscountCode`, `toggleDiscountCodeActive`, and `applyDiscountCode(code: Text, orderSubtotal: Float)` — which validates the code (active, not expired, not exceeded max uses), increments usedCount, and returns the discount amount and final discounted total. All write operations must be restricted to admin role. Verify that stable state for discountCodes and its ID counter is declared and persisted correctly.",
+      "reqIds": [
+        "REQ-52"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-54",
+      "summary": "Ensure the backend actor fully implements Tax Configuration: `createTaxConfig`, `getTaxConfigs`, `getTaxConfig` (by ID), `updateTaxConfig`, `deleteTaxConfig`, `toggleTaxConfigActive`, and `calculateTax(subtotal: Float)` — which returns an array of applied taxes (name, rate, amount) and total tax amount based on all active tax configs. All write operations must be restricted to admin role. Verify that stable state for taxConfigs and its ID counter is declared and persisted correctly.",
+      "reqIds": [
+        "REQ-53"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-55",
+      "summary": "Ensure the backend actor fully implements the `getSalesReport(period: variant { #daily | #weekly }, referenceDate: Int)` query. It must return: a period label (e.g. '2024-06-10' or 'Week of 2024-06-10'), total orders count, total revenue, average order value, and a top-selling items array (menuItemId, menuItemName, quantitySold, revenue) sorted by quantitySold descending, limited to top 10. The report must be computed from existing salesOrders filtered by UTC date range matching the requested period.",
+      "reqIds": [
+        "REQ-54"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-56",
+      "summary": "Ensure the `createSaleOrder` backend function correctly accepts the optional `discountCodeId` parameter, applies discount logic via the discount validation path, then applies all active tax configs via `calculateTax` to the post-discount subtotal. Persist on the SaleOrder record: `discountCodeId` (optional Nat), `discountAmount` (Float), `taxBreakdown` (array of { name: Text, rate: Float, amount: Float }), `taxTotal` (Float), and set `totalAmount` = subtotal − discountAmount + taxTotal. Ensure stable state migration carries all prior collections and initialises discountCodes and taxConfigs with their ID counters.",
+      "reqIds": [
+        "REQ-55"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-58",
+      "summary": "Verify and fix the `DiscountsPage.tsx` page at `/discounts` to correctly use the discount React Query hooks. Ensure the Add/Edit modal submits valid payloads to `useCreateDiscountCode` and `useUpdateDiscountCode`, the delete confirmation calls `useDeleteDiscountCode`, the inline toggle calls `useToggleDiscountCodeActive`, and all table columns (code, description, type, value, minimum order, max uses, used count, expiry date, status badge) display correctly from the fetched data.",
+      "reqIds": [
+        "REQ-57"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-59",
+      "summary": "Verify and fix the `TaxConfigPage.tsx` page at `/tax-config` to correctly use the tax React Query hooks. Ensure the Add/Edit modal submits to `useCreateTaxConfig` / `useUpdateTaxConfig`, the delete confirmation calls `useDeleteTaxConfig`, the inline toggle calls `useToggleTaxConfigActive`, and the live preview panel calls `useCalculateTax` with the user-entered subtotal and displays each active tax line and total tax amount.",
+      "reqIds": [
+        "REQ-58"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-60",
+      "summary": "Customer loyalty points — earn points per order, redeem for discounts",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-61",
+      "summary": "Subscription delivery calendar — visual schedule showing upcoming deliveries per customer",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-62",
+      "summary": "Customer order history — full purchase timeline visible on each customer profile",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-63",
+      "summary": "Extend the backend actor to support a Customer Loyalty Points system. Add a `loyaltyPoints` field (Nat, default 0) to the existing Customer type. Add a `LoyaltyTransaction` type with fields: id (Nat), customerId (Nat), points (Int — positive for earned, negative for redeemed), reason (Text), createdAt (Int). Implement: `getLoyaltyBalance(customerId: Nat)` returning current points balance; `getLoyaltyTransactions(customerId: Nat)` returning all transactions for a customer newest-first; `redeemLoyaltyPoints(customerId: Nat, points: Nat, discountAmount: Float)` which deducts the given points from the customer's balance and records a redemption transaction (fails if insufficient balance); and a private helper `awardLoyaltyPoints(customerId: Nat, points: Nat, reason: Text)` that adds points and records an earn transaction. Call `awardLoyaltyPoints` from within `createSaleOrder` — award 1 point per whole unit of currency spent on the order's totalAmount (i.e. `Float.toInt(totalAmount)` points), linking via the order's customerId if provided. Add an optional `customerId` field (optional Nat) to `SaleOrder` so orders can be attributed to customers. All write operations must be restricted to admin role.",
+      "reqIds": [
+        "REQ-61"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-64",
+      "summary": "Extend the backend actor to support a Subscription Delivery Calendar. Add a `getUpcomingDeliveries(customerId: optional Nat, daysAhead: Nat)` query that returns all active subscriptions (optionally filtered by customerId) whose `nextRenewalDate` falls within the next `daysAhead` days from now. Each result entry should include: subscriptionId (Nat), customerId (Nat), customerName (Text), planName (Text), menuItemIds (array of Nat), nextRenewalDate (Int — Unix timestamp), and frequencyDays (Nat). Results should be sorted by nextRenewalDate ascending.",
+      "reqIds": [
+        "REQ-62"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-65",
+      "summary": "Extend the backend actor to support Customer Order History. Add a `getCustomerOrderHistory(customerId: Nat)` query that returns all SaleOrders where the order's `customerId` field matches the given customerId, sorted by createdAt descending. Each entry should include all existing SaleOrder fields (id, items, subtotal, totalAmount, discountAmount, taxBreakdown, taxTotal, note, createdAt) plus the discountCodeId if set. Also update `createSaleOrder` to accept and persist the optional `customerId` field (if not already done in REQ-61).",
+      "reqIds": [
+        "REQ-63"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-66",
+      "summary": "Generate an updated `migration.mo` file that carries over all existing stable state (userProfiles, ingredients, menuItems, salesOrders, customers, subscriptions, alerts, suppliers, purchaseOrders, wasteLogs, comboDeal, discountCodes, taxConfigs, and all their ID counters) and initialises empty collections for the new loyaltyTransactions map and its ID counter. Migrate existing Customer records to include a `loyaltyPoints` field defaulting to 0. Migrate existing SaleOrder records to include `customerId` as null/absent.",
+      "reqIds": [
+        "REQ-64"
       ],
       "status": "pending"
     }

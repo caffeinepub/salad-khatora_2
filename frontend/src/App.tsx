@@ -23,6 +23,7 @@ import PurchaseOrdersPage from './pages/PurchaseOrdersPage';
 import WasteLogPage from './pages/WasteLogPage';
 import CombosPage from './pages/CombosPage';
 import AdminSettingsPage from './pages/AdminSettingsPage';
+import DeliveryCalendarPage from './pages/DeliveryCalendarPage';
 
 const queryClient = new QueryClient();
 
@@ -96,6 +97,12 @@ const subscriptionsRoute = createRoute({
   component: SubscriptionsPage,
 });
 
+const deliveryCalendarRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/delivery-calendar',
+  component: DeliveryCalendarPage,
+});
+
 const alertsRoute = createRoute({
   getParentRoute: () => layoutRoute,
   path: '/alerts',
@@ -137,6 +144,7 @@ const routeTree = rootRoute.addChildren([
     salesRoute,
     customersRoute,
     subscriptionsRoute,
+    deliveryCalendarRoute,
     alertsRoute,
     suppliersRoute,
     purchaseOrdersRoute,

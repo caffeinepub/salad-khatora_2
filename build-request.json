@@ -1,227 +1,37 @@
 {
   "kind": "build_request",
-  "title": "Phase 3 Sales & Revenue: Discounts, Sales Reports, Tax Configuration + Sales Dropdown Nav",
+  "title": "Fix Admin Settings page to show Claim Admin button when admin role is vacant",
   "projectName": "Salad Khatora",
-  "priority": "normal",
+  "priority": "high",
   "requirements": [
     {
-      "id": "REQ-42",
-      "text": "Extend the backend actor to support a Discount & Coupon system. Add a `DiscountCode` type with fields: id (Nat), code (Text, unique), description (Text), discountType (variant: #percentage | #fixed), discountValue (Float), minimumOrderAmount (Float), maxUses (optional Nat), usedCount (Nat), isActive (Bool), expiresAt (optional Int Unix timestamp), createdAt (Int). Implement: `createDiscountCode`, `getDiscountCodes` (returns all), `getDiscountCode` (by ID), `updateDiscountCode`, `deleteDiscountCode`, `toggleDiscountCodeActive`, and `applyDiscountCode(code: Text, orderSubtotal: Float)` — which validates the code (active, not expired, not exceeded max uses), increments usedCount, and returns the discount amount and final discounted total. All write operations must be restricted to admin role.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Discount & coupon system — create promo codes or percentage/fixed discounts for orders"
-        ]
-      },
-      "acceptanceCriteria": [
-        "DiscountCode type is persisted in stable state with all specified fields.",
-        "createDiscountCode, getDiscountCodes, getDiscountCode, updateDiscountCode, deleteDiscountCode, and toggleDiscountCodeActive are implemented and admin-only for writes.",
-        "applyDiscountCode validates that the code is active, not expired, and within max uses before applying.",
-        "applyDiscountCode increments usedCount on successful application.",
-        "Percentage discounts are calculated as discountValue% of orderSubtotal; fixed discounts deduct discountValue directly.",
-        "minimumOrderAmount is enforced — applyDiscountCode returns an error if the subtotal is below the minimum."
-      ]
-    },
-    {
-      "id": "REQ-43",
-      "text": "Extend the backend actor to support Tax Configuration. Add a `TaxConfig` type with fields: id (Nat), name (Text — e.g. 'GST', 'VAT'), rate (Float — percentage, e.g. 10.0 for 10%), isActive (Bool), appliesTo (variant: #all | #menuItems | #combos), createdAt (Int). Implement: `createTaxConfig`, `getTaxConfigs` (returns all), `getTaxConfig` (by ID), `updateTaxConfig`, `deleteTaxConfig`, `toggleTaxConfigActive`. Also add a `calculateTax(subtotal: Float)` query that returns an array of applied taxes (name, rate, amount) and total tax amount based on all active tax configs. All write operations must be restricted to admin role.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Tax configuration — add GST/VAT settings and show tax breakdowns on bills"
-        ]
-      },
-      "acceptanceCriteria": [
-        "TaxConfig type is persisted in stable state with all specified fields.",
-        "createTaxConfig, getTaxConfigs, getTaxConfig, updateTaxConfig, deleteTaxConfig, and toggleTaxConfigActive are implemented; writes are admin-only.",
-        "calculateTax returns a breakdown per active tax config with name, rate, and computed tax amount.",
-        "calculateTax returns total cumulative tax across all active configs."
-      ]
-    },
-    {
-      "id": "REQ-44",
-      "text": "Extend the backend actor to support Sales Reports. Add a `getSalesReport(period: variant { #daily | #weekly }, referenceDate: Int })` query that returns: period label (e.g. '2024-06-10' or 'Week of 2024-06-10'), total orders count, total revenue, top-selling menu items (array of { menuItemId: Nat, menuItemName: Text, quantitySold: Nat, revenue: Float } sorted by quantitySold descending, top 10), and average order value. The report is computed dynamically from existing salesOrders data filtered to the requested period (UTC). This is a query — no write restrictions needed.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Daily/weekly sales reports — downloadable summaries of revenue and top-selling items"
-        ]
-      },
-      "acceptanceCriteria": [
-        "getSalesReport accepts a period variant (#daily or #weekly) and a referenceDate Unix timestamp.",
-        "Daily period filters sales with createdAt on the same UTC calendar day as referenceDate.",
-        "Weekly period filters sales within the 7-day window starting from referenceDate.",
-        "Returns total orders, total revenue, average order value, and top 10 menu items by quantity sold.",
-        "Top items are sorted by quantitySold descending."
-      ]
-    },
-    {
-      "id": "REQ-45",
-      "text": "Update the `createSaleOrder` backend function to accept two new optional parameters: `discountCodeId` (optional Nat) and apply active taxes automatically. When a discountCodeId is provided, call the discount validation logic and apply the discount to the subtotal. Then apply all active tax configs via calculateTax to the post-discount subtotal. Persist in SaleOrder: `discountCodeId` (optional Nat), `discountAmount` (Float), `taxBreakdown` (array of { name: Text, rate: Float, amount: Float }), `taxTotal` (Float), and update `totalAmount` to equal subtotal − discountAmount + taxTotal. Generate an updated migration.mo that carries over all prior state and initialises empty collections for discountCodes and taxConfigs with their ID counters.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Discount & coupon system — create promo codes or percentage/fixed discounts for orders",
-          "Tax configuration — add GST/VAT settings and show tax breakdowns on bills"
-        ]
-      },
-      "acceptanceCriteria": [
-        "createSaleOrder accepts an optional discountCodeId; if provided and valid, the discount is applied to the subtotal.",
-        "All active tax configs are automatically applied to the post-discount subtotal.",
-        "SaleOrder records store discountAmount, taxBreakdown array, taxTotal, and updated totalAmount.",
-        "totalAmount = subtotal − discountAmount + taxTotal.",
-        "migration.mo carries over all prior stable state and initialises discountCodes, taxConfigs, and their ID counters as empty."
-      ]
-    },
-    {
-      "id": "REQ-46",
-      "text": "Add React Query hooks in `frontend/src/hooks/useQueries.ts` for all new backend operations introduced in REQ-42 through REQ-45: `useDiscountCodes` (query), `useDiscountCode` (query by id), `useCreateDiscountCode` (mutation), `useUpdateDiscountCode` (mutation), `useDeleteDiscountCode` (mutation), `useToggleDiscountCodeActive` (mutation), `useApplyDiscountCode` (mutation), `useTaxConfigs` (query), `useTaxConfig` (query by id), `useCreateTaxConfig` (mutation), `useUpdateTaxConfig` (mutation), `useDeleteTaxConfig` (mutation), `useToggleTaxConfigActive` (mutation), `useCalculateTax` (query by subtotal), `useSalesReport` (query by period and referenceDate). Follow the same patterns as existing hooks (actor-based calls, proper query keys, cache invalidation on mutations).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ]
-      },
-      "acceptanceCriteria": [
-        "All 15 hooks are added to useQueries.ts following existing actor-based patterns.",
-        "Query hooks use appropriate query keys including parameters (id, subtotal, period, referenceDate).",
-        "Mutation hooks invalidate relevant query keys on success (e.g., discount code mutations invalidate discountCodes queries; tax config mutations invalidate taxConfigs queries).",
-        "useSalesReport accepts period ('daily' | 'weekly') and referenceDate (Date object or timestamp)."
-      ]
-    },
-    {
-      "id": "REQ-47",
-      "text": "Build a Discounts & Coupons page accessible at `/discounts`. Display all discount codes in a table with columns for: code, description, type (percentage/fixed), value, minimum order, max uses, used count, expiry date, and status badge (active/inactive). Include an 'Add Discount Code' modal with all required fields: code, description, discount type selector (percentage or fixed), discount value, optional minimum order amount, optional max uses, optional expiry date, and active toggle. Support editing and deleting existing discount codes. Allow toggling active status inline.",
+      "id": "REQ-69",
+      "text": "Fix the Admin Settings page (`frontend/src/pages/AdminSettingsPage.tsx`) so that when the current user does not have admin access AND the admin role is vacant (i.e., `getAdminPrincipal` returns an empty/null principal or `claimAdminIfVacant` would succeed), the page displays a 'Claim Admin' button that calls `useClaimAdminIfVacant`. Currently the page only shows 'You do not have admin access' without offering the claim option. The logic should be: (1) if the user IS the admin — show the full admin panel (reassign, vacate); (2) if the user is NOT the admin but the admin role IS vacant — show the 'Claim Admin (if vacant)' button with explanatory text; (3) if the user is NOT the admin and an admin IS already assigned — show the 'You do not have admin access' message only. Show success or error feedback after the claim attempt.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-1"
         ],
         "quotes": [
-          "Discount & coupon system — create promo codes or percentage/fixed discounts for orders"
+          "showing you dont have admin access before it had option to claim admin access"
         ]
       },
       "acceptanceCriteria": [
-        "Page is accessible at /discounts and lists all discount codes from useDiscountCodes.",
-        "Table shows code, description, type, value, minimum order, max uses, used count, expiry date, and active/inactive badge.",
-        "Add Discount Code modal includes all fields with validation (code required, discountValue > 0).",
-        "Editing a discount code pre-fills the modal with existing values.",
-        "Deleting a discount code shows a confirmation dialog before proceeding.",
-        "Active/inactive toggle works inline without opening the edit modal."
-      ]
-    },
-    {
-      "id": "REQ-48",
-      "text": "Build a Sales Reports page accessible at `/sales-reports`. At the top, show two date-range pickers: one for 'Daily Report' (single date picker) and one for 'Weekly Report' (week start date picker). On selecting a date and report type, display a report card showing: period label, total orders, total revenue, average order value, and a top-selling items table (item name, quantity sold, revenue). Include a 'Download CSV' button that exports the displayed report data as a CSV file client-side (no backend endpoint needed — construct CSV from the query result in the browser).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Daily/weekly sales reports — downloadable summaries of revenue and top-selling items"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Page is accessible at /sales-reports.",
-        "User can select a date and choose Daily or Weekly report type; the report card updates on selection.",
-        "Report card displays period label, total orders, total revenue, average order value.",
-        "Top-selling items table shows item name, quantity sold, and revenue, sorted by quantity descending.",
-        "Download CSV button generates and downloads a CSV file with all report data client-side.",
-        "Loading and empty states are handled gracefully."
-      ]
-    },
-    {
-      "id": "REQ-49",
-      "text": "Build a Tax Configuration page accessible at `/tax-config`. Display all tax configs in a table with columns for: name, rate (%), applies to, and status badge (active/inactive). Include an 'Add Tax Config' modal with fields: name (e.g. 'GST'), rate (Float, e.g. 10 for 10%), applies to selector (#all / #menuItems / #combos), and active toggle. Support editing and deleting existing tax configs. Allow toggling active status inline. Show a live preview panel that calculates tax on a sample subtotal entered by the user, displaying each active tax line and total tax amount.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Tax configuration — add GST/VAT settings and show tax breakdowns on bills"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Page is accessible at /tax-config.",
-        "Table lists all tax configs with name, rate, applies to, and active/inactive badge.",
-        "Add Tax Config modal includes all fields with validation (name required, rate > 0).",
-        "Editing pre-fills the modal; deleting shows a confirmation dialog.",
-        "Active/inactive toggle works inline.",
-        "Live preview panel accepts a sample subtotal input and displays the tax breakdown using useCalculateTax."
-      ]
-    },
-    {
-      "id": "REQ-50",
-      "text": "Update the New Order form on the Sales page (`/sales`, `frontend/src/pages/SalesPage.tsx`) to support discount code application and show a tax breakdown before submission. Add a 'Promo Code' input field with an 'Apply' button that calls `useApplyDiscountCode`; on success show the discount amount deducted. Below the subtotal, display a tax breakdown section listing each active tax line (name, rate, amount) from `useCalculateTax` applied to the post-discount subtotal. Update the order total display to show: Subtotal, Discount (if applied), Tax lines, and Grand Total. Pass the discountCodeId (if applied) when calling createSaleOrder. In the Sales History table, update the order detail expansion to show discount amount, tax breakdown, and the final total.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "Discount & coupon system — create promo codes or percentage/fixed discounts for orders",
-          "Tax configuration — add GST/VAT settings and show tax breakdowns on bills",
-          "show tax breakdowns on bills"
-        ]
-      },
-      "acceptanceCriteria": [
-        "New Order form has a 'Promo Code' text input and an 'Apply' button.",
-        "Applying a valid code shows the discount amount and deducts it from the total; invalid/expired codes show an error.",
-        "Tax breakdown section lists each active tax config with name, rate, and computed amount based on post-discount subtotal.",
-        "Order total section shows: Subtotal → Discount (if any) → each Tax line → Grand Total.",
-        "createSaleOrder is called with the discountCodeId when a promo code has been successfully applied.",
-        "Expanded order details in Sales History show discount amount, tax breakdown, and grand total."
-      ]
-    },
-    {
-      "id": "REQ-51",
-      "text": "Reorganize the Sales section in the Layout navigation (`frontend/src/components/Layout.tsx`) as a collapsible dropdown group in the sidebar/header. The dropdown label is 'Sales' with a chevron icon. It contains four sub-links: 'Sales' (→ /sales, existing), 'Discounts & Coupons' (→ /discounts), 'Sales Reports' (→ /sales-reports), and 'Tax Configuration' (→ /tax-config). The dropdown should expand automatically when the current route matches any of the four sub-paths. Register the three new routes (/discounts, /sales-reports, /tax-config) in `frontend/src/App.tsx` pointing to their respective new page components.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "put all these under sales tab as a drop down"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The sidebar/header shows a 'Sales' dropdown group with a chevron toggle.",
-        "The dropdown contains: Sales (/sales), Discounts & Coupons (/discounts), Sales Reports (/sales-reports), Tax Configuration (/tax-config).",
-        "The dropdown auto-expands when the active route is any of the four sub-paths.",
-        "Routes /discounts, /sales-reports, and /tax-config are registered in App.tsx and render their respective page components.",
-        "The layout remains responsive on mobile — the dropdown works in both desktop sidebar and mobile menu."
+        "When the admin role is vacant, a logged-in non-admin user sees a 'Claim Admin' button on the Admin Settings page instead of (or in addition to) the 'You do not have admin access' message.",
+        "Clicking 'Claim Admin' calls `useClaimAdminIfVacant` and shows a success toast on completion or an error message on failure.",
+        "When the admin role is already assigned to another principal, the page shows only the 'You do not have admin access' message with no claim button.",
+        "When the logged-in user IS the admin, the full admin panel (reassign, vacate) is displayed as before.",
+        "The vacant-admin detection logic uses the value returned by `useAdminPrincipal` — if it is empty, null, or an empty string, the role is considered vacant."
       ]
     }
   ],
   "constraints": [
-    "Do not break or modify existing salesOrders data schema beyond the additive fields specified in REQ-45.",
-    "migration.mo must carry over all prior stable state without data loss.",
-    "Immutable frontend paths (useInternetIdentity.ts, useActor.ts, main.tsx, components/ui) must not be modified.",
-    "CSV download for Sales Reports must be constructed client-side — no new backend endpoint required.",
-    "All new backend write operations must be restricted to admin role via existing MixinAuthorization pattern."
+    "Do not modify files listed in frontend.immutablePaths.",
+    "Do not alter backend logic — the fix is purely in the frontend AdminSettingsPage component."
   ],
   "nonGoals": [
-    "Payment gateway or Stripe integration.",
-    "Email delivery of sales reports.",
-    "Customer-facing promo code entry (codes are applied by admin at point of sale only).",
-    "Multi-currency support.",
-    "Printable bill/receipt PDF generation.",
-    "Changes to existing Dashboard stat cards beyond what is needed for the Sales nav reorganization."
+    "Adding new backend endpoints or changing admin role logic in the Motoko actor.",
+    "Changing the visual theme or layout of the Admin Settings page beyond the required conditional UI."
   ],
   "imageRequirements": {
     "required": [],

@@ -1,121 +1,23 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Phase 3 Sales & Revenue: Discounts, Sales Reports, Tax Configuration + Sales Dropdown Nav",
+  "title": "Fix Admin Settings page to show Claim Admin button when admin role is vacant",
   "requirements": [
     {
-      "id": "REQ-46",
-      "summary": "Add React Query hooks for discount codes, tax configs, and sales reports",
+      "id": "REQ-69",
+      "summary": "Add conditional UI logic to AdminSettingsPage to display a 'Claim Admin' button when the admin role is vacant, allowing non-admin users to claim the role. Show different UI states based on whether the user is admin, the role is vacant, or an admin is already assigned.",
       "acceptanceCriteria": [
-        "All 15 hooks are added to useQueries.ts following existing actor-based patterns.",
-        "Query hooks use appropriate query keys including parameters (id, subtotal, period, referenceDate).",
-        "Mutation hooks invalidate relevant query keys on success (e.g., discount code mutations invalidate discountCodes queries; tax config mutations invalidate taxConfigs queries).",
-        "useSalesReport accepts period ('daily' | 'weekly') and referenceDate (Date object or timestamp)."
+        "When the admin role is vacant, a logged-in non-admin user sees a 'Claim Admin' button on the Admin Settings page instead of (or in addition to) the 'You do not have admin access' message.",
+        "Clicking 'Claim Admin' calls `useClaimAdminIfVacant` and shows a success toast on completion or an error message on failure.",
+        "When the admin role is already assigned to another principal, the page shows only the 'You do not have admin access' message with no claim button.",
+        "When the logged-in user IS the admin, the full admin panel (reassign, vacate) is displayed as before.",
+        "The vacant-admin detection logic uses the value returned by `useAdminPrincipal` — if it is empty, null, or an empty string, the role is considered vacant."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useQueries.ts",
+          "path": "frontend/src/pages/AdminSettingsPage.tsx",
           "operation": "modify",
-          "description": "Add 15 new React Query hooks: useDiscountCodes (query), useDiscountCode (query by id), useCreateDiscountCode (mutation), useUpdateDiscountCode (mutation), useDeleteDiscountCode (mutation), useToggleDiscountCodeActive (mutation), useApplyDiscountCode (mutation), useTaxConfigs (query), useTaxConfig (query by id), useCreateTaxConfig (mutation), useUpdateTaxConfig (mutation), useDeleteTaxConfig (mutation), useToggleTaxConfigActive (mutation), useCalculateTax (query by subtotal), useSalesReport (query by period and referenceDate). Follow existing patterns: actor-based calls, proper query keys with parameters, cache invalidation on mutations (discount mutations invalidate ['discountCodes'], tax mutations invalidate ['taxConfigs'])."
-        }
-      ]
-    },
-    {
-      "id": "REQ-47",
-      "summary": "Build Discounts & Coupons management page with CRUD operations",
-      "acceptanceCriteria": [
-        "Page is accessible at /discounts and lists all discount codes from useDiscountCodes.",
-        "Table shows code, description, type, value, minimum order, max uses, used count, expiry date, and active/inactive badge.",
-        "Add Discount Code modal includes all fields with validation (code required, discountValue > 0).",
-        "Editing a discount code pre-fills the modal with existing values.",
-        "Deleting a discount code shows a confirmation dialog before proceeding.",
-        "Active/inactive toggle works inline without opening the edit modal."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/DiscountsPage.tsx",
-          "operation": "create",
-          "description": "Create a new page component for /discounts route. Display all discount codes in a table with columns: code, description, type (badge showing 'Percentage' or 'Fixed'), discount value, minimum order amount, max uses, used count, expiry date (formatted or 'No expiry'), and active status badge (green for active, gray for inactive). Include an 'Add Discount Code' button that opens a dialog modal with form fields: code (text input, required), description (textarea, required), discount type (select: percentage or fixed), discount value (number input, required, >0 validation), minimum order amount (number input, default 0), max uses (optional number input), expiry date (optional date picker), and active toggle (default true). Support inline edit (opens same modal pre-filled) and delete (with confirmation dialog). Implement inline active/inactive toggle via useToggleDiscountCodeActive without opening modal. Use useDiscountCodes for data fetching, useCreateDiscountCode, useUpdateDiscountCode, useDeleteDiscountCode, and useToggleDiscountCodeActive mutations. Follow existing page patterns from CustomersPage and SuppliersPage for table layout, dialogs, and CRUD operations."
-        }
-      ]
-    },
-    {
-      "id": "REQ-48",
-      "summary": "Build Sales Reports page with daily/weekly report generation and CSV download",
-      "acceptanceCriteria": [
-        "Page is accessible at /sales-reports.",
-        "User can select a date and choose Daily or Weekly report type; the report card updates on selection.",
-        "Report card displays period label, total orders, total revenue, average order value.",
-        "Top-selling items table shows item name, quantity sold, and revenue, sorted by quantity descending.",
-        "Download CSV button generates and downloads a CSV file with all report data client-side.",
-        "Loading and empty states are handled gracefully."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/SalesReportsPage.tsx",
-          "operation": "create",
-          "description": "Create a new page component for /sales-reports route. At the top, display two date-range pickers: one labeled 'Daily Report' with a single date picker, and one labeled 'Weekly Report' with a week start date picker. Include radio buttons or tabs to select report type (Daily or Weekly). When a date and report type are selected, call useSalesReport with the appropriate period ('daily' or 'weekly') and the selected date as referenceDate (converted to Unix timestamp). Display a report card showing: period label (from backend response), total orders count, total revenue (formatted as currency), and average order value (formatted as currency). Below, display a 'Top Selling Items' table with columns: item name, quantity sold, and revenue (sorted by quantity descending, limited to top 10 as per backend). Include a 'Download CSV' button that constructs a CSV file client-side from the report data (include headers: Period, Total Orders, Total Revenue, Average Order Value, and a separate section for Top Items with Item Name, Quantity Sold, Revenue) and triggers a browser download using Blob and URL.createObjectURL. Handle loading state (show skeleton) and empty state (show message when no data for selected period). Use existing shadcn/ui components for date pickers, cards, tables, and buttons."
-        }
-      ]
-    },
-    {
-      "id": "REQ-49",
-      "summary": "Build Tax Configuration page with CRUD operations and live preview panel",
-      "acceptanceCriteria": [
-        "Page is accessible at /tax-config.",
-        "Table lists all tax configs with name, rate, applies to, and active/inactive badge.",
-        "Add Tax Config modal includes all fields with validation (name required, rate > 0).",
-        "Editing pre-fills the modal; deleting shows a confirmation dialog.",
-        "Active/inactive toggle works inline.",
-        "Live preview panel accepts a sample subtotal input and displays the tax breakdown using useCalculateTax."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/TaxConfigPage.tsx",
-          "operation": "create",
-          "description": "Create a new page component for /tax-config route. Display all tax configs in a table with columns: name, rate (formatted as percentage, e.g., '10%'), applies to (display variant as text: 'All', 'Menu Items', or 'Combos'), and active status badge (green for active, gray for inactive). Include an 'Add Tax Config' button that opens a dialog modal with form fields: name (text input, required, e.g., 'GST'), rate (number input, required, >0 validation, label as percentage), applies to (select dropdown with options: All, Menu Items, Combos), and active toggle (default true). Support inline edit (opens same modal pre-filled) and delete (with confirmation dialog). Implement inline active/inactive toggle via useToggleTaxConfigActive without opening modal. Below the table, add a 'Live Tax Preview' panel with a number input labeled 'Sample Subtotal' where the user can enter a test amount. Call useCalculateTax with this subtotal and display the resulting tax breakdown as a list showing each active tax config's name, rate, and computed tax amount, plus the total tax amount at the bottom. Use useTaxConfigs for data fetching, useCreateTaxConfig, useUpdateTaxConfig, useDeleteTaxConfig, useToggleTaxConfigActive, and useCalculateTax. Follow existing page patterns for table layout, dialogs, and CRUD operations."
-        }
-      ]
-    },
-    {
-      "id": "REQ-50",
-      "summary": "Update Sales page New Order form to support discount codes and show tax breakdown",
-      "acceptanceCriteria": [
-        "New Order form has a 'Promo Code' text input and an 'Apply' button.",
-        "Applying a valid code shows the discount amount and deducts it from the total; invalid/expired codes show an error.",
-        "Tax breakdown section lists each active tax config with name, rate, and computed amount based on post-discount subtotal.",
-        "Order total section shows: Subtotal → Discount (if any) → each Tax line → Grand Total.",
-        "createSaleOrder is called with the discountCodeId when a promo code has been successfully applied.",
-        "Expanded order details in Sales History show discount amount, tax breakdown, and grand total."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/SalesPage.tsx",
-          "operation": "modify",
-          "description": "Update the New Order form section to add a 'Promo Code' text input and an 'Apply' button. On clicking Apply, call useApplyDiscountCode mutation with the entered code and the current order subtotal. On success, store the returned discount code ID, discount amount, and final total; display the discount amount below the subtotal (e.g., 'Discount Applied: -$5.00'). On error (invalid, expired, or minimum not met), display an error message below the input. After applying discount (or if none), call useCalculateTax with the post-discount subtotal and display a 'Tax Breakdown' section listing each tax line (name, rate as percentage, computed tax amount). Update the order total display to show: 'Subtotal: $X', 'Discount: -$Y' (if applied), then each tax line as 'Tax Name (Rate%): $Z', and finally 'Grand Total: $T'. When submitting the order via useCreateSaleOrder, pass the discountCodeId in the request if a promo code was successfully applied. In the Sales History table, update the expandable order detail row to display: discount amount (if present), tax breakdown (list each tax line with name, rate, amount), and grand total. Use existing SaleOrder type fields: discountAmount, taxBreakdown array, taxTotal, totalAmount. Maintain existing functionality for menu item selection and quantity input."
-        }
-      ]
-    },
-    {
-      "id": "REQ-51",
-      "summary": "Reorganize Sales navigation as a collapsible dropdown with four sub-links",
-      "acceptanceCriteria": [
-        "The sidebar/header shows a 'Sales' dropdown group with a chevron toggle.",
-        "The dropdown contains: Sales (/sales), Discounts & Coupons (/discounts), Sales Reports (/sales-reports), Tax Configuration (/tax-config).",
-        "The dropdown auto-expands when the active route is any of the four sub-paths.",
-        "Routes /discounts, /sales-reports, and /tax-config are registered in App.tsx and render their respective page components.",
-        "The layout remains responsive on mobile — the dropdown works in both desktop sidebar and mobile menu."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/Layout.tsx",
-          "operation": "modify",
-          "description": "Replace the existing single 'Sales' navigation link with a collapsible dropdown group labeled 'Sales' with a chevron icon (use lucide-react ChevronDown/ChevronUp or similar). The dropdown should contain four sub-links: 'Sales' (→ /sales), 'Discounts & Coupons' (→ /discounts), 'Sales Reports' (→ /sales-reports), and 'Tax Configuration' (→ /tax-config). Implement expand/collapse state using React useState. Auto-expand the dropdown when the current route (obtained via TanStack Router's useLocation or similar) matches any of the four sub-paths (/sales, /discounts, /sales-reports, /tax-config). Apply active state styling to the currently selected sub-link. Ensure the dropdown works in both desktop sidebar and mobile menu (apply the same pattern to the mobile navigation section). Use existing navigation styling patterns and shadcn/ui components (Collapsible or Accordion if appropriate)."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Register three new routes in the router configuration: '/discounts' (renders DiscountsPage), '/sales-reports' (renders SalesReportsPage), and '/tax-config' (renders TaxConfigPage). Import the new page components at the top of the file. Follow the existing route registration pattern used for other pages (e.g., /customers, /suppliers). Ensure all three routes are wrapped in the Layout component like existing routes."
+          "description": "Update the AdminSettingsPage component to add conditional rendering logic that detects when the admin role is vacant (by checking if the adminPrincipal from useAdminPrincipal is empty, null, or an empty string). Add a new UI section that displays when the current user is not admin AND the role is vacant, containing a 'Claim Admin' button that calls the useClaimAdminIfVacant mutation hook. Include explanatory text describing what claiming the admin role means. Show success/error toast messages after the claim attempt using the existing toast system. Ensure the three UI states are clearly separated: (1) user is admin → show full admin panel with reassign/vacate controls, (2) user is not admin but role is vacant → show 'Claim Admin' button with explanation, (3) user is not admin and role is occupied → show 'You do not have admin access' message only."
         }
       ]
     }

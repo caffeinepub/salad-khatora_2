@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-react-query-hooks-in-frontend-src-hooks-usequeries-ts-for-all-new-backend-operations-introduced-in-req-42-through-req-45-usediscountcodes-query-usediscountcode-query-by-id-usecreatediscountcode-mutation-useupdatediscountcode-mutation-usedeletediscountcode-mutation-usetogglediscountcodeactive-mutation-useapplydiscountcode-mutation-usetaxconfigs-query-usetaxconfig-query-by-id-usecreatetaxconfig-mutation-useupdatetaxconfig-mutation-usedeletetaxconfig-mutation-usetoggletaxconfigactive-mutation-usecalculatetax-query-by-subtotal-usesalesreport-query-by-period-and-referencedate-follow-the-same-patterns-as-existing-hooks-actor-based-calls-proper-query-keys-cache-invalidation-on-mutations",
-      "featureTitle": "Add React Query hooks in `frontend/src/hooks/useQueries.ts` for all new backend operations introduced in REQ-42 through REQ-45: `useDiscountCodes` (query), `useDiscountCode` (query by id), `useCreateDiscountCode` (mutation), `useUpdateDiscountCode` (mutation), `useDeleteDiscountCode` (mutation), `useToggleDiscountCodeActive` (mutation), `useApplyDiscountCode` (mutation), `useTaxConfigs` (query), `useTaxConfig` (query by id), `useCreateTaxConfig` (mutation), `useUpdateTaxConfig` (mutation), `useDeleteTaxConfig` (mutation), `useToggleTaxConfigActive` (mutation), `useCalculateTax` (query by subtotal), `useSalesReport` (query by period and referenceDate). Follow the same patterns as existing hooks (actor-based calls, proper query keys, cache invalidation on mutations).",
+      "featureId": "feature-fix-the-admin-settings-page-frontend-src-pages-adminsettingspage-tsx-so-that-when-the-current-user-does-not-have-admin-access-and-the-admin-role-is-vacant-i-e-getadminprincipal-returns-an-empty-null-principal-or-claimadminifvacant-would-succeed-the-page-displays-a-claim-admin-button-that-calls-useclaimadminifvacant-currently-the-page-only-shows-you-do-not-have-admin-access-without-offering-the-claim-option-the-logic-should-be-1-if-the-user-is-the-admin-show-the-full-admin-panel-reassign-vacate-2-if-the-user-is-not-the-admin-but-the-admin-role-is-vacant-show-the-claim-admin-if-vacant-button-with-explanatory-text-3-if-the-user-is-not-the-admin-and-an-admin-is-already-assigned-show-the-you-do-not-have-admin-access-message-only-show-success-or-error-feedback-after-the-claim-attempt",
+      "featureTitle": "Fix the Admin Settings page (`frontend/src/pages/AdminSettingsPage.tsx`) so that when the current user does not have admin access AND the admin role is vacant (i.e., `getAdminPrincipal` returns an empty/null principal or `claimAdminIfVacant` would succeed), the page displays a 'Claim Admin' button that calls `useClaimAdminIfVacant`. Currently the page only shows 'You do not have admin access' without offering the claim option. The logic should be: (1) if the user IS the admin — show the full admin panel (reassign, vacate); (2) if the user is NOT the admin but the admin role IS vacant — show the 'Claim Admin (if vacant)' button with explanatory text; (3) if the user is NOT the admin and an admin IS already assigned — show the 'You do not have admin access' message only. Show success or error feedback after the claim attempt.",
       "files": [
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/pages/AdminSettingsPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -16,83 +16,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-46"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-build-a-discounts-coupons-page-accessible-at-discounts-display-all-discount-codes-in-a-table-with-columns-for-code-description-type-percentage-fixed-value-minimum-order-max-uses-used-count-expiry-date-and-status-badge-active-inactive-include-an-add-discount-code-modal-with-all-required-fields-code-description-discount-type-selector-percentage-or-fixed-discount-value-optional-minimum-order-amount-optional-max-uses-optional-expiry-date-and-active-toggle-support-editing-and-deleting-existing-discount-codes-allow-toggling-active-status-inline",
-      "featureTitle": "Build a Discounts & Coupons page accessible at `/discounts`. Display all discount codes in a table with columns for: code, description, type (percentage/fixed), value, minimum order, max uses, used count, expiry date, and status badge (active/inactive). Include an 'Add Discount Code' modal with all required fields: code, description, discount type selector (percentage or fixed), discount value, optional minimum order amount, optional max uses, optional expiry date, and active toggle. Support editing and deleting existing discount codes. Allow toggling active status inline.",
-      "files": [
-        "frontend/src/pages/DiscountsPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-47"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-build-a-sales-reports-page-accessible-at-sales-reports-at-the-top-show-two-date-range-pickers-one-for-daily-report-single-date-picker-and-one-for-weekly-report-week-start-date-picker-on-selecting-a-date-and-report-type-display-a-report-card-showing-period-label-total-orders-total-revenue-average-order-value-and-a-top-selling-items-table-item-name-quantity-sold-revenue-include-a-download-csv-button-that-exports-the-displayed-report-data-as-a-csv-file-client-side-no-backend-endpoint-needed-construct-csv-from-the-query-result-in-the-browser",
-      "featureTitle": "Build a Sales Reports page accessible at `/sales-reports`. At the top, show two date-range pickers: one for 'Daily Report' (single date picker) and one for 'Weekly Report' (week start date picker). On selecting a date and report type, display a report card showing: period label, total orders, total revenue, average order value, and a top-selling items table (item name, quantity sold, revenue). Include a 'Download CSV' button that exports the displayed report data as a CSV file client-side (no backend endpoint needed — construct CSV from the query result in the browser).",
-      "files": [
-        "frontend/src/pages/SalesReportsPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-48"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-build-a-tax-configuration-page-accessible-at-tax-config-display-all-tax-configs-in-a-table-with-columns-for-name-rate-applies-to-and-status-badge-active-inactive-include-an-add-tax-config-modal-with-fields-name-e-g-gst-rate-float-e-g-10-for-10-applies-to-selector-all-menuitems-combos-and-active-toggle-support-editing-and-deleting-existing-tax-configs-allow-toggling-active-status-inline-show-a-live-preview-panel-that-calculates-tax-on-a-sample-subtotal-entered-by-the-user-displaying-each-active-tax-line-and-total-tax-amount",
-      "featureTitle": "Build a Tax Configuration page accessible at `/tax-config`. Display all tax configs in a table with columns for: name, rate (%), applies to, and status badge (active/inactive). Include an 'Add Tax Config' modal with fields: name (e.g. 'GST'), rate (Float, e.g. 10 for 10%), applies to selector (#all / #menuItems / #combos), and active toggle. Support editing and deleting existing tax configs. Allow toggling active status inline. Show a live preview panel that calculates tax on a sample subtotal entered by the user, displaying each active tax line and total tax amount.",
-      "files": [
-        "frontend/src/pages/TaxConfigPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-49"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-update-the-new-order-form-on-the-sales-page-sales-frontend-src-pages-salespage-tsx-to-support-discount-code-application-and-show-a-tax-breakdown-before-submission-add-a-promo-code-input-field-with-an-apply-button-that-calls-useapplydiscountcode-on-success-show-the-discount-amount-deducted-below-the-subtotal-display-a-tax-breakdown-section-listing-each-active-tax-line-name-rate-amount-from-usecalculatetax-applied-to-the-post-discount-subtotal-update-the-order-total-display-to-show-subtotal-discount-if-applied-tax-lines-and-grand-total-pass-the-discountcodeid-if-applied-when-calling-createsaleorder-in-the-sales-history-table-update-the-order-detail-expansion-to-show-discount-amount-tax-breakdown-and-the-final-total",
-      "featureTitle": "Update the New Order form on the Sales page (`/sales`, `frontend/src/pages/SalesPage.tsx`) to support discount code application and show a tax breakdown before submission. Add a 'Promo Code' input field with an 'Apply' button that calls `useApplyDiscountCode`; on success show the discount amount deducted. Below the subtotal, display a tax breakdown section listing each active tax line (name, rate, amount) from `useCalculateTax` applied to the post-discount subtotal. Update the order total display to show: Subtotal, Discount (if applied), Tax lines, and Grand Total. Pass the discountCodeId (if applied) when calling createSaleOrder. In the Sales History table, update the order detail expansion to show discount amount, tax breakdown, and the final total.",
-      "files": [
-        "frontend/src/pages/SalesPage.tsx"
-      ],
-      "components": [
-        "authorization@4.0.0",
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-50"
+        "REQ-69"
       ],
       "confidence": "high"
     }

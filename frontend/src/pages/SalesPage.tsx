@@ -1,19 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
-import { useMenuItems, useCreateSaleOrder, useSaleOrders, useApplyDiscountCode, useCalculateTax } from '../hooks/useQueries';
-import type { MenuItem, SaleOrder, DiscountApplicationResult } from '../backend';
 import {
-  ShoppingCart, Plus, Minus, Receipt, ChevronDown, ChevronUp, Loader2, CheckCircle2, ClipboardList, Tag, X,
+  useMenuItems,
+  useCreateSaleOrder,
+  useSaleOrders,
+  useApplyDiscountCode,
+  useCalculateTax,
+  useCustomers,
+  useLoyaltyBalance,
+  type DiscountApplicationResult,
+} from '../hooks/useQueries';
+import type { MenuItem, SaleOrder } from '../hooks/useQueries';
+import {
+  ShoppingCart, Plus, Minus, Receipt, ChevronDown, ChevronUp, Loader2, CheckCircle2,
+  ClipboardList, Tag, X, Users, Star,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface OrderLine {
@@ -25,24 +36,40 @@ function formatCurrency(v: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v);
 }
 
-function formatDate(ts: bigint) {
-  const ms = Number(ts) / 1_000_000;
+function formatDate(ts: number) {
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric', month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
-  }).format(new Date(ms));
+  }).format(new Date(ts));
+}
+
+// ─── Customer Loyalty Badge ───────────────────────────────────────────────────
+
+function CustomerLoyaltyBadge({ customerId }: { customerId: number }) {
+  const { data: balance, isLoading } = useLoyaltyBalance(customerId);
+
+  if (isLoading) return <Skeleton className="h-6 w-24" />;
+
+  return (
+    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-700 text-xs font-medium">
+      <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-500" />
+      {(balance ?? 0).toLocaleString()} pts
+    </div>
+  );
 }
 
 // ─── New Order Section ────────────────────────────────────────────────────────
 
 function NewOrderSection() {
   const { data: menuItems, isLoading: menuLoading } = useMenuItems();
+  const { data: customers = [] } = useCustomers();
   const createSaleOrder = useCreateSaleOrder();
   const applyDiscountMutation = useApplyDiscountCode();
 
   const [orderLines, setOrderLines] = useState<Map<string, OrderLine>>(new Map());
   const [note, setNote] = useState('');
   const [success, setSuccess] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | undefined>(undefined);
 
   // Promo code state
   const [promoCode, setPromoCode] = useState('');
@@ -51,7 +78,7 @@ function NewOrderSection() {
 
   const availableItems = (menuItems ?? []).filter((item) => item.isAvailable);
 
-  const getQty = (id: bigint) => orderLines.get(id.toString())?.quantity ?? 0;
+  const getQty = (id: number) => orderLines.get(id.toString())?.quantity ?? 0;
 
   const setQty = (item: MenuItem, qty: number) => {
     setOrderLines((prev) => {
@@ -63,7 +90,6 @@ function NewOrderSection() {
       }
       return next;
     });
-    // Clear applied discount when order changes
     setAppliedDiscount(null);
     setPromoError('');
   };
@@ -74,7 +100,6 @@ function NewOrderSection() {
   const postDiscountSubtotal = Math.max(0, subtotal - discountAmount);
   const hasItems = lines.length > 0;
 
-  // Calculate tax on post-discount subtotal
   const { data: taxResult } = useCalculateTax(hasItems ? postDiscountSubtotal : 0);
   const taxTotal = taxResult?.totalTaxAmount ?? 0;
   const grandTotal = postDiscountSubtotal + taxTotal;
@@ -103,11 +128,13 @@ function NewOrderSection() {
   const handleSubmit = async () => {
     if (!hasItems) return;
     try {
-      await createSaleOrder.mutateAsync({
-        items: lines.map((l) => [l.menuItem.id, BigInt(l.quantity)]),
+      const result = await createSaleOrder.mutateAsync({
+        items: lines.map((l) => ({ menuItemId: l.menuItem.id, quantity: l.quantity })),
         note,
-        discountCodeId: appliedDiscount ? appliedDiscount.discountCode.id : undefined,
+        discountCodeId: appliedDiscount ? Number(appliedDiscount.discountCode.id) : undefined,
+        customerId: selectedCustomerId,
       });
+
       setOrderLines(new Map());
       setNote('');
       setAppliedDiscount(null);
@@ -115,6 +142,15 @@ function NewOrderSection() {
       setPromoError('');
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
+
+      // Show loyalty points toast if customer was selected
+      if (selectedCustomerId !== undefined && result.pointsAwarded > 0) {
+        const customer = customers.find(c => c.id === selectedCustomerId);
+        toast.success(
+          `Order placed! ${customer?.name ?? 'Customer'} earned ${result.pointsAwarded} loyalty point${result.pointsAwarded !== 1 ? 's' : ''}.`,
+          { duration: 4000 }
+        );
+      }
     } catch {
       // error handled below
     }
@@ -150,6 +186,37 @@ function NewOrderSection() {
               : 'Failed to place order. Please try again.'}
           </div>
         )}
+
+        {/* Customer Selector */}
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground flex items-center gap-1">
+            <Users className="w-3 h-3" /> Customer (optional)
+          </Label>
+          <div className="flex items-center gap-2">
+            <Select
+              value={selectedCustomerId !== undefined ? String(selectedCustomerId) : 'none'}
+              onValueChange={val => setSelectedCustomerId(val === 'none' ? undefined : Number(val))}
+            >
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="No customer selected" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No customer</SelectItem>
+                {customers.map(c => (
+                  <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedCustomerId !== undefined && (
+              <CustomerLoyaltyBadge customerId={selectedCustomerId} />
+            )}
+          </div>
+          {selectedCustomerId !== undefined && (
+            <p className="text-xs text-muted-foreground">
+              Customer will earn <strong>{Math.floor(grandTotal)}</strong> loyalty point{Math.floor(grandTotal) !== 1 ? 's' : ''} for this order.
+            </p>
+          )}
+        </div>
 
         {/* Menu items grid */}
         {menuLoading ? (
@@ -284,6 +351,12 @@ function NewOrderSection() {
               <span className="text-foreground">Grand Total</span>
               <span className="text-primary">{formatCurrency(grandTotal)}</span>
             </div>
+            {selectedCustomerId !== undefined && Math.floor(grandTotal) > 0 && (
+              <div className="flex items-center gap-1.5 pt-1 text-xs text-yellow-700">
+                <Star className="h-3 w-3 fill-yellow-400 text-yellow-500" />
+                Earns {Math.floor(grandTotal)} loyalty point{Math.floor(grandTotal) !== 1 ? 's' : ''}
+              </div>
+            )}
           </div>
         )}
 
@@ -325,187 +398,104 @@ function NewOrderSection() {
 // ─── Sales History Section ────────────────────────────────────────────────────
 
 function SalesHistorySection() {
-  const { data: orders, isLoading } = useSaleOrders(0, 50);
-  const [expandedId, setExpandedId] = useState<bigint | null>(null);
+  const { data: orders = [], isLoading } = useSaleOrders();
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  const sorted = [...(orders ?? [])].sort((a, b) => Number(b.createdAt - a.createdAt));
+  const toggleExpand = (id: number) => setExpandedId(prev => prev === id ? null : id);
 
   return (
     <Card className="border-border shadow-card">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-              <ClipboardList className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-base font-heading font-semibold">Sales History</CardTitle>
-              <CardDescription className="text-xs">All past orders</CardDescription>
-            </div>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+            <ClipboardList className="w-4 h-4 text-primary" />
           </div>
-          {!isLoading && sorted.length > 0 && (
-            <Badge variant="secondary" className="text-xs">{sorted.length} order{sorted.length !== 1 ? 's' : ''}</Badge>
-          )}
+          <div>
+            <CardTitle className="text-base font-heading font-semibold">Sales History</CardTitle>
+            <CardDescription className="text-xs">Recent orders</CardDescription>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <div className="space-y-3">
-            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 rounded-xl" />)}
           </div>
-        ) : sorted.length === 0 ? (
+        ) : orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
             <ClipboardList className="w-10 h-10 text-muted-foreground mb-3" />
             <p className="font-medium text-foreground text-sm">No orders yet</p>
-            <p className="text-muted-foreground text-xs mt-1">Place your first order above.</p>
+            <p className="text-muted-foreground text-xs mt-1">Orders will appear here once placed.</p>
           </div>
         ) : (
-          <>
-            {/* Desktop table */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Order ID</th>
-                    <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date & Time</th>
-                    <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Items</th>
-                    <th className="text-right py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Total</th>
-                    <th className="w-8" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {sorted.map((order) => {
-                    const isExpanded = expandedId === order.id;
-                    return (
-                      <>
-                        <tr
-                          key={order.id.toString()}
-                          className="border-b border-border/50 hover:bg-accent/30 transition-colors cursor-pointer"
-                          onClick={() => setExpandedId(isExpanded ? null : order.id)}
-                        >
-                          <td className="py-3 px-3 font-mono text-xs text-muted-foreground">#{order.id.toString()}</td>
-                          <td className="py-3 px-3 text-foreground">{formatDate(order.createdAt)}</td>
-                          <td className="py-3 px-3 text-muted-foreground">
-                            {order.items.length} item{order.items.length !== 1 ? 's' : ''}
-                          </td>
-                          <td className="py-3 px-3 text-right font-semibold text-primary">{formatCurrency(order.totalAmount)}</td>
-                          <td className="py-3 px-3 text-muted-foreground">
-                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          </td>
-                        </tr>
-                        {isExpanded && (
-                          <tr key={`${order.id}-detail`} className="bg-secondary/30">
-                            <td colSpan={5} className="px-3 py-3">
-                              <OrderDetail order={order} />
-                            </td>
-                          </tr>
-                        )}
-                      </>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+          <div className="space-y-2">
+            {orders.map((order) => (
+              <div key={order.id} className="border border-border rounded-xl overflow-hidden">
+                <button
+                  className="w-full flex items-center justify-between p-3 hover:bg-accent/30 transition-colors text-left"
+                  onClick={() => toggleExpand(order.id)}
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <span className="text-xs font-mono text-muted-foreground">#{order.id}</span>
+                    <span className="text-xs text-muted-foreground hidden sm:block">{formatDate(order.createdAt)}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-sm font-semibold text-primary">{formatCurrency(order.totalAmount)}</span>
+                    {expandedId === order.id
+                      ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                      : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                  </div>
+                </button>
 
-            {/* Mobile cards */}
-            <div className="md:hidden space-y-3">
-              {sorted.map((order) => {
-                const isExpanded = expandedId === order.id;
-                return (
-                  <div key={order.id.toString()} className="border border-border rounded-xl overflow-hidden">
-                    <button
-                      className="w-full flex items-center justify-between p-4 hover:bg-accent/30 transition-colors text-left"
-                      onClick={() => setExpandedId(isExpanded ? null : order.id)}
-                    >
-                      <div>
-                        <p className="font-mono text-xs text-muted-foreground">Order #{order.id.toString()}</p>
-                        <p className="text-sm font-medium text-foreground mt-0.5">{formatDate(order.createdAt)}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {order.items.length} item{order.items.length !== 1 ? 's' : ''}
-                        </p>
+                {expandedId === order.id && (
+                  <div className="border-t border-border bg-secondary/20 p-3 space-y-2">
+                    <p className="text-xs text-muted-foreground sm:hidden">{formatDate(order.createdAt)}</p>
+                    {order.items.map(([itemId, name, qty, price]) => (
+                      <div key={itemId} className="flex justify-between text-sm">
+                        <span className="text-foreground">{name} × {qty}</span>
+                        <span className="text-muted-foreground">{formatCurrency(price * qty)}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-primary">{formatCurrency(order.totalAmount)}</span>
-                        {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-                      </div>
-                    </button>
-                    {isExpanded && (
-                      <div className="border-t border-border p-4 bg-secondary/20">
-                        <OrderDetail order={order} />
+                    ))}
+                    <Separator />
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span>{formatCurrency(order.subtotal)}</span>
+                    </div>
+                    {order.discountAmount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-primary">Discount</span>
+                        <span className="text-primary">-{formatCurrency(order.discountAmount)}</span>
                       </div>
                     )}
+                    {order.taxBreakdown && order.taxBreakdown.length > 0 && order.taxBreakdown.map((tax, i) => (
+                      <div key={i} className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{tax.name} ({tax.rate}%)</span>
+                        <span>{formatCurrency(tax.amount)}</span>
+                      </div>
+                    ))}
+                    <Separator />
+                    <div className="flex justify-between text-sm font-bold">
+                      <span>Total</span>
+                      <span className="text-primary">{formatCurrency(order.totalAmount)}</span>
+                    </div>
+                    {order.note && (
+                      <p className="text-xs text-muted-foreground italic">Note: {order.note}</p>
+                    )}
                   </div>
-                );
-              })}
-            </div>
-          </>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>
   );
 }
 
-// ─── Order Detail ─────────────────────────────────────────────────────────────
-
-function OrderDetail({ order }: { order: SaleOrder }) {
-  return (
-    <div className="space-y-2">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Line Items</p>
-      {order.items.map(([menuItemId, name, quantity, unitPrice]) => (
-        <div key={menuItemId.toString()} className="flex items-center justify-between text-sm">
-          <span className="text-foreground">{name} × {quantity.toString()}</span>
-          <span className="text-muted-foreground">{formatCurrency(unitPrice)} ea · {formatCurrency(unitPrice * Number(quantity))}</span>
-        </div>
-      ))}
-
-      <Separator className="my-1" />
-
-      {/* Subtotal */}
-      <div className="flex justify-between text-sm">
-        <span className="text-muted-foreground">Subtotal</span>
-        <span className="text-foreground">{formatCurrency(order.subtotal)}</span>
-      </div>
-
-      {/* Discount */}
-      {order.discountAmount > 0 && (
-        <div className="flex justify-between text-sm">
-          <span className="text-primary flex items-center gap-1">
-            <Tag className="w-3 h-3" /> Discount
-          </span>
-          <span className="text-primary font-medium">-{formatCurrency(order.discountAmount)}</span>
-        </div>
-      )}
-
-      {/* Tax Breakdown */}
-      {order.taxBreakdown && order.taxBreakdown.length > 0 && (
-        <>
-          {order.taxBreakdown.map((tax, i) => (
-            <div key={i} className="flex justify-between text-sm">
-              <span className="text-muted-foreground">{tax.name} ({tax.rate}%)</span>
-              <span className="text-foreground">{formatCurrency(tax.amount)}</span>
-            </div>
-          ))}
-        </>
-      )}
-
-      <Separator className="my-1" />
-
-      {/* Grand Total */}
-      <div className="flex justify-between font-bold text-sm">
-        <span>Grand Total</span>
-        <span className="text-primary">{formatCurrency(order.totalAmount)}</span>
-      </div>
-
-      {order.note && (
-        <div className="mt-2 pt-2 border-t border-border/50">
-          <p className="text-xs text-muted-foreground">Note: {order.note}</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SalesPage() {
   const { identity } = useInternetIdentity();
@@ -516,15 +506,11 @@ export default function SalesPage() {
   }, [identity, navigate]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Page Header */}
+    <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-2xl font-bold text-foreground">Billing & Sales</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">
-          Create new orders and view sales history
-        </p>
+        <h1 className="text-2xl font-heading font-bold text-foreground">Billing & Sales</h1>
+        <p className="text-muted-foreground text-sm mt-1">Create orders and view sales history</p>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <NewOrderSection />
         <SalesHistorySection />

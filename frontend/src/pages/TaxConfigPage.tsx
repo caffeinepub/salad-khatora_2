@@ -9,9 +9,10 @@ import {
   useDeleteTaxConfig,
   useToggleTaxConfigActive,
   useCalculateTax,
+  TaxConfig,
+  TaxConfigInput,
+  TaxAppliesTo,
 } from '../hooks/useQueries';
-import type { TaxConfig, TaxConfigInput } from '../backend';
-import { TaxAppliesTo } from '../backend';
 import {
   Percent, Plus, Pencil, Trash2, Loader2, ToggleLeft, ToggleRight, Calculator,
 } from 'lucide-react';
@@ -278,7 +279,7 @@ export default function TaxConfigPage() {
                     </thead>
                     <tbody>
                       {taxConfigs.map(tc => (
-                        <tr key={tc.id.toString()} className="border-b border-border/50 hover:bg-accent/30 transition-colors">
+                        <tr key={tc.id} className="border-b border-border/50 hover:bg-accent/30 transition-colors">
                           <td className="py-3 px-3 font-semibold text-foreground">{tc.name}</td>
                           <td className="py-3 px-3 font-mono text-primary font-bold">{tc.rate}%</td>
                           <td className="py-3 px-3">

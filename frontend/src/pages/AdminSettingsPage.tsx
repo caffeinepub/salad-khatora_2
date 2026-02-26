@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Shield, UserX, UserCheck, Copy, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { Settings, Shield, UserX, UserCheck, Copy, CheckCircle, AlertTriangle, Loader2, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import {
@@ -26,7 +26,7 @@ import {
 
 export default function AdminSettingsPage() {
   const { identity } = useInternetIdentity();
-  const { data: adminPrincipal, isLoading: adminLoading } = useAdminPrincipal();
+  const { data: isCallerAdmin, isLoading: adminLoading } = useAdminPrincipal();
   const reassignAdmin = useReassignAdmin();
   const vacateAdmin = useVacateAdmin();
   const claimAdmin = useClaimAdminIfVacant();
@@ -36,8 +36,7 @@ export default function AdminSettingsPage() {
   const [copied, setCopied] = useState(false);
 
   const currentUserPrincipal = identity?.getPrincipal().toString() ?? '';
-  const isAdminVacant = !adminPrincipal || adminPrincipal === '';
-  const isCurrentUserAdmin = !!adminPrincipal && adminPrincipal === currentUserPrincipal;
+  const isCurrentUserAdmin = !!isCallerAdmin;
 
   const handleCopyPrincipal = async () => {
     if (!currentUserPrincipal) return;
@@ -79,7 +78,7 @@ export default function AdminSettingsPage() {
       toast.success('You are now the admin!');
     } catch (err: any) {
       const msg = err?.message ?? 'Failed to claim admin role.';
-      toast.error(msg.includes('already assigned') ? 'Admin role is already assigned to someone.' : msg);
+      toast.error(msg.includes('already assigned') ? 'Admin role is already assigned to someone else.' : msg);
     }
   };
 
@@ -110,31 +109,25 @@ export default function AdminSettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Shield className="h-4 w-4 text-primary" />
-            Current Admin
+            Admin Status
           </CardTitle>
-          <CardDescription>The principal ID of the current admin account</CardDescription>
+          <CardDescription>Your current admin access level</CardDescription>
         </CardHeader>
         <CardContent>
           {adminLoading ? (
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Loading...</span>
+              <span className="text-sm">Checking admin status...</span>
             </div>
-          ) : isAdminVacant ? (
-            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-              <AlertTriangle className="h-4 w-4" />
-              <span className="text-sm font-medium">No admin assigned — role is vacant</span>
+          ) : isCurrentUserAdmin ? (
+            <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg">
+              <Shield className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium text-primary">You are the admin</span>
             </div>
           ) : (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 p-3 bg-muted rounded-lg font-mono text-xs break-all">
-                <span className="flex-1">{adminPrincipal}</span>
-                {adminPrincipal === currentUserPrincipal && (
-                  <span className="shrink-0 text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-sans font-medium">
-                    You
-                  </span>
-                )}
-              </div>
+            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm font-medium">You do not have admin access</span>
             </div>
           )}
         </CardContent>
@@ -169,19 +162,28 @@ export default function AdminSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Claim Admin (if vacant) */}
-      {isAdminVacant && (
-        <Card className="border-primary/30">
+      {/* Claim Admin — shown to non-admins once loading is complete */}
+      {!adminLoading && !isCurrentUserAdmin && (
+        <Card className="border-primary/40 bg-primary/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <UserCheck className="h-4 w-4 text-primary" />
+              <Crown className="h-4 w-4 text-primary" />
               Claim Admin Role
             </CardTitle>
             <CardDescription>
-              The admin role is currently vacant. You can claim it to become the admin.
+              If the admin role is currently vacant, you can claim it to gain full administrative
+              access. If the role is already assigned to another account, this action will be rejected.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <div className="flex items-start gap-3 p-3 bg-background rounded-lg border border-border text-sm text-muted-foreground">
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-amber-500" />
+              <p>
+                Claiming admin gives you full control over this application, including managing
+                inventory, orders, customers, and settings. Only claim if you are the intended
+                administrator.
+              </p>
+            </div>
             <Button
               onClick={handleClaim}
               disabled={claimAdmin.isPending}
@@ -194,7 +196,7 @@ export default function AdminSettingsPage() {
                 </>
               ) : (
                 <>
-                  <UserCheck className="h-4 w-4 mr-2" />
+                  <Crown className="h-4 w-4 mr-2" />
                   Claim Admin Role
                 </>
               )}
@@ -203,7 +205,7 @@ export default function AdminSettingsPage() {
         </Card>
       )}
 
-      {/* Reassign Admin */}
+      {/* Reassign Admin — only for current admin */}
       {isCurrentUserAdmin && (
         <Card>
           <CardHeader>
@@ -255,7 +257,7 @@ export default function AdminSettingsPage() {
         </Card>
       )}
 
-      {/* Vacate Admin Role */}
+      {/* Vacate Admin Role — only for current admin */}
       {isCurrentUserAdmin && (
         <Card className="border-destructive/30">
           <CardHeader>
@@ -308,25 +310,6 @@ export default function AdminSettingsPage() {
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Info for non-admin logged-in users */}
-      {!isAdminVacant && !isCurrentUserAdmin && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3 text-muted-foreground">
-              <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5 text-amber-500" />
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-foreground">Admin role is assigned</p>
-                <p className="text-sm">
-                  The admin role is currently assigned to another account. Only the current admin can
-                  reassign or vacate the role. If you believe you should be the admin, ask the current
-                  admin to reassign the role to your principal ID shown above.
-                </p>
-              </div>
-            </div>
           </CardContent>
         </Card>
       )}

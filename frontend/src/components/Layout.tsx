@@ -17,6 +17,7 @@ import {
   Heart,
   Tag,
   Settings,
+  CalendarDays,
 } from 'lucide-react';
 import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { useQueryClient } from '@tanstack/react-query';
@@ -37,6 +38,7 @@ const navLinks = [
   { to: '/sales', label: 'Sales', icon: ShoppingCart },
   { to: '/customers', label: 'Customers', icon: Users },
   { to: '/subscriptions', label: 'Subscriptions', icon: CalendarCheck },
+  { to: '/delivery-calendar', label: 'Delivery Calendar', icon: CalendarDays },
   { to: '/alerts', label: 'Alerts', icon: Bell },
   { to: '/admin-settings', label: 'Admin Settings', icon: Settings },
 ];
