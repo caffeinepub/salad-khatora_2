@@ -1,0 +1,86 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 3,
+  "summary": "Salad Khatora app - Phase 1 in progress: admin authentication (email/password login), inventory management system (add ingredients with name, quantity, unit, cost price, supplier, low-stock threshold, auto total value calculation), and a dashboard with key stats and low-stock alerts. UI uses white and green theme, mobile-friendly.",
+  "architectural_notes": [
+    "White and green UI theme, fully mobile-friendly",
+    "App is named Salad Khatora"
+  ],
+  "known_issues": [],
+  "isFixRequest": false,
+  "imageRequirements": "## Required Images\n- Salad Khatora app logo — a fresh salad bowl with green leafy vegetables, minimal flat illustration style, transparent background (logo.dim_256x256.png)",
+  "existing_features": [
+    {
+      "id": "feature-build-an-admin-login-screen-on-the-frontend-with-email-and-password-fields-and-a-login-button-show-error-messages-for-invalid-credentials-on-successful-login-redirect-to-the-dashboard",
+      "title": "Build an admin login screen on the frontend with email and password fields and a Login button. Show error messages for invalid credentials. On successful login, redirect to the dashboard.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-an-inventory-management-page-on-the-frontend-displaying-all-ingredients-in-a-table-or-card-list-with-columns-for-name-quantity-unit-cost-price-supplier-low-stock-threshold-and-total-value-include-an-add-ingredient-form-modal-with-all-required-fields-support-editing-and-deleting-existing-ingredients-visually-highlight-rows-where-current-quantity-is-at-or-below-the-low-stock-threshold",
+      "title": "Build an Inventory Management page on the frontend displaying all ingredients in a table or card list with columns for name, quantity, unit, cost price, supplier, low-stock threshold, and total value. Include an Add Ingredient form/modal with all required fields. Support editing and deleting existing ingredients. Visually highlight rows where current quantity is at or below the low-stock threshold.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-dashboard-page-as-the-default-post-login-view-display-key-stat-cards-for-total-number-of-ingredients-total-inventory-value-sum-of-all-total-values-and-count-of-low-stock-items-show-a-low-stock-alerts-section-listing-all-ingredients-at-or-below-their-low-stock-threshold-with-name-current-quantity-unit-and-threshold-stats-must-reflect-current-backend-data",
+      "title": "Build a Dashboard page as the default post-login view. Display key stat cards for: total number of ingredients, total inventory value (sum of all total values), and count of low-stock items. Show a low-stock alerts section listing all ingredients at or below their low-stock threshold with name, current quantity, unit, and threshold. Stats must reflect current backend data.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-apply-a-consistent-white-and-green-visual-theme-across-all-pages-include-a-sidebar-or-top-navigation-for-routing-between-dashboard-and-inventory-pages-ensure-the-entire-app-is-fully-responsive-and-mobile-friendly-with-readable-typography-and-accessible-touch-targets-render-the-generated-logo-frontend-public-assets-generated-logo-png-in-the-navigation-header",
+      "title": "Apply a consistent white and green visual theme across all pages. Include a sidebar or top navigation for routing between Dashboard and Inventory pages. Ensure the entire app is fully responsive and mobile-friendly with readable typography and accessible touch targets. Render the generated logo (frontend/public/assets/generated/logo.png) in the navigation header.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Admin authentication with email/password login",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Inventory management: add ingredients with name, quantity, unit, cost price, supplier, low-stock threshold, auto total value calculation",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Dashboard with key stats and low-stock alerts",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Implement admin authentication in the backend with stored email/password credentials. Provide login and logout functions that return a session token or authenticated state. Protect all non-auth endpoints by requiring a valid session.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Implement an Inventory data model and CRUD operations in the backend. Each ingredient record must store: name (Text), quantity (Float), unit (Text), cost price per unit (Float), supplier (Text), and low-stock threshold (Float). The total value (quantity × cost price) must be auto-calculated and returned in list results. Provide functions to add, update, delete, and list ingredients.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Salad Khatora",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}

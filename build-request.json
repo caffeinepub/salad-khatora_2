@@ -1,0 +1,142 @@
+{
+  "kind": "build_request",
+  "title": "Salad Khatora – Phase 1: Auth, Inventory & Dashboard",
+  "projectName": "Salad Khatora",
+  "priority": "normal",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Implement admin authentication in the backend with stored email/password credentials. Provide login and logout functions that return a session token or authenticated state. Protect all non-auth endpoints by requiring a valid session.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "admin authentication (email/password login)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Admin can log in with a valid email and password",
+        "Invalid credentials are rejected with an error message",
+        "Session state is maintained across calls until logout",
+        "Logout clears the admin session"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Build an admin login screen on the frontend with email and password fields and a Login button. Show error messages for invalid credentials. On successful login, redirect to the dashboard.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "admin authentication (email/password login)"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Login form renders with email and password inputs",
+        "Error message appears when credentials are wrong",
+        "Successful login navigates the admin to the dashboard",
+        "Login page redirects to dashboard if already authenticated"
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Implement an Inventory data model and CRUD operations in the backend. Each ingredient record must store: name (Text), quantity (Float), unit (Text), cost price per unit (Float), supplier (Text), and low-stock threshold (Float). The total value (quantity × cost price) must be auto-calculated and returned in list results. Provide functions to add, update, delete, and list ingredients.",
+      "target": "backend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "add ingredients with name, quantity, unit, cost price, supplier, and low-stock threshold with auto total value calculation"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Ingredient records persist name, quantity, unit, cost price, supplier, and low-stock threshold",
+        "Total value is returned as quantity × cost price for each ingredient",
+        "Ingredients can be added, updated, deleted, and listed",
+        "Listing returns all fields including auto-calculated total value"
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "Build an Inventory Management page on the frontend displaying all ingredients in a table or card list with columns for name, quantity, unit, cost price, supplier, low-stock threshold, and total value. Include an Add Ingredient form/modal with all required fields. Support editing and deleting existing ingredients. Visually highlight rows where current quantity is at or below the low-stock threshold.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "add ingredients with name, quantity, unit, cost price, supplier, low-stock threshold, auto total value calculation"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Inventory table/list displays all ingredient fields including auto-calculated total value",
+        "Add Ingredient form accepts all required fields and saves to backend",
+        "Existing ingredients can be edited and changes are persisted",
+        "Ingredients can be deleted with a confirmation step",
+        "Ingredients at or below low-stock threshold are visually highlighted"
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "Build a Dashboard page as the default post-login view. Display key stat cards for: total number of ingredients, total inventory value (sum of all total values), and count of low-stock items. Show a low-stock alerts section listing all ingredients at or below their low-stock threshold with name, current quantity, unit, and threshold. Stats must reflect current backend data.",
+      "target": "both",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "Dashboard with key stats and low-stock alerts"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Dashboard shows total ingredient count, total inventory value, and low-stock item count as stat cards",
+        "Low-stock alerts section lists all ingredients at or below their threshold",
+        "Each alert shows ingredient name, current quantity, unit, and threshold",
+        "Dashboard is the default page after login"
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "Apply a consistent white and green visual theme across all pages. Include a sidebar or top navigation for routing between Dashboard and Inventory pages. Ensure the entire app is fully responsive and mobile-friendly with readable typography and accessible touch targets. Render the generated logo (frontend/public/assets/generated/logo.png) in the navigation header.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-1"
+        ],
+        "quotes": [
+          "white and green theme, fully mobile-friendly"
+        ]
+      },
+      "acceptanceCriteria": [
+        "Primary color palette uses white backgrounds with green accents throughout all pages",
+        "Navigation allows switching between Dashboard and Inventory pages",
+        "All pages are usable and well-laid-out on mobile screen sizes",
+        "Typography, spacing, and button sizes meet mobile usability standards",
+        "Logo is displayed in the navigation header"
+      ]
+    }
+  ],
+  "constraints": [
+    "Only admin authentication via email/password is in scope — no Internet Identity for this phase",
+    "All backend logic must reside in a single Motoko actor (backend/main.mo)",
+    "Do not modify any files under frontend/src/hooks/ or frontend/src/components/ui"
+  ],
+  "nonGoals": [
+    "Order management, sales tracking, or menu builder features",
+    "Multi-user roles or staff accounts",
+    "Real-time WebSocket updates",
+    "External supplier API integrations",
+    "Phase 2 or later features"
+  ],
+  "imageRequirements": {
+    "required": [
+      "Salad Khatora app logo — a fresh salad bowl with green leafy vegetables, minimal flat illustration style, transparent background (logo.dim_256x256.png)"
+    ],
+    "edits": []
+  }
+}

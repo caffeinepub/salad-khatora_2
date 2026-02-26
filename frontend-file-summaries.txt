@@ -1,0 +1,14 @@
+{
+  "frontend/src/index.css": "Global styles with a fresh white-and-green OKLCH color system, custom font imports (Plus Jakarta Sans + DM Sans), and design tokens for light/dark modes.",
+  "frontend/tailwind.config.js": "Extended Tailwind config with custom green primary palette, heading/body font families, additional border radii, and green glow shadow utilities.",
+  "frontend/src/hooks/useQueries.ts": "All React Query hooks for backend operations: user profile (get/save), admin check, inventory CRUD (list/add/update/delete), inventory stats, and low-stock items with proper cache invalidation.",
+  "frontend/src/App.tsx": "TanStack Router setup with root, login (unprotected), and protected routes (dashboard, inventory) wrapped in a shared Layout component; index redirects to /dashboard.",
+  "frontend/src/components/Layout.tsx": "Responsive app shell with sticky header (logo, nav links, logout), mobile hamburger menu, main content area, and branded footer with caffeine.ai attribution.",
+  "frontend/src/pages/LoginPage.tsx": "Login page with Internet Identity sign-in button, brand logo, feature highlights, loading/error states, and auto-redirect if already authenticated.",
+  "frontend/src/pages/DashboardPage.tsx": "Dashboard showing three stat cards (total items, total value, low-stock count), a low-stock alerts list, profile setup modal trigger, and refresh action.",
+  "frontend/src/pages/InventoryPage.tsx": "Full inventory management page with sortable desktop table and mobile card layout, search filtering, add/edit dialogs, delete confirmation, and low-stock visual highlighting.",
+  "frontend/src/components/AddIngredientForm.tsx": "Form for adding a new ingredient with all required fields, client-side validation, real-time total value preview, and success/loading states.",
+  "frontend/src/components/EditIngredientForm.tsx": "Pre-populated edit form for an existing ingredient with validation, total value preview, and save/cancel actions.",
+  "frontend/src/components/ProfileSetupModal.tsx": "First-login modal that prompts the admin to enter their name and saves it via the backend profile API; cannot be dismissed without completing setup.",
+  "frontend/src/lib/utils.ts": "Utility function `cn` combining clsx and tailwind-merge for conditional class name composition."
+}

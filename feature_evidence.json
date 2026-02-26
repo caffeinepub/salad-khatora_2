@@ -1,0 +1,89 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-build-an-admin-login-screen-on-the-frontend-with-email-and-password-fields-and-a-login-button-show-error-messages-for-invalid-credentials-on-successful-login-redirect-to-the-dashboard",
+      "featureTitle": "Build an admin login screen on the frontend with email and password fields and a Login button. Show error messages for invalid credentials. On successful login, redirect to the dashboard.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/pages/LoginPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-build-an-inventory-management-page-on-the-frontend-displaying-all-ingredients-in-a-table-or-card-list-with-columns-for-name-quantity-unit-cost-price-supplier-low-stock-threshold-and-total-value-include-an-add-ingredient-form-modal-with-all-required-fields-support-editing-and-deleting-existing-ingredients-visually-highlight-rows-where-current-quantity-is-at-or-below-the-low-stock-threshold",
+      "featureTitle": "Build an Inventory Management page on the frontend displaying all ingredients in a table or card list with columns for name, quantity, unit, cost price, supplier, low-stock threshold, and total value. Include an Add Ingredient form/modal with all required fields. Support editing and deleting existing ingredients. Visually highlight rows where current quantity is at or below the low-stock threshold.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/AddIngredientForm.tsx",
+        "frontend/src/components/EditIngredientForm.tsx",
+        "frontend/src/pages/InventoryPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-build-a-dashboard-page-as-the-default-post-login-view-display-key-stat-cards-for-total-number-of-ingredients-total-inventory-value-sum-of-all-total-values-and-count-of-low-stock-items-show-a-low-stock-alerts-section-listing-all-ingredients-at-or-below-their-low-stock-threshold-with-name-current-quantity-unit-and-threshold-stats-must-reflect-current-backend-data",
+      "featureTitle": "Build a Dashboard page as the default post-login view. Display key stat cards for: total number of ingredients, total inventory value (sum of all total values), and count of low-stock items. Show a low-stock alerts section listing all ingredients at or below their low-stock threshold with name, current quantity, unit, and threshold. Stats must reflect current backend data.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/pages/DashboardPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-apply-a-consistent-white-and-green-visual-theme-across-all-pages-include-a-sidebar-or-top-navigation-for-routing-between-dashboard-and-inventory-pages-ensure-the-entire-app-is-fully-responsive-and-mobile-friendly-with-readable-typography-and-accessible-touch-targets-render-the-generated-logo-frontend-public-assets-generated-logo-png-in-the-navigation-header",
+      "featureTitle": "Apply a consistent white and green visual theme across all pages. Include a sidebar or top navigation for routing between Dashboard and Inventory pages. Ensure the entire app is fully responsive and mobile-friendly with readable typography and accessible touch targets. Render the generated logo (frontend/public/assets/generated/logo.png) in the navigation header.",
+      "files": [
+        "frontend/src/App.tsx",
+        "frontend/src/components/Layout.tsx",
+        "frontend/src/index.css",
+        "frontend/tailwind.config.js"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
+      ],
+      "confidence": "high"
+    }
+  ]
+}

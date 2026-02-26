@@ -1,0 +1,127 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Salad Khatora – Phase 1: Auth, Inventory & Dashboard (Frontend)",
+  "requirements": [
+    {
+      "id": "REQ-2",
+      "summary": "Build admin login screen with email/password authentication",
+      "acceptanceCriteria": [
+        "Login form renders with email and password inputs",
+        "Error message appears when credentials are wrong",
+        "Successful login navigates the admin to the dashboard",
+        "Login page redirects to dashboard if already authenticated"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/LoginPage.tsx",
+          "operation": "create",
+          "description": "Create login page component with email and password input fields, login button, and error message display. On successful authentication, redirect to /dashboard. If already authenticated, redirect to /dashboard immediately. Use the authorization component to support admin authentication via Internet Identity. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Add route for /login pointing to LoginPage. Add route guard logic to redirect unauthenticated users to /login when accessing protected routes. Set /dashboard as the default route after authentication."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Build Inventory Management page with CRUD operations for ingredients",
+      "acceptanceCriteria": [
+        "Inventory table/list displays all ingredient fields including auto-calculated total value",
+        "Add Ingredient form accepts all required fields and saves to backend",
+        "Existing ingredients can be edited and changes are persisted",
+        "Ingredients can be deleted with a confirmation step",
+        "Ingredients at or below low-stock threshold are visually highlighted"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/InventoryPage.tsx",
+          "operation": "create",
+          "description": "Create inventory management page displaying all ingredients in a table with columns: name, quantity, unit, cost price, supplier, low-stock threshold, and total value. Visually highlight rows where quantity is at or below low-stock threshold using green accent colors. Include edit and delete actions for each row with confirmation dialog for delete. Call backend listInventory() to fetch data."
+        },
+        {
+          "path": "frontend/src/components/AddIngredientForm.tsx",
+          "operation": "create",
+          "description": "Create form component with input fields for: name (Text), quantity (Float), unit (Text), cost price per unit (Float), supplier (Text), and low-stock threshold (Float). Include submit button that calls backend addInventoryItem(). Display validation errors and success feedback. Use white background with green accent buttons matching the theme."
+        },
+        {
+          "path": "frontend/src/components/EditIngredientForm.tsx",
+          "operation": "create",
+          "description": "Create edit form component similar to AddIngredientForm but pre-populated with existing ingredient data. Submit button calls backend updateInventoryItem(). Include cancel action to close the form."
+        },
+        {
+          "path": "frontend/src/hooks/useInventory.ts",
+          "operation": "create",
+          "description": "Create custom hook using React Query to manage inventory data fetching and mutations. Provide functions: listInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem. Handle loading states, errors, and cache invalidation after mutations."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Add route for /inventory pointing to InventoryPage. Ensure route is protected and requires authentication via the authorization component."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Build Dashboard page with key stats and low-stock alerts",
+      "acceptanceCriteria": [
+        "Dashboard shows total ingredient count, total inventory value, and low-stock item count as stat cards",
+        "Low-stock alerts section lists all ingredients at or below their threshold",
+        "Each alert shows ingredient name, current quantity, unit, and threshold",
+        "Dashboard is the default page after login"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/DashboardPage.tsx",
+          "operation": "create",
+          "description": "Create dashboard page displaying three stat cards: total ingredient count, total inventory value (sum of all ingredient total values), and low-stock item count. Below stats, include a low-stock alerts section listing all ingredients at or below their low-stock threshold with name, current quantity, unit, and threshold. Call backend getInventoryStats() and getLowStockItems(). Use white background with green accents for stat cards and alerts."
+        },
+        {
+          "path": "frontend/src/hooks/useDashboardStats.ts",
+          "operation": "create",
+          "description": "Create custom hook using React Query to fetch dashboard statistics. Call backend getInventoryStats() for stat card data and getLowStockItems() for low-stock alerts. Handle loading and error states."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Add route for /dashboard pointing to DashboardPage. Set /dashboard as the default route (redirect from / to /dashboard when authenticated). Ensure route is protected and requires authentication."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Apply white and green theme, responsive layout, and navigation with logo",
+      "acceptanceCriteria": [
+        "Primary color palette uses white backgrounds with green accents throughout all pages",
+        "Navigation allows switching between Dashboard and Inventory pages",
+        "All pages are usable and well-laid-out on mobile screen sizes",
+        "Typography, spacing, and button sizes meet mobile usability standards",
+        "Logo is displayed in the navigation header"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "Update global CSS to define white and green color scheme. Set primary green color (e.g., #22c55e or similar green shade) for accents, buttons, and highlights. Ensure white backgrounds throughout. Configure typography for readability on mobile."
+        },
+        {
+          "path": "frontend/tailwind.config.js",
+          "operation": "modify",
+          "description": "Extend Tailwind theme to include custom green primary color and ensure responsive breakpoints are configured. Add green accent color to the theme palette for consistent usage across components."
+        },
+        {
+          "path": "frontend/src/components/Layout.tsx",
+          "operation": "create",
+          "description": "Create layout component with navigation header displaying the generated logo from frontend/public/assets/generated/logo.dim_256x256.png. Include navigation links for Dashboard and Inventory pages. Add logout button in the header. Ensure layout is fully responsive with mobile-friendly navigation (hamburger menu for mobile if needed). Use white background with green accents."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Wrap all protected routes (Dashboard, Inventory) with the Layout component to provide consistent navigation and logo display across pages. Ensure LoginPage is not wrapped with Layout."
+        }
+      ]
+    }
+  ]
+}
