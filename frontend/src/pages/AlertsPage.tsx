@@ -2,7 +2,7 @@ import React from 'react';
 import { useAlerts, useMarkAlertRead, useMarkAllAlertsRead, AlertType } from '../hooks/useQueries';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Bell, AlertTriangle, Calendar, Package, CalendarX, CheckCheck, Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -13,7 +13,7 @@ export default function AlertsPage() {
 
   const unreadCount = alerts.filter(a => !a.isRead).length;
 
-  const getAlertIcon = (type: string) => {
+  const getAlertIcon = (type: AlertType) => {
     switch (type) {
       case AlertType.lowStock:
         return <Package className="h-5 w-5 text-orange-500" />;
@@ -26,7 +26,7 @@ export default function AlertsPage() {
     }
   };
 
-  const getAlertBadge = (type: string) => {
+  const getAlertBadge = (type: AlertType) => {
     switch (type) {
       case AlertType.lowStock:
         return <Badge className="bg-orange-100 text-orange-800 border-orange-200">Low Stock</Badge>;
@@ -40,12 +40,12 @@ export default function AlertsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Alerts</h1>
+          <h1 className="text-2xl font-bold text-foreground">Alerts</h1>
           {unreadCount > 0 && (
-            <Badge className="bg-red-500 text-white">{unreadCount} unread</Badge>
+            <Badge className="bg-destructive text-destructive-foreground">{unreadCount} unread</Badge>
           )}
         </div>
         {unreadCount > 0 && (

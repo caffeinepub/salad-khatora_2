@@ -2,10 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-admin-settings-page-frontend-src-pages-adminsettingspage-tsx-so-that-when-the-current-user-does-not-have-admin-access-and-the-admin-role-is-vacant-i-e-getadminprincipal-returns-an-empty-null-principal-or-claimadminifvacant-would-succeed-the-page-displays-a-claim-admin-button-that-calls-useclaimadminifvacant-currently-the-page-only-shows-you-do-not-have-admin-access-without-offering-the-claim-option-the-logic-should-be-1-if-the-user-is-the-admin-show-the-full-admin-panel-reassign-vacate-2-if-the-user-is-not-the-admin-but-the-admin-role-is-vacant-show-the-claim-admin-if-vacant-button-with-explanatory-text-3-if-the-user-is-not-the-admin-and-an-admin-is-already-assigned-show-the-you-do-not-have-admin-access-message-only-show-success-or-error-feedback-after-the-claim-attempt",
-      "featureTitle": "Fix the Admin Settings page (`frontend/src/pages/AdminSettingsPage.tsx`) so that when the current user does not have admin access AND the admin role is vacant (i.e., `getAdminPrincipal` returns an empty/null principal or `claimAdminIfVacant` would succeed), the page displays a 'Claim Admin' button that calls `useClaimAdminIfVacant`. Currently the page only shows 'You do not have admin access' without offering the claim option. The logic should be: (1) if the user IS the admin — show the full admin panel (reassign, vacate); (2) if the user is NOT the admin but the admin role IS vacant — show the 'Claim Admin (if vacant)' button with explanatory text; (3) if the user is NOT the admin and an admin IS already assigned — show the 'You do not have admin access' message only. Show success or error feedback after the claim attempt.",
+      "featureId": "feature-fix-the-profile-setup-modal-in-frontend-src-components-profilesetupmodal-tsx-so-that-clicking-get-started-after-entering-a-name-does-not-freeze-or-get-stuck-investigate-and-resolve-the-issue-causing-the-modal-to-hang-on-submission-likely-the-createuserprofile-or-equivalent-mutation-call-is-not-resolving-or-the-loading-state-is-never-cleared-ensure-1-the-get-started-button-shows-a-loading-spinner-while-the-mutation-is-in-flight-2-on-success-the-modal-closes-and-the-user-proceeds-normally-3-on-error-a-visible-error-message-is-displayed-and-the-button-becomes-re-clickable-4-the-button-is-disabled-only-while-the-mutation-is-actively-pending-never-indefinitely",
+      "featureTitle": "Fix the Profile Setup Modal in `frontend/src/components/ProfileSetupModal.tsx` so that clicking 'Get Started' after entering a name does not freeze or get stuck. Investigate and resolve the issue causing the modal to hang on submission — likely the `createUserProfile` (or equivalent) mutation call is not resolving or the loading state is never cleared. Ensure: (1) the 'Get Started' button shows a loading spinner while the mutation is in-flight; (2) on success the modal closes and the user proceeds normally; (3) on error a visible error message is displayed and the button becomes re-clickable; (4) the button is disabled only while the mutation is actively pending, never indefinitely.",
       "files": [
-        "frontend/src/pages/AdminSettingsPage.tsx"
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/DashboardPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -16,7 +17,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-69"
+        "REQ-86"
       ],
       "confidence": "high"
     }

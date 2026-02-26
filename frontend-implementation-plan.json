@@ -1,23 +1,33 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix Admin Settings page to show Claim Admin button when admin role is vacant",
+  "title": "Fix Profile Setup Modal Freeze Bug",
   "requirements": [
     {
-      "id": "REQ-69",
-      "summary": "Add conditional UI logic to AdminSettingsPage to display a 'Claim Admin' button when the admin role is vacant, allowing non-admin users to claim the role. Show different UI states based on whether the user is admin, the role is vacant, or an admin is already assigned.",
+      "id": "REQ-86",
+      "summary": "Fix ProfileSetupModal freezing after entering name by ensuring the mutation resolves properly, loading states are managed correctly, and error handling allows retry",
       "acceptanceCriteria": [
-        "When the admin role is vacant, a logged-in non-admin user sees a 'Claim Admin' button on the Admin Settings page instead of (or in addition to) the 'You do not have admin access' message.",
-        "Clicking 'Claim Admin' calls `useClaimAdminIfVacant` and shows a success toast on completion or an error message on failure.",
-        "When the admin role is already assigned to another principal, the page shows only the 'You do not have admin access' message with no claim button.",
-        "When the logged-in user IS the admin, the full admin panel (reassign, vacate) is displayed as before.",
-        "The vacant-admin detection logic uses the value returned by `useAdminPrincipal` — if it is empty, null, or an empty string, the role is considered vacant."
+        "Typing a name in the 'Your Name' field and clicking 'Get Started' does not cause the modal to freeze indefinitely.",
+        "The 'Get Started' button displays a loading indicator while the profile save is in progress.",
+        "On a successful save the modal closes automatically and the dashboard is visible.",
+        "On a backend error an error message is shown inside the modal and the button becomes clickable again.",
+        "The button is never left permanently disabled after a submission attempt."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/AdminSettingsPage.tsx",
+          "path": "frontend/src/components/ProfileSetupModal.tsx",
           "operation": "modify",
-          "description": "Update the AdminSettingsPage component to add conditional rendering logic that detects when the admin role is vacant (by checking if the adminPrincipal from useAdminPrincipal is empty, null, or an empty string). Add a new UI section that displays when the current user is not admin AND the role is vacant, containing a 'Claim Admin' button that calls the useClaimAdminIfVacant mutation hook. Include explanatory text describing what claiming the admin role means. Show success/error toast messages after the claim attempt using the existing toast system. Ensure the three UI states are clearly separated: (1) user is admin → show full admin panel with reassign/vacate controls, (2) user is not admin but role is vacant → show 'Claim Admin' button with explanation, (3) user is not admin and role is occupied → show 'You do not have admin access' message only."
+          "description": "Fix the ProfileSetupModal component to properly handle the saveCallerUserProfile mutation lifecycle. Ensure: (1) the button is disabled only while isPending is true from the useSaveCallerUserProfile mutation hook; (2) display a loading spinner on the button during submission using isPending state; (3) on mutation success, invalidate the 'currentUserProfile' query key to trigger a refetch and close the modal automatically; (4) on mutation error, display the error message inside the modal using error.message from the mutation hook and keep the button enabled for retry; (5) prevent form submission if the name field is empty; (6) ensure onOpenChange is not blocked and the modal can be dismissed after save completes. Review the current implementation to identify if the mutation's onSuccess callback is missing query invalidation or if error states are not being displayed."
+        },
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Review and fix the useSaveCallerUserProfile mutation hook to ensure it returns proper isPending, isError, and error states. Verify the mutation function correctly calls actor.saveCallerUserProfile with a UserProfile object (not just a string). Ensure the onSuccess callback invalidates the 'currentUserProfile' query key using queryClient.invalidateQueries. Add proper error handling to surface backend errors to the UI. If the hook does not exist, create it following the pattern of other mutation hooks in this file, wrapping the backend's saveCallerUserProfile method."
+        },
+        {
+          "path": "frontend/src/pages/DashboardPage.tsx",
+          "operation": "modify",
+          "description": "Review the DashboardPage to ensure the showProfileSetup condition correctly uses isAuthenticated, !profileLoading, isFetched, and userProfile === null as per the authorization component usage instructions. Verify that the ProfileSetupModal is rendered with proper state management and that after a successful profile save, the modal closes and the dashboard content is shown without requiring a page refresh. Ensure the query refetch logic properly updates the userProfile state when the modal completes."
         }
       ]
     }

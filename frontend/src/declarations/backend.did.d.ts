@@ -10,6 +10,52 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface AuditLog {
+  'id' : bigint,
+  'action' : string,
+  'timestamp' : bigint,
+  'targetType' : string,
+  'details' : string,
+  'actorPrincipal' : string,
+  'targetId' : [] | [bigint],
+}
+export interface Customer {
+  'id' : bigint,
+  'name' : string,
+  'createdAt' : bigint,
+  'email' : string,
+  'loyaltyPoints' : bigint,
+  'phone' : string,
+}
+export interface DiscountApplicationResult {
+  'discountCode' : DiscountCode,
+  'discountAmount' : number,
+  'finalTotal' : number,
+}
+export interface DiscountCode {
+  'id' : bigint,
+  'discountValue' : number,
+  'expiresAt' : [] | [bigint],
+  'code' : string,
+  'createdAt' : bigint,
+  'discountType' : DiscountType,
+  'usedCount' : bigint,
+  'description' : string,
+  'isActive' : boolean,
+  'maxUses' : [] | [bigint],
+  'minimumOrderAmount' : number,
+}
+export interface DiscountCodeInput {
+  'discountValue' : number,
+  'expiresAt' : [] | [bigint],
+  'code' : string,
+  'discountType' : DiscountType,
+  'description' : string,
+  'maxUses' : [] | [bigint],
+  'minimumOrderAmount' : number,
+}
+export type DiscountType = { 'fixed' : null } |
+  { 'percentage' : null };
 export interface LoyaltyTransaction {
   'id' : bigint,
   'createdAt' : bigint,
@@ -35,17 +81,55 @@ export interface SaleOrderItem {
   'quantity' : bigint,
   'price' : number,
 }
+export interface StaffAccount {
+  'id' : bigint,
+  'principal' : Principal,
+  'name' : string,
+  'createdAt' : bigint,
+  'role' : StaffRole,
+  'isActive' : boolean,
+}
+export type StaffRole = { 'manager' : null } |
+  { 'admin' : null } |
+  { 'cashier' : null };
+export type TaxAppliesTo = { 'all' : null } |
+  { 'menuItems' : null } |
+  { 'combos' : null };
 export interface TaxBreakdown {
   'name' : string,
   'rate' : number,
   'amount' : number,
+}
+export interface TaxCalculationResult {
+  'breakdown' : Array<TaxBreakdown>,
+  'totalTaxAmount' : number,
+}
+export interface TaxConfig {
+  'id' : bigint,
+  'appliesTo' : TaxAppliesTo,
+  'name' : string,
+  'createdAt' : bigint,
+  'rate' : number,
+  'isActive' : boolean,
+}
+export interface TaxConfigInput {
+  'appliesTo' : TaxAppliesTo,
+  'name' : string,
+  'rate' : number,
 }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'applyDiscountCode' : ActorMethod<
+    [string, number],
+    DiscountApplicationResult
+  >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'calculateTax' : ActorMethod<[number, string], TaxCalculationResult>,
+  'createCustomer' : ActorMethod<[string, string, string], bigint>,
+  'createDiscountCode' : ActorMethod<[DiscountCodeInput], bigint>,
   'createSaleOrder' : ActorMethod<
     [
       Array<SaleOrderItem>,
@@ -60,12 +144,40 @@ export interface _SERVICE {
     ],
     bigint
   >,
+  'createStaffAccount' : ActorMethod<[Principal, string, StaffRole], undefined>,
+  'createTaxConfig' : ActorMethod<[TaxConfigInput], bigint>,
+  'deleteCustomer' : ActorMethod<[bigint], undefined>,
+  'deleteDiscountCode' : ActorMethod<[bigint], undefined>,
+  'deleteSaleOrder' : ActorMethod<[bigint], undefined>,
+  'deleteStaffAccount' : ActorMethod<[bigint], undefined>,
+  'deleteTaxConfig' : ActorMethod<[bigint], undefined>,
+  'getAuditLogs' : ActorMethod<[bigint, bigint], Array<AuditLog>>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getCustomer' : ActorMethod<[bigint], [] | [Customer]>,
   'getCustomerOrderHistory' : ActorMethod<[bigint], Array<SaleOrder>>,
+  'getCustomers' : ActorMethod<[], Array<Customer>>,
+  'getDiscountCode' : ActorMethod<[bigint], [] | [DiscountCode]>,
+  'getDiscountCodes' : ActorMethod<[], Array<DiscountCode>>,
   'getLoyaltyBalance' : ActorMethod<[bigint], bigint>,
   'getLoyaltyTransactions' : ActorMethod<[bigint], Array<LoyaltyTransaction>>,
+  'getMyRole' : ActorMethod<[], [] | [StaffRole]>,
+  'getSaleOrder' : ActorMethod<[bigint], [] | [SaleOrder]>,
+  'getSaleOrders' : ActorMethod<[], Array<SaleOrder>>,
+  'getStaffAccount' : ActorMethod<[bigint], [] | [StaffAccount]>,
+  'getStaffAccounts' : ActorMethod<[], Array<StaffAccount>>,
+  'getTaxConfig' : ActorMethod<[bigint], [] | [TaxConfig]>,
+  'getTaxConfigs' : ActorMethod<[], Array<TaxConfig>>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'redeemLoyaltyPoints' : ActorMethod<[bigint, bigint, number], undefined>,
+  'toggleDiscountCode' : ActorMethod<[bigint], undefined>,
+  'toggleTaxConfig' : ActorMethod<[bigint], undefined>,
+  'updateCustomer' : ActorMethod<[bigint, string, string, string], undefined>,
+  'updateDiscountCode' : ActorMethod<[bigint, DiscountCodeInput], undefined>,
+  'updateStaffAccount' : ActorMethod<
+    [bigint, string, StaffRole, boolean],
+    undefined
+  >,
+  'updateTaxConfig' : ActorMethod<[bigint, TaxConfigInput], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

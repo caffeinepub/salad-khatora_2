@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useCreateIngredient, useSuppliers, CreateIngredientRequest } from '../hooks/useQueries';
+import { useCreateIngredient, useSuppliers } from '../hooks/useQueries';
+import type { CreateIngredientRequest } from '../hooks/useQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

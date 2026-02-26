@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useUpdateIngredient, useSuppliers, Ingredient, UpdateIngredientRequest } from '../hooks/useQueries';
+import { useUpdateIngredient, useSuppliers } from '../hooks/useQueries';
+import type { Ingredient, UpdateIngredientRequest } from '../hooks/useQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +18,7 @@ export default function EditIngredientForm({ ingredient, onSuccess, onCancel }: 
   const { data: suppliers = [] } = useSuppliers();
 
   const [form, setForm] = useState<UpdateIngredientRequest>({
+    id: ingredient.id,
     name: ingredient.name,
     quantity: ingredient.quantity,
     unit: ingredient.unit,
@@ -36,7 +38,7 @@ export default function EditIngredientForm({ ingredient, onSuccess, onCancel }: 
       ...form,
       expiryDate: expiryDateStr ? new Date(expiryDateStr).getTime() : undefined,
     };
-    await updateIngredient.mutateAsync({ id: ingredient.id, item: payload });
+    await updateIngredient.mutateAsync(payload);
     onSuccess();
   };
 

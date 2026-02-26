@@ -1,14 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the Admin Settings page to show a "Claim Admin" button when the admin role is vacant, instead of only showing "You do not have admin access."
+**Goal:** Fix the Profile Setup Modal freezing/hanging indefinitely after the user enters a name and clicks "Get Started".
 
 **Planned changes:**
-- Update `AdminSettingsPage.tsx` to implement three-state conditional rendering:
-  1. If the current user IS the admin — show the full admin panel (reassign, vacate) as before
-  2. If the current user is NOT the admin and the admin role IS vacant (empty/null principal from `useAdminPrincipal`) — show a "Claim Admin (if vacant)" button with explanatory text
-  3. If the current user is NOT the admin and an admin IS already assigned — show only the "You do not have admin access" message
-- Wire the "Claim Admin" button to call `useClaimAdminIfVacant`
-- Show a success toast on successful claim or an error message on failure
+- Investigate and fix the `createUserProfile` (or equivalent) mutation call in `ProfileSetupModal.tsx` that is not resolving or not clearing its loading state
+- Ensure the "Get Started" button shows a loading spinner while the mutation is in-flight
+- Ensure the modal closes automatically on successful profile save
+- Display a visible error message inside the modal on failure and re-enable the button
+- Ensure the button is never left permanently disabled after a submission attempt
 
-**User-visible outcome:** A non-admin user visiting the Admin Settings page will now see a "Claim Admin" button when the admin role is vacant, allowing them to claim admin access directly from the page.
+**User-visible outcome:** Users can enter their name in the Profile Setup Modal and click "Get Started" without the modal freezing — it either closes on success or shows an error and allows retrying.

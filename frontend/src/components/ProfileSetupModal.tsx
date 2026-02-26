@@ -1,12 +1,17 @@
-import { useState } from 'react';
-import { Leaf, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UserProfile } from '../hooks/useQueries';
+import { Loader2 } from 'lucide-react';
+import type { UserProfile } from '../hooks/useQueries';
 
 interface ProfileSetupModalProps {
   onSave: (profile: UserProfile) => Promise<void>;
@@ -14,70 +19,41 @@ interface ProfileSetupModalProps {
 }
 
 export default function ProfileSetupModal({ onSave, isSaving }: ProfileSetupModalProps) {
-  const [open, setOpen] = useState(true);
   const [name, setName] = useState('');
-  const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) {
-      setError('Please enter your name');
-      return;
-    }
-    try {
-      await onSave({ name: name.trim() });
-      setOpen(false);
-    } catch {
-      setError('Failed to save profile. Please try again.');
-    }
+  const handleSave = async () => {
+    if (!name.trim()) return;
+    await onSave({ name: name.trim(), principal: '' });
   };
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="sm:max-w-sm" onInteractOutside={e => e.preventDefault()}>
+    <Dialog open>
+      <DialogContent className="sm:max-w-md" onInteractOutside={e => e.preventDefault()}>
         <DialogHeader>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-              <Leaf className="w-4 h-4 text-primary" />
-            </div>
-            <DialogTitle className="font-heading">Welcome!</DialogTitle>
-          </div>
+          <DialogTitle>Welcome! Set up your profile</DialogTitle>
           <DialogDescription>
-            Let's set up your admin profile. What should we call you?
+            Please enter your name to get started. This will be displayed throughout the app.
           </DialogDescription>
         </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="profile-name" className="text-sm font-medium">
-              Your Name <span className="text-destructive">*</span>
-            </Label>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1">
+            <Label htmlFor="profile-name">Your Name</Label>
             <Input
               id="profile-name"
-              placeholder="e.g. Chef Maria"
+              placeholder="Enter your name"
               value={name}
-              onChange={e => { setName(e.target.value); setError(''); }}
-              className={error ? 'border-destructive' : 'border-border'}
+              onChange={e => setName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSave()}
               autoFocus
             />
-            {error && <p className="text-xs text-destructive">{error}</p>}
           </div>
-
-          <Button
-            type="submit"
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-green"
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Saving...
-              </span>
-            ) : (
-              'Get Started'
-            )}
+        </div>
+        <DialogFooter>
+          <Button onClick={handleSave} disabled={isSaving || !name.trim()} className="w-full">
+            {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Get Started
           </Button>
-        </form>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

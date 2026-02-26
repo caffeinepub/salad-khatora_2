@@ -1,37 +1,37 @@
 {
   "kind": "build_request",
-  "title": "Fix Admin Settings page to show Claim Admin button when admin role is vacant",
-  "projectName": "Salad Khatora",
+  "title": "Fix Profile Setup Modal freezing after entering name",
   "priority": "high",
   "requirements": [
     {
-      "id": "REQ-69",
-      "text": "Fix the Admin Settings page (`frontend/src/pages/AdminSettingsPage.tsx`) so that when the current user does not have admin access AND the admin role is vacant (i.e., `getAdminPrincipal` returns an empty/null principal or `claimAdminIfVacant` would succeed), the page displays a 'Claim Admin' button that calls `useClaimAdminIfVacant`. Currently the page only shows 'You do not have admin access' without offering the claim option. The logic should be: (1) if the user IS the admin — show the full admin panel (reassign, vacate); (2) if the user is NOT the admin but the admin role IS vacant — show the 'Claim Admin (if vacant)' button with explanatory text; (3) if the user is NOT the admin and an admin IS already assigned — show the 'You do not have admin access' message only. Show success or error feedback after the claim attempt.",
+      "id": "REQ-86",
+      "text": "Fix the Profile Setup Modal in `frontend/src/components/ProfileSetupModal.tsx` so that clicking 'Get Started' after entering a name does not freeze or get stuck. Investigate and resolve the issue causing the modal to hang on submission — likely the `createUserProfile` (or equivalent) mutation call is not resolving or the loading state is never cleared. Ensure: (1) the 'Get Started' button shows a loading spinner while the mutation is in-flight; (2) on success the modal closes and the user proceeds normally; (3) on error a visible error message is displayed and the button becomes re-clickable; (4) the button is disabled only while the mutation is actively pending, never indefinitely.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-recent-1"
         ],
         "quotes": [
-          "showing you dont have admin access before it had option to claim admin access"
+          "after entering the name it is getting struck"
         ]
       },
       "acceptanceCriteria": [
-        "When the admin role is vacant, a logged-in non-admin user sees a 'Claim Admin' button on the Admin Settings page instead of (or in addition to) the 'You do not have admin access' message.",
-        "Clicking 'Claim Admin' calls `useClaimAdminIfVacant` and shows a success toast on completion or an error message on failure.",
-        "When the admin role is already assigned to another principal, the page shows only the 'You do not have admin access' message with no claim button.",
-        "When the logged-in user IS the admin, the full admin panel (reassign, vacate) is displayed as before.",
-        "The vacant-admin detection logic uses the value returned by `useAdminPrincipal` — if it is empty, null, or an empty string, the role is considered vacant."
+        "Typing a name in the 'Your Name' field and clicking 'Get Started' does not cause the modal to freeze indefinitely.",
+        "The 'Get Started' button displays a loading indicator while the profile save is in progress.",
+        "On a successful save the modal closes automatically and the dashboard is visible.",
+        "On a backend error an error message is shown inside the modal and the button becomes clickable again.",
+        "The button is never left permanently disabled after a submission attempt."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files listed in frontend.immutablePaths.",
-    "Do not alter backend logic — the fix is purely in the frontend AdminSettingsPage component."
+    "Do not modify files listed in frontend.immutablePaths (useInternetIdentity.ts, useActor.ts, main.tsx, components/ui).",
+    "Do not change the backend profile storage logic unless the root cause is a backend bug."
   ],
   "nonGoals": [
-    "Adding new backend endpoints or changing admin role logic in the Motoko actor.",
-    "Changing the visual theme or layout of the Admin Settings page beyond the required conditional UI."
+    "Redesigning the Profile Setup Modal UI beyond fixing the freeze bug.",
+    "Adding new profile fields.",
+    "Changes to any other page or component unrelated to the modal freeze."
   ],
   "imageRequirements": {
     "required": [],

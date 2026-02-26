@@ -1,7 +1,7 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T10:42:39.125Z",
+  "generatedAt": "2026-02-26T13:43:43.409Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
@@ -11,14 +11,17 @@
     "implemented": 1,
     "items": [
       {
-        "id": "REQ-69",
-        "summary": "Fix the Admin Settings page (`frontend/src/pages/AdminSettingsPage.tsx`) so that when the current user does not have admin access AND the admin role is vacant (i.e., `getAdminPrincipal` returns an empty/null principal or `claimAdminIfVacant` would succeed), the page displays a 'Claim Admin' button that calls `useClaimAdminIfVacant`. Currently the page only shows 'You do not have admin access' without offering the claim option. The logic should be: (1) if the user IS the admin — show the full admin panel (reassign, vacate); (2) if the user is NOT the admin but the admin role IS vacant — show the 'Claim Admin (if vacant)' button with explanatory text; (3) if the user is NOT the admin and an admin IS already assigned — show the 'You do not have admin access' message only. Show success or error feedback after the claim attempt.",
+        "id": "REQ-86",
+        "summary": "Fix the Profile Setup Modal in `frontend/src/components/ProfileSetupModal.tsx` so that clicking 'Get Started' after entering a name does not freeze or get stuck. Investigate and resolve the issue causing the modal to hang on submission — likely the `createUserProfile` (or equivalent) mutation call is not resolving or the loading state is never cleared. Ensure: (1) the 'Get Started' button shows a loading spinner while the mutation is in-flight; (2) on success the modal closes and the user proceeds normally; (3) on error a visible error message is displayed and the button becomes re-clickable; (4) the button is disabled only while the mutation is actively pending, never indefinitely.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/AdminSettingsPage.tsx"
+          "frontend/src/components/ProfileSetupModal.tsx",
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/DashboardPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/AdminSettingsPage.tsx"
+          "frontend/src/hooks/useQueries.ts",
+          "frontend/src/pages/DashboardPage.tsx"
         ]
       }
     ]
@@ -28,7 +31,11 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/pages/AdminSettingsPage.tsx",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/DashboardPage.tsx",
+    "frontend/src/pages/SalesPage.tsx",
+    "frontend/src/pages/SalesReportsPage.tsx",
+    "frontend/src/pages/WasteLogPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

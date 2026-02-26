@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 21,
-  "summary": "Salad Khatora app — Phase 3 (Sales & Revenue: Discounts, Tax Config, Sales Reports) deployed. Now building Phase 4 Customer & Subscriptions features: Customer loyalty points (earn per order, redeem for discounts), Subscription delivery calendar (visual schedule of upcoming deliveries), and Customer order history (full purchase timeline on customer profiles).",
+  "projectStateVersion": 29,
+  "summary": "Salad Khatora app — Phase 4 (Customer & Subscriptions: Loyalty Points, Delivery Calendar, Order History) deployed. Now building Phase 5 Admin & Usability features: Role-based staff accounts (cashier, manager, admin), Activity/audit log (track who made changes and when), and Dark mode toggle.",
   "architectural_notes": [
     "White and green UI theme, fully mobile-friendly",
     "App is named Salad Khatora",
@@ -9,7 +9,8 @@
   ],
   "known_issues": [
     "Admin access is tied to Internet Identity principal; users may lose access if they switch login methods or devices",
-    "Admin access page shows 'no admin access' error without offering the 'Claim Admin' option when admin role is vacant"
+    "Admin access page shows 'no admin access' error without offering the 'Claim Admin' option when admin role is vacant",
+    "Staff account creation modal freezes/gets stuck after entering the name field"
   ],
   "isFixRequest": true,
   "existing_features": [
@@ -298,6 +299,46 @@
       "title": "Fix the Admin Settings page (`frontend/src/pages/AdminSettingsPage.tsx`) so that when the current user does not have admin access AND the admin role is vacant (i.e., `getAdminPrincipal` returns an empty/null principal or `claimAdminIfVacant` would succeed), the page displays a 'Claim Admin' button that calls `useClaimAdminIfVacant`. Currently the page only shows 'You do not have admin access' without offering the claim option. The logic should be: (1) if the user IS the admin — show the full admin panel (reassign, vacate); (2) if the user is NOT the admin but the admin role IS vacant — show the 'Claim Admin (if vacant)' button with explanatory text; (3) if the user is NOT the admin and an admin IS already assigned — show the 'You do not have admin access' message only. Show success or error feedback after the claim attempt.",
       "reqIds": [
         "REQ-69"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-react-query-hooks-in-frontend-src-hooks-usequeries-ts-for-all-new-backend-staff-account-and-audit-log-operations-usestaffaccounts-query-usestaffaccount-query-by-id-usemyrole-query-usecreatestaffaccount-mutation-useupdatestaffaccount-mutation-usedeletestaffaccount-mutation-useauditlogs-query-takes-limit-and-offset-params-follow-the-same-patterns-as-existing-hooks-actor-based-calls-proper-query-keys-cache-invalidation-on-mutations-mutation-hooks-for-create-update-and-delete-should-invalidate-staffaccounts-on-success",
+      "title": "Add React Query hooks in `frontend/src/hooks/useQueries.ts` for all new backend staff account and audit log operations: `useStaffAccounts` (query), `useStaffAccount` (query by id), `useMyRole` (query), `useCreateStaffAccount` (mutation), `useUpdateStaffAccount` (mutation), `useDeleteStaffAccount` (mutation), `useAuditLogs` (query — takes limit and offset params). Follow the same patterns as existing hooks (actor-based calls, proper query keys, cache invalidation on mutations). Mutation hooks for create, update, and delete should invalidate `['staffAccounts']` on success.",
+      "reqIds": [
+        "REQ-73"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-a-staff-accounts-management-page-accessible-at-staff-display-all-staff-accounts-in-a-table-with-columns-for-name-principal-truncated-role-badge-cashier-manager-admin-with-distinct-colours-status-active-inactive-badge-and-created-date-include-an-add-staff-account-modal-with-fields-principal-id-text-input-name-text-input-and-role-selector-cashier-manager-admin-support-editing-name-role-isactive-toggle-and-deleting-existing-staff-accounts-with-a-confirmation-dialog-the-page-must-be-restricted-to-admin-users-redirect-non-admins-to-dashboard-add-a-staff-accounts-navigation-link-in-the-layout-sidebar-under-an-admin-section",
+      "title": "Build a Staff Accounts management page accessible at `/staff`. Display all staff accounts in a table with columns for: name, principal (truncated), role badge (Cashier/Manager/Admin with distinct colours), status (Active/Inactive badge), and created date. Include an 'Add Staff Account' modal with fields: principal ID (text input), name (text input), and role selector (#cashier, #manager, #admin). Support editing (name, role, isActive toggle) and deleting existing staff accounts with a confirmation dialog. The page must be restricted to admin users (redirect non-admins to dashboard). Add a 'Staff Accounts' navigation link in the Layout sidebar under an 'Admin' section.",
+      "reqIds": [
+        "REQ-74"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-build-an-activity-log-page-accessible-at-audit-log-display-audit-log-entries-in-a-paginated-table-20-per-page-with-columns-for-timestamp-formatted-date-time-actor-principal-truncated-action-target-type-target-id-if-set-and-details-show-newest-entries-first-include-a-load-more-button-or-simple-pagination-controls-the-page-must-be-restricted-to-admin-users-redirect-non-admins-to-dashboard-add-an-activity-log-navigation-link-in-the-layout-sidebar-under-the-admin-section",
+      "title": "Build an Activity Log page accessible at `/audit-log`. Display audit log entries in a paginated table (20 per page) with columns for: timestamp (formatted date/time), actor (principal, truncated), action, target type, target ID (if set), and details. Show newest entries first. Include a 'Load More' button or simple pagination controls. The page must be restricted to admin users (redirect non-admins to dashboard). Add an 'Activity Log' navigation link in the Layout sidebar under the 'Admin' section.",
+      "reqIds": [
+        "REQ-75"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-dark-mode-toggle-in-the-application-add-a-toggle-button-sun-moon-icon-in-the-layout-header-that-switches-between-light-and-dark-themes-persist-the-user-s-preference-in-localstorage-so-it-survives-page-refreshes-the-toggle-must-apply-a-dark-class-to-the-html-element-leveraging-the-existing-dark-mode-css-custom-properties-already-defined-in-frontend-src-index-css-and-frontend-index-css-the-themeprovider-in-frontend-src-app-tsx-should-be-wired-to-honour-the-persisted-preference-on-initial-load",
+      "title": "Implement a dark mode toggle in the application. Add a toggle button (sun/moon icon) in the Layout header that switches between light and dark themes. Persist the user's preference in localStorage so it survives page refreshes. The toggle must apply a `dark` class to the `<html>` element, leveraging the existing dark mode CSS custom properties already defined in `frontend/src/index.css` and `frontend/index.css`. The ThemeProvider in `frontend/src/App.tsx` should be wired to honour the persisted preference on initial load.",
+      "reqIds": [
+        "REQ-76"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-fix-the-profile-setup-modal-in-frontend-src-components-profilesetupmodal-tsx-so-that-clicking-get-started-after-entering-a-name-does-not-freeze-or-get-stuck-investigate-and-resolve-the-issue-causing-the-modal-to-hang-on-submission-likely-the-createuserprofile-or-equivalent-mutation-call-is-not-resolving-or-the-loading-state-is-never-cleared-ensure-1-the-get-started-button-shows-a-loading-spinner-while-the-mutation-is-in-flight-2-on-success-the-modal-closes-and-the-user-proceeds-normally-3-on-error-a-visible-error-message-is-displayed-and-the-button-becomes-re-clickable-4-the-button-is-disabled-only-while-the-mutation-is-actively-pending-never-indefinitely",
+      "title": "Fix the Profile Setup Modal in `frontend/src/components/ProfileSetupModal.tsx` so that clicking 'Get Started' after entering a name does not freeze or get stuck. Investigate and resolve the issue causing the modal to hang on submission — likely the `createUserProfile` (or equivalent) mutation call is not resolving or the loading state is never cleared. Ensure: (1) the 'Get Started' button shows a loading spinner while the mutation is in-flight; (2) on success the modal closes and the user proceeds normally; (3) on error a visible error message is displayed and the button becomes re-clickable; (4) the button is disabled only while the mutation is actively pending, never indefinitely.",
+      "reqIds": [
+        "REQ-86"
       ],
       "version": 1
     }
@@ -662,6 +703,120 @@
       "summary": "Generate an updated `migration.mo` file that carries over all existing stable state (userProfiles, ingredients, menuItems, salesOrders, customers, subscriptions, alerts, suppliers, purchaseOrders, wasteLogs, comboDeal, discountCodes, taxConfigs, and all their ID counters) and initialises empty collections for the new loyaltyTransactions map and its ID counter. Migrate existing Customer records to include a `loyaltyPoints` field defaulting to 0. Migrate existing SaleOrder records to include `customerId` as null/absent.",
       "reqIds": [
         "REQ-64"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-67",
+      "summary": "Role-based staff accounts — separate access levels for cashier, manager, and admin roles",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-68",
+      "summary": "Activity/audit log — track who made changes and when across the app",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-69",
+      "summary": "Dark mode toggle — allow users to switch between light and dark UI themes",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-70",
+      "summary": "Extend the backend actor to support role-based staff accounts. Add a `StaffRole` variant type with values: `#cashier`, `#manager`, `#admin`. Add a `StaffAccount` type with fields: id (Nat), principal (Principal), name (Text), role (StaffRole), isActive (Bool), createdAt (Int). Implement: `createStaffAccount(principal: Principal, name: Text, role: StaffRole)` (admin only), `getStaffAccounts` (returns all, admin only), `getStaffAccount(id: Nat)` (admin only), `updateStaffAccount(id: Nat, name: Text, role: StaffRole, isActive: Bool)` (admin only), `deleteStaffAccount(id: Nat)` (admin only), and `getMyRole()` (public query — returns the role of the calling principal, or null if not a staff member). The existing admin principal always implicitly has the `#admin` role. All write operations must be restricted to admin role. Persist staffAccounts in stable state.",
+      "reqIds": [
+        "REQ-70"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-71",
+      "summary": "Extend the backend actor to support an Activity/Audit Log. Add an `AuditLog` type with fields: id (Nat), actor (Text — principal as Text), action (Text — e.g. 'createMenuItem', 'deleteIngredient'), targetType (Text — e.g. 'MenuItem', 'Ingredient'), targetId (optional Nat), details (Text — human-readable summary of the change), timestamp (Int — Unix timestamp nanoseconds). Implement: `getAuditLogs(limit: Nat, offset: Nat)` (returns paginated logs newest-first, admin only). Add a private helper `logAudit(action: Text, targetType: Text, targetId: ?Nat, details: Text)` that records an entry with the caller's principal. Call `logAudit` from all write operations (create, update, delete, toggle, status change) across all existing domains: ingredients, menu items, sale orders, customers, subscriptions, suppliers, purchase orders, waste logs, combo deals, discount codes, tax configs, staff accounts, and admin role changes. Persist auditLogs in stable state.",
+      "reqIds": [
+        "REQ-71"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-72",
+      "summary": "Generate an updated `migration.mo` file that carries over all existing stable state (userProfiles, ingredients, menuItems, salesOrders, customers, subscriptions, alerts, suppliers, purchaseOrders, wasteLogs, comboDeal, discountCodes, taxConfigs, loyaltyTransactions and all their ID counters) and initialises empty collections for the new `staffAccounts` map, `auditLogs` map, and their respective ID counters.",
+      "reqIds": [
+        "REQ-72"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-73",
+      "summary": "Verify and fix the backend actor in `backend/main.mo` to fully implement the staff accounts feature. Ensure stable declarations exist for `staffAccounts` (HashMap/map of Nat → StaffAccount) and `staffAccountIdCounter` (Nat). Confirm `createStaffAccount`, `getStaffAccounts`, `getStaffAccount`, `updateStaffAccount`, `deleteStaffAccount`, and `getMyRole` are all present, correctly typed, and that write operations enforce admin-only access. The existing admin principal must implicitly return `#admin` from `getMyRole`. Ensure all write operations call `logAudit`.",
+      "reqIds": [
+        "REQ-77"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-74",
+      "summary": "Verify and fix the backend actor in `backend/main.mo` to fully implement the audit log feature. Ensure stable declarations exist for `auditLogs` (map of Nat → AuditLog) and `auditLogIdCounter` (Nat). Confirm the private helper `logAudit(action, targetType, targetId, details)` records the caller's principal and current timestamp. Confirm `getAuditLogs(limit, offset)` returns paginated entries newest-first and is admin-only. Verify that `logAudit` is called from ALL write operations across all domains: ingredients, menu items, sale orders, customers, subscriptions, suppliers, purchase orders, waste logs, combo deals, discount codes, tax configs, staff accounts, and admin role changes.",
+      "reqIds": [
+        "REQ-78"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-75",
+      "summary": "Generate an updated `backend/migration.mo` that carries over all existing stable state (userProfiles, ingredients, menuItems, salesOrders, customers, subscriptions, alerts, suppliers, purchaseOrders, wasteLogs, comboDeal, discountCodes, taxConfigs, loyaltyTransactions and all their ID counters) and initialises empty collections for `staffAccounts`, `auditLogs`, and their respective ID counters (`staffAccountIdCounter`, `auditLogIdCounter`). This migration must be safe to run on a canister that already has the prior state from migration version targeting loyalty transactions.",
+      "reqIds": [
+        "REQ-79"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-76",
+      "summary": "Verify and fix the React Query hooks in `frontend/src/hooks/useQueries.ts` for all staff account and audit log operations: `useStaffAccounts`, `useStaffAccount` (by id), `useMyRole`, `useCreateStaffAccount`, `useUpdateStaffAccount`, `useDeleteStaffAccount`, and `useAuditLogs` (takes limit and offset). Ensure each hook calls the correct actor method, uses appropriate query keys, and that mutation hooks for create, update, and delete invalidate `['staffAccounts']` on success. `useAuditLogs` should use query key `['auditLogs', limit, offset]`.",
+      "reqIds": [
+        "REQ-80"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-77",
+      "summary": "Verify and fix the Staff Accounts management page at `frontend/src/pages/StaffAccountsPage.tsx`. The page must: fetch staff accounts via `useStaffAccounts`; display them in a table with columns for name, principal (truncated to 12 chars with ellipsis), role badge (Cashier=blue, Manager=orange, Admin=green), status (Active/Inactive badge), and created date (formatted); include an 'Add Staff Account' modal with fields for principal ID, name, and role selector (`#cashier`, `#manager`, `#admin`) that submits via `useCreateStaffAccount`; support editing (name, role, isActive toggle) via `useUpdateStaffAccount`; support deleting with a confirmation dialog via `useDeleteStaffAccount`. The page must redirect non-admin users to `/dashboard` using `useMyRole`. The 'Staff Accounts' link must appear in the Layout sidebar under an 'Admin' section.",
+      "reqIds": [
+        "REQ-81"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-78",
+      "summary": "Verify and fix the Activity Log page at `frontend/src/pages/AuditLogPage.tsx`. The page must: fetch audit log entries via `useAuditLogs(limit, offset)` starting with limit=20 and offset=0; display entries in a table with columns for timestamp (formatted date/time), actor (principal truncated to 12 chars), action (with a colour-coded badge), target type, target ID (if set, otherwise '—'), and details; show newest entries first; include a 'Load More' button that increments offset by 20 and appends additional rows; redirect non-admin users to `/dashboard` using `useMyRole`. The 'Activity Log' link must appear in the Layout sidebar under the 'Admin' section.",
+      "reqIds": [
+        "REQ-82"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-79",
+      "summary": "Verify and fix the dark mode toggle implementation across the application. Ensure `frontend/src/hooks/useDarkMode.ts` correctly reads the persisted preference from `localStorage` on initialisation and applies/removes the `dark` class on the `<html>` element. Ensure `frontend/src/App.tsx` calls the hook (or a ThemeProvider that uses it) on mount so the correct theme is applied before first render. Ensure the toggle button (sun/moon icon) in `frontend/src/components/Layout.tsx` uses `useDarkMode` and visually reflects the current theme. Verify that toggling persists to `localStorage` and survives a page refresh.",
+      "reqIds": [
+        "REQ-83"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-80",
+      "summary": "Add a backend function `resetAdminForTesting()` — or more precisely, update the backend actor's `postUpgrade` or stable initialisation logic so that on the next deployment the stored admin principal is cleared (set to null/vacant), allowing any authenticated user to call `claimAdminIfVacant` and become the first admin. Alternatively, expose a one-time `clearAdminPrincipal()` function that clears the stored admin principal unconditionally (no caller restriction), intended only for recovery. The safest approach is to clear the `adminPrincipal` stable variable in the migration so it initialises as vacant on the next canister upgrade.",
+      "reqIds": [
+        "REQ-84"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-81",
+      "summary": "Update `backend/migration.mo` to carry over all existing stable state unchanged AND explicitly reset the `adminPrincipal` field to the vacant/null state during migration, so that after the canister upgrade no admin is assigned and the role is open to be claimed.",
+      "reqIds": [
+        "REQ-85"
       ],
       "status": "pending"
     }

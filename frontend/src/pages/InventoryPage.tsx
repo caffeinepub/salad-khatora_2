@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import {
   useIngredients,
   useDeleteIngredient,
-  Ingredient,
 } from '../hooks/useQueries';
+import type { Ingredient } from '../hooks/useQueries';
 import AddIngredientForm from '../components/AddIngredientForm';
 import EditIngredientForm from '../components/EditIngredientForm';
 import { Button } from '@/components/ui/button';
@@ -34,9 +34,12 @@ export default function InventoryPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Inventory</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Inventory</h1>
+          <p className="text-muted-foreground text-sm mt-1">Manage your ingredients and stock levels</p>
+        </div>
         <Button onClick={() => setShowAddDialog(true)}>
           <Plus className="mr-2 h-4 w-4" /> Add Ingredient
         </Button>

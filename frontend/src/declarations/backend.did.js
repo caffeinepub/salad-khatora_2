@@ -8,20 +8,87 @@
 
 import { IDL } from '@icp-sdk/core/candid';
 
+export const DiscountType = IDL.Variant({
+  'fixed' : IDL.Null,
+  'percentage' : IDL.Null,
+});
+export const DiscountCode = IDL.Record({
+  'id' : IDL.Nat,
+  'discountValue' : IDL.Float64,
+  'expiresAt' : IDL.Opt(IDL.Int),
+  'code' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'discountType' : DiscountType,
+  'usedCount' : IDL.Nat,
+  'description' : IDL.Text,
+  'isActive' : IDL.Bool,
+  'maxUses' : IDL.Opt(IDL.Nat),
+  'minimumOrderAmount' : IDL.Float64,
+});
+export const DiscountApplicationResult = IDL.Record({
+  'discountCode' : DiscountCode,
+  'discountAmount' : IDL.Float64,
+  'finalTotal' : IDL.Float64,
+});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
   'guest' : IDL.Null,
+});
+export const TaxBreakdown = IDL.Record({
+  'name' : IDL.Text,
+  'rate' : IDL.Float64,
+  'amount' : IDL.Float64,
+});
+export const TaxCalculationResult = IDL.Record({
+  'breakdown' : IDL.Vec(TaxBreakdown),
+  'totalTaxAmount' : IDL.Float64,
+});
+export const DiscountCodeInput = IDL.Record({
+  'discountValue' : IDL.Float64,
+  'expiresAt' : IDL.Opt(IDL.Int),
+  'code' : IDL.Text,
+  'discountType' : DiscountType,
+  'description' : IDL.Text,
+  'maxUses' : IDL.Opt(IDL.Nat),
+  'minimumOrderAmount' : IDL.Float64,
 });
 export const SaleOrderItem = IDL.Record({
   'itemId' : IDL.Nat,
   'quantity' : IDL.Nat,
   'price' : IDL.Float64,
 });
-export const TaxBreakdown = IDL.Record({
+export const StaffRole = IDL.Variant({
+  'manager' : IDL.Null,
+  'admin' : IDL.Null,
+  'cashier' : IDL.Null,
+});
+export const TaxAppliesTo = IDL.Variant({
+  'all' : IDL.Null,
+  'menuItems' : IDL.Null,
+  'combos' : IDL.Null,
+});
+export const TaxConfigInput = IDL.Record({
+  'appliesTo' : TaxAppliesTo,
   'name' : IDL.Text,
   'rate' : IDL.Float64,
-  'amount' : IDL.Float64,
+});
+export const AuditLog = IDL.Record({
+  'id' : IDL.Nat,
+  'action' : IDL.Text,
+  'timestamp' : IDL.Int,
+  'targetType' : IDL.Text,
+  'details' : IDL.Text,
+  'actorPrincipal' : IDL.Text,
+  'targetId' : IDL.Opt(IDL.Nat),
+});
+export const Customer = IDL.Record({
+  'id' : IDL.Nat,
+  'name' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'email' : IDL.Text,
+  'loyaltyPoints' : IDL.Nat,
+  'phone' : IDL.Text,
 });
 export const SaleOrder = IDL.Record({
   'id' : IDL.Nat,
@@ -43,10 +110,38 @@ export const LoyaltyTransaction = IDL.Record({
   'points' : IDL.Int,
   'reason' : IDL.Text,
 });
+export const StaffAccount = IDL.Record({
+  'id' : IDL.Nat,
+  'principal' : IDL.Principal,
+  'name' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'role' : StaffRole,
+  'isActive' : IDL.Bool,
+});
+export const TaxConfig = IDL.Record({
+  'id' : IDL.Nat,
+  'appliesTo' : TaxAppliesTo,
+  'name' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'rate' : IDL.Float64,
+  'isActive' : IDL.Bool,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'applyDiscountCode' : IDL.Func(
+      [IDL.Text, IDL.Float64],
+      [DiscountApplicationResult],
+      ['query'],
+    ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'calculateTax' : IDL.Func(
+      [IDL.Float64, IDL.Text],
+      [TaxCalculationResult],
+      ['query'],
+    ),
+  'createCustomer' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Nat], []),
+  'createDiscountCode' : IDL.Func([DiscountCodeInput], [IDL.Nat], []),
   'createSaleOrder' : IDL.Func(
       [
         IDL.Vec(SaleOrderItem),
@@ -62,39 +157,135 @@ export const idlService = IDL.Service({
       [IDL.Nat],
       [],
     ),
+  'createStaffAccount' : IDL.Func([IDL.Principal, IDL.Text, StaffRole], [], []),
+  'createTaxConfig' : IDL.Func([TaxConfigInput], [IDL.Nat], []),
+  'deleteCustomer' : IDL.Func([IDL.Nat], [], []),
+  'deleteDiscountCode' : IDL.Func([IDL.Nat], [], []),
+  'deleteSaleOrder' : IDL.Func([IDL.Nat], [], []),
+  'deleteStaffAccount' : IDL.Func([IDL.Nat], [], []),
+  'deleteTaxConfig' : IDL.Func([IDL.Nat], [], []),
+  'getAuditLogs' : IDL.Func([IDL.Nat, IDL.Nat], [IDL.Vec(AuditLog)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getCustomer' : IDL.Func([IDL.Nat], [IDL.Opt(Customer)], ['query']),
   'getCustomerOrderHistory' : IDL.Func(
       [IDL.Nat],
       [IDL.Vec(SaleOrder)],
       ['query'],
     ),
+  'getCustomers' : IDL.Func([], [IDL.Vec(Customer)], ['query']),
+  'getDiscountCode' : IDL.Func([IDL.Nat], [IDL.Opt(DiscountCode)], ['query']),
+  'getDiscountCodes' : IDL.Func([], [IDL.Vec(DiscountCode)], ['query']),
   'getLoyaltyBalance' : IDL.Func([IDL.Nat], [IDL.Nat], ['query']),
   'getLoyaltyTransactions' : IDL.Func(
       [IDL.Nat],
       [IDL.Vec(LoyaltyTransaction)],
       ['query'],
     ),
+  'getMyRole' : IDL.Func([], [IDL.Opt(StaffRole)], ['query']),
+  'getSaleOrder' : IDL.Func([IDL.Nat], [IDL.Opt(SaleOrder)], ['query']),
+  'getSaleOrders' : IDL.Func([], [IDL.Vec(SaleOrder)], ['query']),
+  'getStaffAccount' : IDL.Func([IDL.Nat], [IDL.Opt(StaffAccount)], ['query']),
+  'getStaffAccounts' : IDL.Func([], [IDL.Vec(StaffAccount)], ['query']),
+  'getTaxConfig' : IDL.Func([IDL.Nat], [IDL.Opt(TaxConfig)], ['query']),
+  'getTaxConfigs' : IDL.Func([], [IDL.Vec(TaxConfig)], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'redeemLoyaltyPoints' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Float64], [], []),
+  'toggleDiscountCode' : IDL.Func([IDL.Nat], [], []),
+  'toggleTaxConfig' : IDL.Func([IDL.Nat], [], []),
+  'updateCustomer' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text, IDL.Text], [], []),
+  'updateDiscountCode' : IDL.Func([IDL.Nat, DiscountCodeInput], [], []),
+  'updateStaffAccount' : IDL.Func(
+      [IDL.Nat, IDL.Text, StaffRole, IDL.Bool],
+      [],
+      [],
+    ),
+  'updateTaxConfig' : IDL.Func([IDL.Nat, TaxConfigInput], [], []),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
+  const DiscountType = IDL.Variant({
+    'fixed' : IDL.Null,
+    'percentage' : IDL.Null,
+  });
+  const DiscountCode = IDL.Record({
+    'id' : IDL.Nat,
+    'discountValue' : IDL.Float64,
+    'expiresAt' : IDL.Opt(IDL.Int),
+    'code' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'discountType' : DiscountType,
+    'usedCount' : IDL.Nat,
+    'description' : IDL.Text,
+    'isActive' : IDL.Bool,
+    'maxUses' : IDL.Opt(IDL.Nat),
+    'minimumOrderAmount' : IDL.Float64,
+  });
+  const DiscountApplicationResult = IDL.Record({
+    'discountCode' : DiscountCode,
+    'discountAmount' : IDL.Float64,
+    'finalTotal' : IDL.Float64,
+  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
     'guest' : IDL.Null,
+  });
+  const TaxBreakdown = IDL.Record({
+    'name' : IDL.Text,
+    'rate' : IDL.Float64,
+    'amount' : IDL.Float64,
+  });
+  const TaxCalculationResult = IDL.Record({
+    'breakdown' : IDL.Vec(TaxBreakdown),
+    'totalTaxAmount' : IDL.Float64,
+  });
+  const DiscountCodeInput = IDL.Record({
+    'discountValue' : IDL.Float64,
+    'expiresAt' : IDL.Opt(IDL.Int),
+    'code' : IDL.Text,
+    'discountType' : DiscountType,
+    'description' : IDL.Text,
+    'maxUses' : IDL.Opt(IDL.Nat),
+    'minimumOrderAmount' : IDL.Float64,
   });
   const SaleOrderItem = IDL.Record({
     'itemId' : IDL.Nat,
     'quantity' : IDL.Nat,
     'price' : IDL.Float64,
   });
-  const TaxBreakdown = IDL.Record({
+  const StaffRole = IDL.Variant({
+    'manager' : IDL.Null,
+    'admin' : IDL.Null,
+    'cashier' : IDL.Null,
+  });
+  const TaxAppliesTo = IDL.Variant({
+    'all' : IDL.Null,
+    'menuItems' : IDL.Null,
+    'combos' : IDL.Null,
+  });
+  const TaxConfigInput = IDL.Record({
+    'appliesTo' : TaxAppliesTo,
     'name' : IDL.Text,
     'rate' : IDL.Float64,
-    'amount' : IDL.Float64,
+  });
+  const AuditLog = IDL.Record({
+    'id' : IDL.Nat,
+    'action' : IDL.Text,
+    'timestamp' : IDL.Int,
+    'targetType' : IDL.Text,
+    'details' : IDL.Text,
+    'actorPrincipal' : IDL.Text,
+    'targetId' : IDL.Opt(IDL.Nat),
+  });
+  const Customer = IDL.Record({
+    'id' : IDL.Nat,
+    'name' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'email' : IDL.Text,
+    'loyaltyPoints' : IDL.Nat,
+    'phone' : IDL.Text,
   });
   const SaleOrder = IDL.Record({
     'id' : IDL.Nat,
@@ -116,10 +307,38 @@ export const idlFactory = ({ IDL }) => {
     'points' : IDL.Int,
     'reason' : IDL.Text,
   });
+  const StaffAccount = IDL.Record({
+    'id' : IDL.Nat,
+    'principal' : IDL.Principal,
+    'name' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'role' : StaffRole,
+    'isActive' : IDL.Bool,
+  });
+  const TaxConfig = IDL.Record({
+    'id' : IDL.Nat,
+    'appliesTo' : TaxAppliesTo,
+    'name' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'rate' : IDL.Float64,
+    'isActive' : IDL.Bool,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'applyDiscountCode' : IDL.Func(
+        [IDL.Text, IDL.Float64],
+        [DiscountApplicationResult],
+        ['query'],
+      ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'calculateTax' : IDL.Func(
+        [IDL.Float64, IDL.Text],
+        [TaxCalculationResult],
+        ['query'],
+      ),
+    'createCustomer' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [IDL.Nat], []),
+    'createDiscountCode' : IDL.Func([DiscountCodeInput], [IDL.Nat], []),
     'createSaleOrder' : IDL.Func(
         [
           IDL.Vec(SaleOrderItem),
@@ -135,20 +354,61 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Nat],
         [],
       ),
+    'createStaffAccount' : IDL.Func(
+        [IDL.Principal, IDL.Text, StaffRole],
+        [],
+        [],
+      ),
+    'createTaxConfig' : IDL.Func([TaxConfigInput], [IDL.Nat], []),
+    'deleteCustomer' : IDL.Func([IDL.Nat], [], []),
+    'deleteDiscountCode' : IDL.Func([IDL.Nat], [], []),
+    'deleteSaleOrder' : IDL.Func([IDL.Nat], [], []),
+    'deleteStaffAccount' : IDL.Func([IDL.Nat], [], []),
+    'deleteTaxConfig' : IDL.Func([IDL.Nat], [], []),
+    'getAuditLogs' : IDL.Func(
+        [IDL.Nat, IDL.Nat],
+        [IDL.Vec(AuditLog)],
+        ['query'],
+      ),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getCustomer' : IDL.Func([IDL.Nat], [IDL.Opt(Customer)], ['query']),
     'getCustomerOrderHistory' : IDL.Func(
         [IDL.Nat],
         [IDL.Vec(SaleOrder)],
         ['query'],
       ),
+    'getCustomers' : IDL.Func([], [IDL.Vec(Customer)], ['query']),
+    'getDiscountCode' : IDL.Func([IDL.Nat], [IDL.Opt(DiscountCode)], ['query']),
+    'getDiscountCodes' : IDL.Func([], [IDL.Vec(DiscountCode)], ['query']),
     'getLoyaltyBalance' : IDL.Func([IDL.Nat], [IDL.Nat], ['query']),
     'getLoyaltyTransactions' : IDL.Func(
         [IDL.Nat],
         [IDL.Vec(LoyaltyTransaction)],
         ['query'],
       ),
+    'getMyRole' : IDL.Func([], [IDL.Opt(StaffRole)], ['query']),
+    'getSaleOrder' : IDL.Func([IDL.Nat], [IDL.Opt(SaleOrder)], ['query']),
+    'getSaleOrders' : IDL.Func([], [IDL.Vec(SaleOrder)], ['query']),
+    'getStaffAccount' : IDL.Func([IDL.Nat], [IDL.Opt(StaffAccount)], ['query']),
+    'getStaffAccounts' : IDL.Func([], [IDL.Vec(StaffAccount)], ['query']),
+    'getTaxConfig' : IDL.Func([IDL.Nat], [IDL.Opt(TaxConfig)], ['query']),
+    'getTaxConfigs' : IDL.Func([], [IDL.Vec(TaxConfig)], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'redeemLoyaltyPoints' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Float64], [], []),
+    'toggleDiscountCode' : IDL.Func([IDL.Nat], [], []),
+    'toggleTaxConfig' : IDL.Func([IDL.Nat], [], []),
+    'updateCustomer' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
+    'updateDiscountCode' : IDL.Func([IDL.Nat, DiscountCodeInput], [], []),
+    'updateStaffAccount' : IDL.Func(
+        [IDL.Nat, IDL.Text, StaffRole, IDL.Bool],
+        [],
+        [],
+      ),
+    'updateTaxConfig' : IDL.Func([IDL.Nat, TaxConfigInput], [], []),
   });
 };
 

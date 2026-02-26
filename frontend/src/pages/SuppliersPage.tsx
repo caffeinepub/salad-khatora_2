@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Plus, Search, Edit2, Trash2, Zap, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -38,8 +38,8 @@ import {
   useUpdateSupplier,
   useDeleteSupplier,
   useAutoGeneratePurchaseOrders,
-  Supplier,
 } from '../hooks/useQueries';
+import type { Supplier } from '../hooks/useQueries';
 
 interface SupplierFormData {
   name: string;
@@ -137,6 +137,7 @@ export default function SuppliersPage() {
     const err = validateForm(form);
     if (err) { setFormError(err); return; }
     try {
+      // Pass the full Supplier object including createdAt from the original
       await updateSupplier.mutateAsync({
         id: editSupplier.id,
         name: form.name.trim(),
@@ -146,6 +147,7 @@ export default function SuppliersPage() {
         address: form.address.trim(),
         leadTimeDays: Math.round(Number(form.leadTimeDays)),
         notes: form.notes.trim(),
+        createdAt: editSupplier.createdAt,
       });
       toast.success('Supplier updated successfully');
       setEditSupplier(null);
@@ -254,11 +256,11 @@ export default function SuppliersPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-heading font-bold text-foreground">Suppliers</h1>
+          <h1 className="text-2xl font-bold text-foreground">Suppliers</h1>
           <p className="text-muted-foreground text-sm mt-1">Manage your ingredient suppliers and generate purchase orders</p>
         </div>
         <div className="flex gap-2 flex-wrap">
