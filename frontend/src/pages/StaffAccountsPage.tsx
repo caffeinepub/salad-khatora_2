@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
 import { Plus, Edit, Trash2, Shield, User, Briefcase, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,7 +31,6 @@ import {
   useCreateStaffAccount,
   useUpdateStaffAccount,
   useDeleteStaffAccount,
-  useIsCallerAdmin,
 } from '@/hooks/useQueries';
 import type { StaffAccount } from '../backend';
 import { StaffRole } from '../backend';
@@ -73,8 +71,6 @@ interface EditFormData {
 }
 
 export default function StaffAccountsPage() {
-  const navigate = useNavigate();
-  const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
   const { data: accounts, isLoading } = useStaffAccounts();
   const createAccount = useCreateStaffAccount();
   const updateAccount = useUpdateStaffAccount();
@@ -86,12 +82,6 @@ export default function StaffAccountsPage() {
 
   const [addForm, setAddForm] = useState<AddFormData>({ principal: '', name: '', role: StaffRole.cashier });
   const [editForm, setEditForm] = useState<EditFormData>({ name: '', role: StaffRole.cashier, isActive: true });
-
-  React.useEffect(() => {
-    if (!adminLoading && isAdmin === false) {
-      navigate({ to: '/dashboard' });
-    }
-  }, [isAdmin, adminLoading, navigate]);
 
   const handleAdd = async () => {
     if (!addForm.principal.trim() || !addForm.name.trim()) return;
@@ -128,14 +118,6 @@ export default function StaffAccountsPage() {
       // error handled by mutation
     }
   };
-
-  if (adminLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <TooltipProvider>

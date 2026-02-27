@@ -1,33 +1,111 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix Profile Setup Modal Freeze Bug",
+  "title": "Fix checkout flow: bill generation, print option, and payment mode selection",
   "requirements": [
     {
-      "id": "REQ-86",
-      "summary": "Fix ProfileSetupModal freezing after entering name by ensuring the mutation resolves properly, loading states are managed correctly, and error handling allows retry",
+      "id": "REQ-1",
+      "summary": "Prevent cart from clearing prematurely during checkout; show order summary dialog with all items before completing sale",
       "acceptanceCriteria": [
-        "Typing a name in the 'Your Name' field and clicking 'Get Started' does not cause the modal to freeze indefinitely.",
-        "The 'Get Started' button displays a loading indicator while the profile save is in progress.",
-        "On a successful save the modal closes automatically and the dashboard is visible.",
-        "On a backend error an error message is shown inside the modal and the button becomes clickable again.",
-        "The button is never left permanently disabled after a submission attempt."
+        "Clicking Checkout opens a modal/dialog showing all cart items with name, quantity, and price",
+        "Cart items remain visible inside the checkout dialog and are not cleared during processing",
+        "The checkout dialog is dismissible and returns the user to the cart without data loss"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/ProfileSetupModal.tsx",
+          "path": "frontend/src/pages/SalesPage.tsx",
           "operation": "modify",
-          "description": "Fix the ProfileSetupModal component to properly handle the saveCallerUserProfile mutation lifecycle. Ensure: (1) the button is disabled only while isPending is true from the useSaveCallerUserProfile mutation hook; (2) display a loading spinner on the button during submission using isPending state; (3) on mutation success, invalidate the 'currentUserProfile' query key to trigger a refetch and close the modal automatically; (4) on mutation error, display the error message inside the modal using error.message from the mutation hook and keep the button enabled for retry; (5) prevent form submission if the name field is empty; (6) ensure onOpenChange is not blocked and the modal can be dismissed after save completes. Review the current implementation to identify if the mutation's onSuccess callback is missing query invalidation or if error states are not being displayed."
+          "description": "Refactor the checkout flow to open a dialog instead of immediately processing the order. Move the cart-clearing logic so it only executes after successful order confirmation. Add state management for a checkout dialog that displays all cart items with their names, quantities, and prices. Ensure the dialog can be dismissed without losing cart data."
         },
         {
-          "path": "frontend/src/hooks/useQueries.ts",
+          "path": "frontend/src/components/CheckoutDialog.tsx",
+          "operation": "create",
+          "description": "Create a new dialog component that displays the order summary before confirmation. Show cart items in a table with columns for item name, quantity, unit price, and line total. Include subtotal, discount amount (if any), tax breakdown, and grand total. Provide 'Cancel' and 'Confirm Order' buttons. Accept props for cart items, discount info, tax info, customer, and callbacks for confirm/cancel actions."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Add payment mode selection step inside checkout dialog before order confirmation",
+      "acceptanceCriteria": [
+        "Checkout dialog includes a clearly labeled 'Payment Mode' section with selectable options: Cash, Card, and UPI/Online",
+        "User cannot confirm/complete the order without selecting a payment mode",
+        "Selected payment mode is passed to the backend and stored with the sale order record"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/CheckoutDialog.tsx",
           "operation": "modify",
-          "description": "Review and fix the useSaveCallerUserProfile mutation hook to ensure it returns proper isPending, isError, and error states. Verify the mutation function correctly calls actor.saveCallerUserProfile with a UserProfile object (not just a string). Ensure the onSuccess callback invalidates the 'currentUserProfile' query key using queryClient.invalidateQueries. Add proper error handling to surface backend errors to the UI. If the hook does not exist, create it following the pattern of other mutation hooks in this file, wrapping the backend's saveCallerUserProfile method."
+          "description": "Add a 'Payment Mode' selection section to the CheckoutDialog with radio buttons or a select dropdown for Cash, Card, and UPI/Online options. Add validation to disable the 'Confirm Order' button until a payment mode is selected. Store the selected payment mode in component state and pass it to the confirm callback. Map the selected option to the backend PaymentMode type (cash, card, upi, or other)."
         },
         {
-          "path": "frontend/src/pages/DashboardPage.tsx",
+          "path": "frontend/src/pages/SalesPage.tsx",
           "operation": "modify",
-          "description": "Review the DashboardPage to ensure the showProfileSetup condition correctly uses isAuthenticated, !profileLoading, isFetched, and userProfile === null as per the authorization component usage instructions. Verify that the ProfileSetupModal is rendered with proper state management and that after a successful profile save, the modal closes and the dashboard content is shown without requiring a page refresh. Ensure the query refetch logic properly updates the userProfile state when the modal completes."
+          "description": "Update the checkout handler to accept the selected payment mode from the CheckoutDialog. Pass the payment mode to the createSaleOrder mutation when confirming the order. Ensure the paymentType parameter matches the backend interface's PaymentMode enum structure."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Generate and display a bill/receipt view after successful order confirmation showing order details, items, pricing, taxes, and payment mode",
+      "acceptanceCriteria": [
+        "Bill view shows order ID, date and time, itemized list with quantities and unit prices, applied discount (if any), tax breakdown, and grand total",
+        "Bill view shows the payment mode used",
+        "Bill is displayed after order confirmation succeeds on the backend"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/BillReceiptView.tsx",
+          "operation": "create",
+          "description": "Create a new component that renders a formatted bill/receipt. Display the order ID, date/time formatted for readability, customer name (if selected), itemized list of products with quantities and unit prices, subtotal, discount details (code and amount if applied), tax breakdown showing each tax line item, grand total, and payment mode. Use a clean, print-friendly layout with clear section headers and appropriate typography. Accept props for the confirmed order data returned from the backend."
+        },
+        {
+          "path": "frontend/src/pages/SalesPage.tsx",
+          "operation": "modify",
+          "description": "Add state management for showing the bill view after successful order creation. When the createSaleOrder mutation succeeds, fetch the created order details (or use the returned order ID to retrieve full data) and transition from the checkout dialog to the bill receipt view. Pass the complete order data including items, totals, tax breakdown, discount info, customer, and payment mode to the BillReceiptView component."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Add a 'Print Bill' button that triggers the browser print dialog for the bill content only",
+      "acceptanceCriteria": [
+        "A 'Print Bill' button is visible on the bill receipt view",
+        "Clicking Print Bill opens the browser print dialog",
+        "Only the bill content is printed; sidebar, navigation, and other UI elements are hidden via print CSS",
+        "The printed receipt is cleanly formatted and readable"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/BillReceiptView.tsx",
+          "operation": "modify",
+          "description": "Add a 'Print Bill' button to the BillReceiptView component that calls window.print() when clicked. Wrap the bill content in a container with a print-specific class or ID. Add inline or scoped print media query styles that hide all non-bill UI elements (buttons, navigation, sidebar) and ensure the bill layout is optimized for printing (white background, black text, proper margins)."
+        },
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "Add print media query CSS rules to hide the application layout, sidebar, and navigation during print. Use @media print to target only the bill receipt container for printing. Ensure proper page breaks, margins, and typography for printed receipts. Set background colors to white and text to black for print clarity."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Clear cart and reset POS state only after bill is displayed and dismissed by the user",
+      "acceptanceCriteria": [
+        "Cart is cleared only after successful order confirmation and the bill dialog is closed or a 'New Sale' button is clicked",
+        "Customer selection and discount code fields are reset after cart is cleared",
+        "POS page is in a clean state ready for a new transaction after dismissal"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/BillReceiptView.tsx",
+          "operation": "modify",
+          "description": "Add a 'Close' or 'New Sale' button to the BillReceiptView that triggers a callback when clicked. This callback will be provided by the parent SalesPage to handle cleanup after the bill is dismissed."
+        },
+        {
+          "path": "frontend/src/pages/SalesPage.tsx",
+          "operation": "modify",
+          "description": "Implement a cleanup handler that clears the cart state, resets the selected customer, clears the applied discount code, and closes the bill view dialog when the user dismisses the bill. Ensure this cleanup only happens after the order is successfully created and the bill has been displayed. Do not clear cart state during checkout processing or if the order creation fails. Reset all POS form fields to their initial empty state."
         }
       ]
     }

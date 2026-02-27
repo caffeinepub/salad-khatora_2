@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import React, { useState } from 'react';
+import { useActor } from '../hooks/useActor';
 import {
   useTaxConfigs,
   useCreateTaxConfig,
@@ -19,7 +18,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Plus, Edit, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function getAppliesToLabel(appliesTo: string): string {
@@ -31,24 +31,26 @@ function getAppliesToLabel(appliesTo: string): string {
 
 interface TaxForm {
   name: string;
-  rate: number;
+  rate: string;
   appliesTo: TaxAppliesTo;
 }
 
 const emptyForm: TaxForm = {
   name: '',
-  rate: 0,
+  rate: '',
   appliesTo: TaxAppliesTo.all,
 };
 
-export default function TaxConfigPage() {
-  const { identity } = useInternetIdentity();
-  const navigate = useNavigate();
+function extractErrorMessage(err: unknown): string {
+  if (!err) return 'An unknown error occurred';
+  const msg = err instanceof Error ? err.message : String(err);
+  const match = msg.match(/Reject text: (.+)$/s) || msg.match(/Error: (.+)$/s);
+  if (match) return match[1].trim();
+  return msg;
+}
 
-  useEffect(() => {
-    // Redirect to dashboard if not authenticated (no /login route exists)
-    if (!identity) navigate({ to: '/dashboard' });
-  }, [identity, navigate]);
+export default function TaxConfigPage() {
+  const { isFetching: actorFetching } = useActor();
 
   const { data: taxConfigs = [], isLoading } = useTaxConfigs();
   const createTC = useCreateTaxConfig();
@@ -60,28 +62,52 @@ export default function TaxConfigPage() {
   const [editTarget, setEditTarget] = useState<TaxConfig | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TaxConfig | null>(null);
   const [form, setForm] = useState<TaxForm>(emptyForm);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const openAdd = () => {
     setForm(emptyForm);
+    setFormError(null);
+    createTC.reset();
     setShowAdd(true);
   };
 
   const openEdit = (tc: TaxConfig) => {
     setEditTarget(tc);
+    setFormError(null);
+    updateTC.reset();
     let appliesTo = TaxAppliesTo.all;
-    if (tc.appliesTo === TaxAppliesTo.menuItems) appliesTo = TaxAppliesTo.menuItems;
-    else if (tc.appliesTo === TaxAppliesTo.combos) appliesTo = TaxAppliesTo.combos;
-    setForm({ name: tc.name, rate: tc.rate, appliesTo });
+    if ((tc.appliesTo as string) === TaxAppliesTo.menuItems) appliesTo = TaxAppliesTo.menuItems;
+    else if ((tc.appliesTo as string) === TaxAppliesTo.combos) appliesTo = TaxAppliesTo.combos;
+    setForm({ name: tc.name, rate: String(tc.rate), appliesTo });
+  };
+
+  const closeDialog = () => {
+    setShowAdd(false);
+    setEditTarget(null);
+    setFormError(null);
   };
 
   const buildInput = (): TaxConfigInput => ({
     name: form.name.trim(),
-    rate: form.rate,
-    appliesTo: form.appliesTo,
+    rate: parseFloat(form.rate) || 0,
+    appliesTo: form.appliesTo as TaxAppliesTo,
   });
 
   const handleSave = async () => {
-    if (!form.name.trim()) return;
+    if (!form.name.trim()) {
+      setFormError('Name is required.');
+      return;
+    }
+    const rateVal = parseFloat(form.rate);
+    if (isNaN(rateVal) || rateVal < 0 || rateVal > 100) {
+      setFormError('Rate must be a number between 0 and 100.');
+      return;
+    }
+    if (actorFetching) {
+      setFormError('Still connecting to the backend. Please wait a moment and try again.');
+      return;
+    }
+    setFormError(null);
     try {
       if (editTarget) {
         await updateTC.mutateAsync({ id: editTarget.id, input: buildInput() });
@@ -91,18 +117,23 @@ export default function TaxConfigPage() {
         setShowAdd(false);
       }
       setForm(emptyForm);
-    } catch {
-      // handled by mutation
+    } catch (err) {
+      setFormError(extractErrorMessage(err));
     }
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    await deleteTC.mutateAsync(deleteTarget.id);
-    setDeleteTarget(null);
+    try {
+      await deleteTC.mutateAsync(deleteTarget.id);
+      setDeleteTarget(null);
+    } catch {
+      // error shown via mutation state
+    }
   };
 
   const isSaving = createTC.isPending || updateTC.isPending;
+  const isSubmitDisabled = isSaving || actorFetching || !form.name.trim();
 
   return (
     <div className="p-6 space-y-6">
@@ -152,6 +183,7 @@ export default function TaxConfigPage() {
                       <Switch
                         checked={tc.isActive}
                         onCheckedChange={() => toggleTC.mutate(tc.id)}
+                        disabled={actorFetching}
                       />
                     </TableCell>
                     <TableCell className="text-right">
@@ -159,7 +191,12 @@ export default function TaxConfigPage() {
                         <Button variant="ghost" size="icon" onClick={() => openEdit(tc)}>
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(tc)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setDeleteTarget(tc)}
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -173,16 +210,33 @@ export default function TaxConfigPage() {
       )}
 
       {/* Add/Edit Dialog */}
-      <Dialog open={showAdd || !!editTarget} onOpenChange={open => { if (!open) { setShowAdd(false); setEditTarget(null); } }}>
+      <Dialog open={showAdd || !!editTarget} onOpenChange={open => { if (!open) closeDialog(); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editTarget ? 'Edit Tax Config' : 'Add Tax Config'}</DialogTitle>
             <DialogDescription>Configure the tax rate details.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            {actorFetching && (
+              <Alert>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <AlertDescription>Connecting to backend, please wait…</AlertDescription>
+              </Alert>
+            )}
+            {formError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{formError}</AlertDescription>
+              </Alert>
+            )}
             <div className="space-y-1">
               <Label htmlFor="tc-name">Name *</Label>
-              <Input id="tc-name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. VAT" />
+              <Input
+                id="tc-name"
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="e.g. VAT"
+              />
             </div>
             <div className="space-y-1">
               <Label htmlFor="tc-rate">Rate (%) *</Label>
@@ -193,7 +247,8 @@ export default function TaxConfigPage() {
                 max={100}
                 step="0.01"
                 value={form.rate}
-                onChange={e => setForm(f => ({ ...f, rate: parseFloat(e.target.value) || 0 }))}
+                onChange={e => setForm(f => ({ ...f, rate: e.target.value }))}
+                placeholder="e.g. 5"
               />
             </div>
             <div className="space-y-1">
@@ -209,9 +264,9 @@ export default function TaxConfigPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowAdd(false); setEditTarget(null); }}>Cancel</Button>
-            <Button onClick={handleSave} disabled={isSaving || !form.name.trim()}>
-              {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            <Button variant="outline" onClick={closeDialog} disabled={isSaving}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isSubmitDisabled}>
+              {(isSaving || actorFetching) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {editTarget ? 'Save Changes' : 'Add Tax'}
             </Button>
           </DialogFooter>
@@ -232,9 +287,9 @@ export default function TaxConfigPage() {
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={handleDelete}
-              disabled={deleteTC.isPending}
+              disabled={deleteTC.isPending || actorFetching}
             >
-              {deleteTC.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {(deleteTC.isPending || actorFetching) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

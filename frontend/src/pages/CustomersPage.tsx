@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Search, Plus, Edit, Trash2, Loader2, ChevronRight } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Loader2, ChevronRight, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,22 @@ function formatDate(ts: bigint): string {
   return new Date(ms).toLocaleDateString();
 }
 
+interface CustomerForm {
+  name: string;
+  mobileNo: string;
+  email: string;
+  preference: string;
+  address: string;
+}
+
+const emptyForm: CustomerForm = {
+  name: '',
+  mobileNo: '',
+  email: '',
+  preference: '',
+  address: '',
+};
+
 export default function CustomersPage() {
   const { data: customers = [], isLoading } = useCustomers();
   const createCustomer = useCreateCustomer();
@@ -48,37 +65,92 @@ export default function CustomersPage() {
   const [deleteTarget, setDeleteTarget] = useState<Customer | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<bigint | null>(null);
 
-  const [addForm, setAddForm] = useState({ name: '', email: '', phone: '' });
-  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '' });
+  const [addForm, setAddForm] = useState<CustomerForm>(emptyForm);
+  const [editForm, setEditForm] = useState<CustomerForm>(emptyForm);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const filtered = customers.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.email.toLowerCase().includes(search.toLowerCase())
+    (c.email ?? '').toLowerCase().includes(search.toLowerCase()) ||
+    c.mobileNo.toLowerCase().includes(search.toLowerCase())
   );
 
+  const isAddFormValid = addForm.name.trim() && addForm.mobileNo.trim() && addForm.preference.trim() && addForm.address.trim();
+  const isEditFormValid = editForm.name.trim() && editForm.mobileNo.trim() && editForm.preference.trim() && editForm.address.trim();
+
+  const openAddDialog = () => {
+    setAddForm(emptyForm);
+    setAddError(null);
+    createCustomer.reset();
+    setShowAdd(true);
+  };
+
+  const closeAddDialog = () => {
+    setShowAdd(false);
+    setAddForm(emptyForm);
+    setAddError(null);
+    createCustomer.reset();
+  };
+
   const handleAdd = async () => {
-    if (!addForm.name.trim() || !addForm.email.trim()) return;
+    if (!isAddFormValid) return;
+    setAddError(null);
     try {
-      await createCustomer.mutateAsync({ name: addForm.name.trim(), email: addForm.email.trim(), phone: addForm.phone.trim() });
-      setShowAdd(false);
-      setAddForm({ name: '', email: '', phone: '' });
-    } catch {
-      // handled by mutation
+      await createCustomer.mutateAsync({
+        name: addForm.name.trim(),
+        mobileNo: addForm.mobileNo.trim(),
+        email: addForm.email.trim() || undefined,
+        preference: addForm.preference.trim(),
+        address: addForm.address.trim(),
+      });
+      closeAddDialog();
+    } catch (err: unknown) {
+      const raw = err instanceof Error ? err.message : String(err);
+      // Extract the meaningful part of the error message
+      const match = raw.match(/Reject text: (.+)/);
+      const message = match ? match[1] : raw || 'Failed to save customer. Please try again.';
+      setAddError(message);
     }
   };
 
   const openEdit = (customer: Customer) => {
     setEditTarget(customer);
-    setEditForm({ name: customer.name, email: customer.email, phone: customer.phone });
+    setEditError(null);
+    updateCustomer.reset();
+    setEditForm({
+      name: customer.name,
+      mobileNo: customer.mobileNo,
+      email: customer.email ?? '',
+      preference: customer.preference,
+      address: customer.address,
+    });
+  };
+
+  const closeEditDialog = () => {
+    setEditTarget(null);
+    setEditError(null);
+    updateCustomer.reset();
   };
 
   const handleEdit = async () => {
-    if (!editTarget) return;
+    if (!editTarget || !isEditFormValid) return;
+    setEditError(null);
     try {
-      await updateCustomer.mutateAsync({ id: editTarget.id, name: editForm.name, email: editForm.email, phone: editForm.phone });
-      setEditTarget(null);
-    } catch {
-      // handled by mutation
+      await updateCustomer.mutateAsync({
+        id: editTarget.id,
+        name: editForm.name.trim(),
+        mobileNo: editForm.mobileNo.trim(),
+        email: editForm.email.trim() || undefined,
+        preference: editForm.preference.trim(),
+        address: editForm.address.trim(),
+      });
+      closeEditDialog();
+    } catch (err: unknown) {
+      const raw = err instanceof Error ? err.message : String(err);
+      const match = raw.match(/Reject text: (.+)/);
+      const message = match ? match[1] : raw || 'Failed to update customer. Please try again.';
+      setEditError(message);
     }
   };
 
@@ -108,7 +180,7 @@ export default function CustomersPage() {
           <h1 className="text-2xl font-bold text-foreground">Customers</h1>
           <p className="text-muted-foreground text-sm mt-1">Manage your customer base</p>
         </div>
-        <Button onClick={() => setShowAdd(true)} className="gap-2">
+        <Button onClick={openAddDialog} className="gap-2">
           <Plus className="w-4 h-4" />
           Add Customer
         </Button>
@@ -134,8 +206,8 @@ export default function CustomersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Mobile No</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
                 <TableHead>Loyalty Points</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -156,8 +228,8 @@ export default function CustomersPage() {
                     onClick={() => setSelectedCustomerId(customer.id)}
                   >
                     <TableCell className="font-medium">{customer.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{customer.email}</TableCell>
-                    <TableCell className="text-muted-foreground">{customer.phone || '—'}</TableCell>
+                    <TableCell className="text-muted-foreground">{customer.mobileNo || '—'}</TableCell>
+                    <TableCell className="text-muted-foreground">{customer.email ?? 'N/A'}</TableCell>
                     <TableCell>{customer.loyaltyPoints.toString()}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {formatDate(customer.createdAt)}
@@ -167,7 +239,12 @@ export default function CustomersPage() {
                         <Button variant="ghost" size="icon" onClick={() => openEdit(customer)}>
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(customer)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setDeleteTarget(customer)}
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                         <ChevronRight className="w-4 h-4 text-muted-foreground ml-1" />
@@ -182,29 +259,84 @@ export default function CustomersPage() {
       )}
 
       {/* Add Dialog */}
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent>
+      <Dialog
+        open={showAdd}
+        onOpenChange={open => {
+          if (!open) closeAddDialog();
+        }}
+      >
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add Customer</DialogTitle>
             <DialogDescription>Enter the customer's details below.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            {addError && (
+              <div className="flex items-start gap-2 rounded-md bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>{addError}</span>
+              </div>
+            )}
             <div className="space-y-1">
               <Label htmlFor="add-name">Name *</Label>
-              <Input id="add-name" value={addForm.name} onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))} placeholder="Full name" />
+              <Input
+                id="add-name"
+                value={addForm.name}
+                onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="Full name"
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="add-email">Email *</Label>
-              <Input id="add-email" type="email" value={addForm.email} onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))} placeholder="email@example.com" />
+              <Label htmlFor="add-mobile">Mobile No *</Label>
+              <Input
+                id="add-mobile"
+                type="tel"
+                value={addForm.mobileNo}
+                onChange={e => setAddForm(f => ({ ...f, mobileNo: e.target.value }))}
+                placeholder="+1 (555) 000-0000"
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="add-phone">Phone</Label>
-              <Input id="add-phone" value={addForm.phone} onChange={e => setAddForm(f => ({ ...f, phone: e.target.value }))} placeholder="+1 (555) 000-0000" />
+              <Label htmlFor="add-email">
+                Email <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Input
+                id="add-email"
+                type="email"
+                value={addForm.email}
+                onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))}
+                placeholder="email@example.com"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="add-preference">Preference *</Label>
+              <Input
+                id="add-preference"
+                value={addForm.preference}
+                onChange={e => setAddForm(f => ({ ...f, preference: e.target.value }))}
+                placeholder="e.g. Veg, Non-Veg, Vegan"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="add-address">Address *</Label>
+              <Textarea
+                id="add-address"
+                value={addForm.address}
+                onChange={e => setAddForm(f => ({ ...f, address: e.target.value }))}
+                placeholder="Enter full address"
+                rows={3}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-            <Button onClick={handleAdd} disabled={createCustomer.isPending || !addForm.name.trim() || !addForm.email.trim()}>
+            <Button
+              variant="outline"
+              onClick={closeAddDialog}
+              disabled={createCustomer.isPending}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleAdd} disabled={createCustomer.isPending || !isAddFormValid}>
               {createCustomer.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Add Customer
             </Button>
@@ -213,29 +345,83 @@ export default function CustomersPage() {
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={!!editTarget} onOpenChange={open => !open && setEditTarget(null)}>
-        <DialogContent>
+      <Dialog
+        open={!!editTarget}
+        onOpenChange={open => {
+          if (!open) closeEditDialog();
+        }}
+      >
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Customer</DialogTitle>
             <DialogDescription>Update the customer's details.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            {editError && (
+              <div className="flex items-start gap-2 rounded-md bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>{editError}</span>
+              </div>
+            )}
             <div className="space-y-1">
               <Label htmlFor="edit-name">Name *</Label>
-              <Input id="edit-name" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
+              <Input
+                id="edit-name"
+                value={editForm.name}
+                onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="edit-email">Email *</Label>
-              <Input id="edit-email" type="email" value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} />
+              <Label htmlFor="edit-mobile">Mobile No *</Label>
+              <Input
+                id="edit-mobile"
+                type="tel"
+                value={editForm.mobileNo}
+                onChange={e => setEditForm(f => ({ ...f, mobileNo: e.target.value }))}
+                placeholder="+1 (555) 000-0000"
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="edit-phone">Phone</Label>
-              <Input id="edit-phone" value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} />
+              <Label htmlFor="edit-email">
+                Email <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editForm.email}
+                onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))}
+                placeholder="email@example.com"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-preference">Preference *</Label>
+              <Input
+                id="edit-preference"
+                value={editForm.preference}
+                onChange={e => setEditForm(f => ({ ...f, preference: e.target.value }))}
+                placeholder="e.g. Veg, Non-Veg, Vegan"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-address">Address *</Label>
+              <Textarea
+                id="edit-address"
+                value={editForm.address}
+                onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))}
+                placeholder="Enter full address"
+                rows={3}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
-            <Button onClick={handleEdit} disabled={updateCustomer.isPending || !editForm.name.trim() || !editForm.email.trim()}>
+            <Button
+              variant="outline"
+              onClick={closeEditDialog}
+              disabled={updateCustomer.isPending}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleEdit} disabled={updateCustomer.isPending || !isEditFormValid}>
               {updateCustomer.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Save Changes
             </Button>

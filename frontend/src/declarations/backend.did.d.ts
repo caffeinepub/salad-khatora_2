@@ -23,9 +23,11 @@ export interface Customer {
   'id' : bigint,
   'name' : string,
   'createdAt' : bigint,
-  'email' : string,
+  'mobileNo' : string,
+  'email' : [] | [string],
   'loyaltyPoints' : bigint,
-  'phone' : string,
+  'preference' : string,
+  'address' : string,
 }
 export interface DiscountApplicationResult {
   'discountCode' : DiscountCode,
@@ -63,6 +65,10 @@ export interface LoyaltyTransaction {
   'points' : bigint,
   'reason' : string,
 }
+export type PaymentMode = { 'upi' : null } |
+  { 'other' : string } |
+  { 'card' : null } |
+  { 'cash' : null };
 export interface SaleOrder {
   'id' : bigint,
   'discountCodeId' : [] | [bigint],
@@ -72,6 +78,7 @@ export interface SaleOrder {
   'taxTotal' : number,
   'totalAmount' : number,
   'taxBreakdown' : Array<TaxBreakdown>,
+  'paymentType' : PaymentMode,
   'customerId' : [] | [bigint],
   'items' : Array<SaleOrderItem>,
   'subtotal' : number,
@@ -117,18 +124,22 @@ export interface TaxConfigInput {
   'name' : string,
   'rate' : number,
 }
+export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'addCustomer' : ActorMethod<
+    [string, string, [] | [string], string, string],
+    bigint
+  >,
   'applyDiscountCode' : ActorMethod<
     [string, number],
     DiscountApplicationResult
   >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'calculateTax' : ActorMethod<[number, string], TaxCalculationResult>,
-  'createCustomer' : ActorMethod<[string, string, string], bigint>,
   'createDiscountCode' : ActorMethod<[DiscountCodeInput], bigint>,
   'createSaleOrder' : ActorMethod<
     [
@@ -141,6 +152,7 @@ export interface _SERVICE {
       string,
       [] | [bigint],
       [] | [bigint],
+      PaymentMode,
     ],
     bigint
   >,
@@ -152,6 +164,7 @@ export interface _SERVICE {
   'deleteStaffAccount' : ActorMethod<[bigint], undefined>,
   'deleteTaxConfig' : ActorMethod<[bigint], undefined>,
   'getAuditLogs' : ActorMethod<[bigint, bigint], Array<AuditLog>>,
+  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getCustomer' : ActorMethod<[bigint], [] | [Customer]>,
   'getCustomerOrderHistory' : ActorMethod<[bigint], Array<SaleOrder>>,
@@ -167,11 +180,16 @@ export interface _SERVICE {
   'getStaffAccounts' : ActorMethod<[], Array<StaffAccount>>,
   'getTaxConfig' : ActorMethod<[bigint], [] | [TaxConfig]>,
   'getTaxConfigs' : ActorMethod<[], Array<TaxConfig>>,
+  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'redeemLoyaltyPoints' : ActorMethod<[bigint, bigint, number], undefined>,
+  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'toggleDiscountCode' : ActorMethod<[bigint], undefined>,
   'toggleTaxConfig' : ActorMethod<[bigint], undefined>,
-  'updateCustomer' : ActorMethod<[bigint, string, string, string], undefined>,
+  'updateCustomer' : ActorMethod<
+    [bigint, string, string, [] | [string], string, string],
+    undefined
+  >,
   'updateDiscountCode' : ActorMethod<[bigint, DiscountCodeInput], undefined>,
   'updateStaffAccount' : ActorMethod<
     [bigint, string, StaffRole, boolean],

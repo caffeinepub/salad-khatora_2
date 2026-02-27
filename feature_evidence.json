@@ -2,11 +2,11 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-fix-the-profile-setup-modal-in-frontend-src-components-profilesetupmodal-tsx-so-that-clicking-get-started-after-entering-a-name-does-not-freeze-or-get-stuck-investigate-and-resolve-the-issue-causing-the-modal-to-hang-on-submission-likely-the-createuserprofile-or-equivalent-mutation-call-is-not-resolving-or-the-loading-state-is-never-cleared-ensure-1-the-get-started-button-shows-a-loading-spinner-while-the-mutation-is-in-flight-2-on-success-the-modal-closes-and-the-user-proceeds-normally-3-on-error-a-visible-error-message-is-displayed-and-the-button-becomes-re-clickable-4-the-button-is-disabled-only-while-the-mutation-is-actively-pending-never-indefinitely",
-      "featureTitle": "Fix the Profile Setup Modal in `frontend/src/components/ProfileSetupModal.tsx` so that clicking 'Get Started' after entering a name does not freeze or get stuck. Investigate and resolve the issue causing the modal to hang on submission — likely the `createUserProfile` (or equivalent) mutation call is not resolving or the loading state is never cleared. Ensure: (1) the 'Get Started' button shows a loading spinner while the mutation is in-flight; (2) on success the modal closes and the user proceeds normally; (3) on error a visible error message is displayed and the button becomes re-clickable; (4) the button is disabled only while the mutation is actively pending, never indefinitely.",
+      "featureId": "feature-fix-the-checkout-flow-in-salespage-tsx-so-that-pressing-the-checkout-button-does-not-clear-the-cart-prematurely-instead-it-should-open-a-checkout-order-summary-dialog-that-displays-all-added-items-quantities-and-prices-before-completing-the-sale",
+      "featureTitle": "Fix the checkout flow in SalesPage.tsx so that pressing the Checkout button does NOT clear the cart prematurely. Instead, it should open a checkout/order summary dialog that displays all added items, quantities, and prices before completing the sale.",
       "files": [
-        "frontend/src/hooks/useQueries.ts",
-        "frontend/src/pages/DashboardPage.tsx"
+        "frontend/src/components/CheckoutDialog.tsx",
+        "frontend/src/pages/SalesPage.tsx"
       ],
       "components": [
         "authorization@4.0.0",
@@ -17,7 +17,87 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-86"
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-payment-mode-selection-step-inside-the-checkout-dialog-the-user-must-be-able-to-choose-a-payment-method-e-g-cash-card-upi-online-before-confirming-the-order-the-selected-payment-mode-must-be-recorded-with-the-sale-order",
+      "featureTitle": "Add a payment mode selection step inside the checkout dialog. The user must be able to choose a payment method (e.g., Cash, Card, UPI/Online) before confirming the order. The selected payment mode must be recorded with the sale order.",
+      "files": [
+        "frontend/src/components/CheckoutDialog.tsx",
+        "frontend/src/pages/SalesPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-after-the-user-selects-a-payment-mode-and-confirms-the-order-generate-a-bill-receipt-view-inside-the-checkout-dialog-or-a-follow-up-dialog-that-displays-order-id-date-time-list-of-items-with-quantities-and-prices-subtotal-taxes-discounts-and-total-amount-due-along-with-the-selected-payment-mode",
+      "featureTitle": "After the user selects a payment mode and confirms the order, generate a bill/receipt view inside the checkout dialog (or a follow-up dialog) that displays: order ID, date/time, list of items with quantities and prices, subtotal, taxes, discounts, and total amount due, along with the selected payment mode.",
+      "files": [
+        "frontend/src/components/BillReceiptView.tsx",
+        "frontend/src/pages/SalesPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-print-bill-button-on-the-generated-bill-view-that-triggers-the-browser-s-print-dialog-scoped-to-the-bill-content-only-hiding-all-navigation-and-ui-chrome-during-print",
+      "featureTitle": "Add a 'Print Bill' button on the generated bill view that triggers the browser's print dialog scoped to the bill content only, hiding all navigation and UI chrome during print.",
+      "files": [
+        "frontend/src/components/BillReceiptView.tsx",
+        "frontend/src/index.css"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-after-the-bill-is-displayed-and-the-user-dismisses-the-bill-dialog-clear-the-cart-and-reset-the-pos-state-selected-customer-discount-code-ready-for-the-next-transaction",
+      "featureTitle": "After the bill is displayed and the user dismisses the bill dialog, clear the cart and reset the POS state (selected customer, discount code) ready for the next transaction.",
+      "files": [
+        "frontend/src/components/BillReceiptView.tsx",
+        "frontend/src/pages/SalesPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
       ],
       "confidence": "high"
     }

@@ -12,6 +12,7 @@ export default function AlertsPage() {
   const markAllRead = useMarkAllAlertsRead();
 
   const unreadCount = alerts.filter(a => !a.isRead).length;
+  const unreadIds = alerts.filter(a => !a.isRead).map(a => a.id);
 
   const getAlertIcon = (type: AlertType) => {
     switch (type) {
@@ -52,7 +53,7 @@ export default function AlertsPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => markAllRead.mutate()}
+            onClick={() => markAllRead.mutate(unreadIds)}
             disabled={markAllRead.isPending}
           >
             <CheckCheck className="mr-2 h-4 w-4" />

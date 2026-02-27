@@ -59,6 +59,7 @@ export interface SaleOrder {
     taxTotal: number;
     totalAmount: number;
     taxBreakdown: Array<TaxBreakdown>;
+    paymentType: PaymentMode;
     customerId?: bigint;
     items: Array<SaleOrderItem>;
     subtotal: number;
@@ -80,9 +81,11 @@ export interface Customer {
     id: bigint;
     name: string;
     createdAt: bigint;
-    email: string;
+    mobileNo: string;
+    email?: string;
     loyaltyPoints: bigint;
-    phone: string;
+    preference: string;
+    address: string;
 }
 export interface DiscountApplicationResult {
     discountCode: DiscountCode;
@@ -101,10 +104,26 @@ export interface TaxCalculationResult {
     breakdown: Array<TaxBreakdown>;
     totalTaxAmount: number;
 }
+export type PaymentMode = {
+    __kind__: "upi";
+    upi: null;
+} | {
+    __kind__: "other";
+    other: string;
+} | {
+    __kind__: "card";
+    card: null;
+} | {
+    __kind__: "cash";
+    cash: null;
+};
 export interface TaxConfigInput {
     appliesTo: TaxAppliesTo;
     name: string;
     rate: number;
+}
+export interface UserProfile {
+    name: string;
 }
 export enum DiscountType {
     fixed = "fixed",
@@ -126,12 +145,12 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
+    addCustomer(name: string, mobileNo: string, email: string | null, preference: string, address: string): Promise<bigint>;
     applyDiscountCode(code: string, orderTotal: number): Promise<DiscountApplicationResult>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     calculateTax(subtotal: number, targetType: string): Promise<TaxCalculationResult>;
-    createCustomer(name: string, email: string, phone: string): Promise<bigint>;
     createDiscountCode(input: DiscountCodeInput): Promise<bigint>;
-    createSaleOrder(items: Array<SaleOrderItem>, subtotal: number, totalAmount: number, discountAmount: number, taxBreakdown: Array<TaxBreakdown>, taxTotal: number, note: string, discountCodeId: bigint | null, customerId: bigint | null): Promise<bigint>;
+    createSaleOrder(items: Array<SaleOrderItem>, subtotal: number, totalAmount: number, discountAmount: number, taxBreakdown: Array<TaxBreakdown>, taxTotal: number, note: string, discountCodeId: bigint | null, customerId: bigint | null, paymentType: PaymentMode): Promise<bigint>;
     createStaffAccount(principal: Principal, name: string, role: StaffRole): Promise<void>;
     createTaxConfig(input: TaxConfigInput): Promise<bigint>;
     deleteCustomer(id: bigint): Promise<void>;
@@ -140,6 +159,7 @@ export interface backendInterface {
     deleteStaffAccount(id: bigint): Promise<void>;
     deleteTaxConfig(id: bigint): Promise<void>;
     getAuditLogs(limit: bigint, offset: bigint): Promise<Array<AuditLog>>;
+    getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getCustomer(id: bigint): Promise<Customer | null>;
     getCustomerOrderHistory(customerId: bigint): Promise<Array<SaleOrder>>;
@@ -155,11 +175,13 @@ export interface backendInterface {
     getStaffAccounts(): Promise<Array<StaffAccount>>;
     getTaxConfig(id: bigint): Promise<TaxConfig | null>;
     getTaxConfigs(): Promise<Array<TaxConfig>>;
+    getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     redeemLoyaltyPoints(customerId: bigint, points: bigint, discountAmount: number): Promise<void>;
+    saveCallerUserProfile(profile: UserProfile): Promise<void>;
     toggleDiscountCode(id: bigint): Promise<void>;
     toggleTaxConfig(id: bigint): Promise<void>;
-    updateCustomer(id: bigint, name: string, email: string, phone: string): Promise<void>;
+    updateCustomer(id: bigint, name: string, mobileNo: string, email: string | null, preference: string, address: string): Promise<void>;
     updateDiscountCode(id: bigint, input: DiscountCodeInput): Promise<void>;
     updateStaffAccount(id: bigint, name: string, role: StaffRole, isActive: boolean): Promise<void>;
     updateTaxConfig(id: bigint, input: TaxConfigInput): Promise<void>;

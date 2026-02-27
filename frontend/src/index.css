@@ -121,3 +121,47 @@
     text-wrap: balance;
   }
 }
+
+/* ─── Print Styles ─────────────────────────────────────────────────────────── */
+@media print {
+  /* Hide everything by default */
+  body > * {
+    display: none !important;
+  }
+
+  /* Show only the bill receipt */
+  #bill-receipt {
+    display: block !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: white !important;
+    color: black !important;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12pt;
+    padding: 16px;
+  }
+
+  /* Hide action buttons inside the dialog during print */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ensure dialog overlay/wrapper doesn't interfere */
+  [data-radix-dialog-overlay],
+  [data-radix-dialog-content] {
+    position: static !important;
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Page setup */
+  @page {
+    margin: 10mm;
+    size: 80mm auto;
+  }
+}

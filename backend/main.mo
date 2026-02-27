@@ -10,9 +10,9 @@ import Order "mo:core/Order";
 import Principal "mo:core/Principal";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
+import Migration "migration";
 
-
-
+(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -26,6 +26,13 @@ actor {
     #all;
     #menuItems;
     #combos;
+  };
+
+  public type PaymentMode = {
+    #cash;
+    #card;
+    #upi;
+    #other : Text;
   };
 
   type TaxBreakdown = {
@@ -96,6 +103,7 @@ actor {
     createdAt : Int;
     discountCodeId : ?Nat;
     customerId : ?Nat;
+    paymentType : PaymentMode;
   };
 
   type SaleOrderItem = {
@@ -107,8 +115,10 @@ actor {
   type Customer = {
     id : Nat;
     name : Text;
-    email : Text;
-    phone : Text;
+    mobileNo : Text;
+    email : ?Text;
+    preference : Text;
+    address : Text;
     createdAt : Int;
     loyaltyPoints : Nat;
   };
@@ -146,6 +156,10 @@ actor {
     timestamp : Int;
   };
 
+  public type UserProfile = {
+    name : Text;
+  };
+
   let discountCodes = Map.empty<Nat, DiscountCode>();
   let taxConfigs = Map.empty<Nat, TaxConfig>();
   let saleOrders = Map.empty<Nat, SaleOrder>();
@@ -153,10 +167,12 @@ actor {
   let loyaltyTransactions = Map.empty<Nat, LoyaltyTransaction>();
   let staffAccounts = Map.empty<Nat, StaffAccount>();
   let auditLogs = Map.empty<Nat, AuditLog>();
+  let userProfiles = Map.empty<Principal, UserProfile>();
 
   var nextDiscountCodeId : Nat = 1;
   var nextTaxConfigId : Nat = 1;
   var nextSaleOrderId : Nat = 1;
+  var nextCustomerId : Nat = 1;
   var nextLoyaltyTransactionId : Nat = 1;
   var nextStaffAccountId : Nat = 1;
   var nextAuditLogId : Nat = 1;
@@ -186,7 +202,26 @@ actor {
     nextAuditLogId += 1;
   };
 
-  // --- Staff Account Management ---
+  public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can get their profile");
+    };
+    userProfiles.get(caller);
+  };
+
+  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can save their profile");
+    };
+    userProfiles.add(caller, profile);
+  };
+
+  public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
+    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Can only view your own profile");
+    };
+    userProfiles.get(user);
+  };
 
   public shared ({ caller }) func createStaffAccount(principal : Principal, name : Text, role : StaffRole) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
@@ -257,10 +292,7 @@ actor {
     };
   };
 
-  // Public query — returns the role of the calling principal, or null if not a staff member.
-  // No authorization check required: any caller may query their own role.
   public query ({ caller }) func getMyRole() : async ?StaffRole {
-    // Check if the caller is the admin principal first
     if (AccessControl.isAdmin(accessControlState, caller)) {
       return ?#admin;
     };
@@ -272,7 +304,7 @@ actor {
       let account = allAccounts[i];
       if (account.principal == caller and account.isActive) {
         result := ?account.role;
-        i := allAccounts.size(); // break
+        i := allAccounts.size();
       };
       i += 1;
     };
@@ -297,8 +329,7 @@ actor {
     logArray.sliceToArray(start, end_);
   };
 
-  // --- Discount & Coupon System ---
-
+  // Discount code management is an admin task
   public shared ({ caller }) func createDiscountCode(input : DiscountCodeInput) : async Nat {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can create discount codes");
@@ -325,17 +356,11 @@ actor {
     id;
   };
 
-  public query ({ caller }) func getDiscountCodes() : async [DiscountCode] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can view discount codes");
-    };
+  public query func getDiscountCodes() : async [DiscountCode] {
     discountCodes.values().toArray();
   };
 
-  public query ({ caller }) func getDiscountCode(id : Nat) : async ?DiscountCode {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can view discount codes");
-    };
+  public query func getDiscountCode(id : Nat) : async ?DiscountCode {
     discountCodes.get(id);
   };
 
@@ -438,8 +463,6 @@ actor {
       };
     };
   };
-
-  // --- Tax Configuration ---
 
   public shared ({ caller }) func createTaxConfig(input : TaxConfigInput) : async Nat {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
@@ -546,31 +569,38 @@ actor {
     { breakdown; totalTaxAmount };
   };
 
-  // --- Customer Management ---
-
-  public shared ({ caller }) func createCustomer(name : Text, email : Text, phone : Text) : async Nat {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can create customers");
+  public shared ({ caller }) func addCustomer(
+    name : Text,
+    mobileNo : Text,
+    email : ?Text,
+    preference : Text,
+    address : Text,
+  ) : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only staff members can create customers");
     };
 
-    let id = nextSaleOrderId; // Note: using a dedicated counter would be better but keeping existing pattern
+    let id = nextCustomerId;
     let customer : Customer = {
-      id = nextSaleOrderId;
+      id;
       name;
+      mobileNo;
       email;
-      phone;
+      preference;
+      address;
       createdAt = Time.now();
       loyaltyPoints = 0;
     };
 
-    customers.add(customer.id, customer);
-    logAudit(caller, "createCustomer", "Customer", ?customer.id, "Created customer '" # name # "'");
+    customers.add(id, customer);
+    logAudit(caller, "addCustomer", "Customer", ?customer.id, "Created customer '" # name # "'");
+    nextCustomerId += 1;
     customer.id;
   };
 
   public query ({ caller }) func getCustomers() : async [Customer] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can view customers");
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only staff members can view customers");
     };
     customers.values().toArray();
   };
@@ -582,7 +612,14 @@ actor {
     customers.get(id);
   };
 
-  public shared ({ caller }) func updateCustomer(id : Nat, name : Text, email : Text, phone : Text) : async () {
+  public shared ({ caller }) func updateCustomer(
+    id : Nat,
+    name : Text,
+    mobileNo : Text,
+    email : ?Text,
+    preference : Text,
+    address : Text,
+  ) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can update customers");
     };
@@ -590,7 +627,14 @@ actor {
     switch (customers.get(id)) {
       case (null) { Runtime.trap("Customer not found") };
       case (?customer) {
-        let updated : Customer = { customer with name; email; phone };
+        let updated : Customer = {
+          customer with
+          name;
+          mobileNo;
+          email;
+          preference;
+          address;
+        };
         customers.add(id, updated);
         logAudit(caller, "updateCustomer", "Customer", ?id, "Updated customer '" # name # "'");
       };
@@ -610,8 +654,6 @@ actor {
       };
     };
   };
-
-  // --- Loyalty Points System ---
 
   public query ({ caller }) func getLoyaltyBalance(customerId : Nat) : async Nat {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
@@ -669,8 +711,6 @@ actor {
         };
         loyaltyTransactions.add(txnId, txn);
         nextLoyaltyTransactionId += 1;
-
-        logAudit(caller, "redeemLoyaltyPoints", "Customer", ?customerId, "Redeemed " # points.toText() # " points for discount");
       };
     };
   };
@@ -695,13 +735,9 @@ actor {
         };
         loyaltyTransactions.add(txnId, txn);
         nextLoyaltyTransactionId += 1;
-
-        logAudit(callerPrincipal, "awardLoyaltyPoints", "Customer", ?customerId, "Awarded " # points.toText() # " points for " # reason);
       };
     };
   };
-
-  // --- Sale Orders ---
 
   public query ({ caller }) func getCustomerOrderHistory(customerId : Nat) : async [SaleOrder] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
@@ -738,9 +774,21 @@ actor {
     saleOrders.get(id);
   };
 
-  public shared ({ caller }) func createSaleOrder(items : [SaleOrderItem], subtotal : Float, totalAmount : Float, discountAmount : Float, taxBreakdown : [TaxBreakdown], taxTotal : Float, note : Text, discountCodeId : ?Nat, customerId : ?Nat) : async Nat {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can create sale orders");
+  // createSaleOrder is used by cashiers at the Point of Sale — requires #user (not #admin)
+  public shared ({ caller }) func createSaleOrder(
+    items : [SaleOrderItem],
+    subtotal : Float,
+    totalAmount : Float,
+    discountAmount : Float,
+    taxBreakdown : [TaxBreakdown],
+    taxTotal : Float,
+    note : Text,
+    discountCodeId : ?Nat,
+    customerId : ?Nat,
+    paymentType : PaymentMode,
+  ) : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only authenticated staff can create sale orders");
     };
 
     let id = nextSaleOrderId;
@@ -756,12 +804,12 @@ actor {
       createdAt = Time.now();
       discountCodeId;
       customerId;
+      paymentType;
     };
 
     saleOrders.add(id, order);
     nextSaleOrderId += 1;
 
-    // Increment discount code usage if applicable
     switch (discountCodeId) {
       case (null) {};
       case (?dcId) {
@@ -801,4 +849,3 @@ actor {
     };
   };
 };
-

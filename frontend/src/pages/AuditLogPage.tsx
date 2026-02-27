@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
 import { Loader2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useAuditLogs, useIsCallerAdmin } from '@/hooks/useQueries';
+import { useAuditLogs } from '@/hooks/useQueries';
 import type { AuditLog } from '../backend';
 
 const PAGE_SIZE = 20;
@@ -29,20 +28,11 @@ function getActionBadgeColor(action: string): string {
 }
 
 export default function AuditLogPage() {
-  const navigate = useNavigate();
-  const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
   const [offset, setOffset] = useState(0);
   const [allLogs, setAllLogs] = useState<AuditLog[]>([]);
   const [hasMore, setHasMore] = useState(true);
 
   const { data: logs, isLoading, isFetching } = useAuditLogs(PAGE_SIZE, offset);
-
-  // Redirect non-admins
-  React.useEffect(() => {
-    if (!adminLoading && isAdmin === false) {
-      navigate({ to: '/dashboard' });
-    }
-  }, [isAdmin, adminLoading, navigate]);
 
   // Accumulate logs as we load more
   React.useEffect(() => {
@@ -67,14 +57,6 @@ export default function AuditLogPage() {
   const loadMore = () => {
     setOffset(prev => prev + PAGE_SIZE);
   };
-
-  if (adminLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <TooltipProvider>
@@ -134,7 +116,7 @@ export default function AuditLogPage() {
                         </TableCell>
                         <TableCell className="text-sm">{log.targetType}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
-                          {log.targetId != null ? log.targetId.toString() : 'N/A'}
+                          {log.targetId !== undefined && log.targetId !== null ? log.targetId.toString() : '—'}
                         </TableCell>
                         <TableCell className="text-sm max-w-xs truncate" title={log.details}>
                           {log.details}
@@ -146,9 +128,14 @@ export default function AuditLogPage() {
               </Table>
             </div>
 
-            {hasMore && allLogs.length > 0 && (
+            {hasMore && (
               <div className="flex justify-center">
-                <Button variant="outline" onClick={loadMore} disabled={isFetching} className="gap-2">
+                <Button
+                  variant="outline"
+                  onClick={loadMore}
+                  disabled={isFetching}
+                  className="gap-2"
+                >
                   {isFetching ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (

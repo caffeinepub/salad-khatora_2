@@ -1,41 +1,100 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-26T13:43:43.409Z",
+  "generatedAt": "2026-02-27T10:53:45.181Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 1,
-    "implemented": 1,
+    "total": 5,
+    "implemented": 5,
     "items": [
       {
-        "id": "REQ-86",
-        "summary": "Fix the Profile Setup Modal in `frontend/src/components/ProfileSetupModal.tsx` so that clicking 'Get Started' after entering a name does not freeze or get stuck. Investigate and resolve the issue causing the modal to hang on submission — likely the `createUserProfile` (or equivalent) mutation call is not resolving or the loading state is never cleared. Ensure: (1) the 'Get Started' button shows a loading spinner while the mutation is in-flight; (2) on success the modal closes and the user proceeds normally; (3) on error a visible error message is displayed and the button becomes re-clickable; (4) the button is disabled only while the mutation is actively pending, never indefinitely.",
+        "id": "REQ-1",
+        "summary": "Fix the checkout flow in SalesPage.tsx so that pressing the Checkout button does NOT clear the cart prematurely. Instead, it should open a checkout/order summary dialog that displays all added items, quantities, and prices before completing the sale.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/components/ProfileSetupModal.tsx",
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/pages/DashboardPage.tsx"
+          "frontend/src/pages/SalesPage.tsx",
+          "frontend/src/components/CheckoutDialog.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useQueries.ts",
-          "frontend/src/pages/DashboardPage.tsx"
+          "frontend/src/pages/SalesPage.tsx",
+          "frontend/src/components/CheckoutDialog.tsx"
+        ]
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Add a payment mode selection step inside the checkout dialog. The user must be able to choose a payment method (e.g., Cash, Card, UPI/Online) before confirming the order. The selected payment mode must be recorded with the sale order.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/CheckoutDialog.tsx",
+          "frontend/src/pages/SalesPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/CheckoutDialog.tsx",
+          "frontend/src/pages/SalesPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "After the user selects a payment mode and confirms the order, generate a bill/receipt view inside the checkout dialog (or a follow-up dialog) that displays: order ID, date/time, list of items with quantities and prices, subtotal, taxes, discounts, and total amount due, along with the selected payment mode.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/BillReceiptView.tsx",
+          "frontend/src/pages/SalesPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/BillReceiptView.tsx",
+          "frontend/src/pages/SalesPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Add a 'Print Bill' button on the generated bill view that triggers the browser's print dialog scoped to the bill content only, hiding all navigation and UI chrome during print.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/BillReceiptView.tsx",
+          "frontend/src/index.css"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/BillReceiptView.tsx",
+          "frontend/src/index.css"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "After the bill is displayed and the user dismisses the bill dialog, clear the cart and reset the POS state (selected customer, discount code) ready for the next transaction.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/BillReceiptView.tsx",
+          "frontend/src/pages/SalesPage.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/BillReceiptView.tsx",
+          "frontend/src/pages/SalesPage.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
+    "backend/main.mo",
+    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/backend.d.ts",
+    "frontend/src/backend.ts",
+    "frontend/src/components/BillReceiptView.tsx",
+    "frontend/src/components/CheckoutDialog.tsx",
+    "frontend/src/declarations/backend.did.d.ts",
+    "frontend/src/declarations/backend.did.js",
     "frontend/src/hooks/useQueries.ts",
+    "frontend/src/index.css",
     "frontend/src/pages/DashboardPage.tsx",
     "frontend/src/pages/SalesPage.tsx",
     "frontend/src/pages/SalesReportsPage.tsx",
-    "frontend/src/pages/WasteLogPage.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

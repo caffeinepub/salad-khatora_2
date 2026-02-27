@@ -15,8 +15,8 @@ export default function SalesReportsPage() {
 
   const { data: report = [], isLoading, isError, error } = useSalesReport(period);
 
-  const totalRevenue = report.reduce((sum, r) => sum + r.revenue, 0);
-  const totalOrders = report.reduce((sum, r) => sum + r.orders, 0);
+  const totalRevenue = report.reduce((sum, r) => sum + r.totalRevenue, 0);
+  const totalOrders = report.reduce((sum, r) => sum + r.totalOrders, 0);
   const avgRevenue = report.length > 0 ? totalRevenue / report.length : 0;
 
   return (
@@ -115,12 +115,12 @@ export default function SalesReportsPage() {
             </TableHeader>
             <TableBody>
               {report.map((row: SalesReportEntry) => (
-                <TableRow key={row.period}>
-                  <TableCell className="font-medium">{row.period}</TableCell>
-                  <TableCell className="text-right">{row.orders}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(row.revenue)}</TableCell>
+                <TableRow key={row.date}>
+                  <TableCell className="font-medium">{row.date}</TableCell>
+                  <TableCell className="text-right">{row.totalOrders}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(row.totalRevenue)}</TableCell>
                   <TableCell className="text-right">
-                    {row.orders > 0 ? formatCurrency(row.revenue / row.orders) : '—'}
+                    {row.totalOrders > 0 ? formatCurrency(row.totalRevenue / row.totalOrders) : '—'}
                   </TableCell>
                 </TableRow>
               ))}
