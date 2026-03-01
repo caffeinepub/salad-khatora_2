@@ -1,31 +1,31 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import React from 'react';
 import {
-  createRootRoute,
-  createRoute,
   createRouter,
+  createRoute,
+  createRootRoute,
   RouterProvider,
   Outlet,
   redirect,
-} from "@tanstack/react-router";
-import Layout from "./components/Layout";
-import DashboardPage from "./pages/DashboardPage";
-import SalesPage from "./pages/SalesPage";
-import InventoryPage from "./pages/InventoryPage";
-import MenuPage from "./pages/MenuPage";
-import CustomersPage from "./pages/CustomersPage";
-import CombosPage from "./pages/CombosPage";
-import SuppliersPage from "./pages/SuppliersPage";
-import PurchaseOrdersPage from "./pages/PurchaseOrdersPage";
-import SubscriptionsPage from "./pages/SubscriptionsPage";
-import DeliveryCalendarPage from "./pages/DeliveryCalendarPage";
-import DiscountsPage from "./pages/DiscountsPage";
-import TaxConfigPage from "./pages/TaxConfigPage";
-import StaffAccountsPage from "./pages/StaffAccountsPage";
-import WasteLogPage from "./pages/WasteLogPage";
-import AlertsPage from "./pages/AlertsPage";
-import SalesReportsPage from "./pages/SalesReportsPage";
-import AuditLogPage from "./pages/AuditLogPage";
-import AdminSettingsPage from "./pages/AdminSettingsPage";
+} from '@tanstack/react-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/sonner';
+import Layout from './components/Layout';
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import InventoryPage from './pages/InventoryPage';
+import SalesPage from './pages/SalesPage';
+import MenuPage from './pages/MenuPage';
+import CustomersPage from './pages/CustomersPage';
+import SuppliersPage from './pages/SuppliersPage';
+import PurchaseOrdersPage from './pages/PurchaseOrdersPage';
+import WasteLogPage from './pages/WasteLogPage';
+import AlertsPage from './pages/AlertsPage';
+import DiscountsPage from './pages/DiscountsPage';
+import TaxConfigPage from './pages/TaxConfigPage';
+import SalesReportsPage from './pages/SalesReportsPage';
+import CombosPage from './pages/CombosPage';
+import SubscriptionsPage from './pages/SubscriptionsPage';
+import DeliveryCalendarPage from './pages/DeliveryCalendarPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,7 +36,22 @@ const queryClient = new QueryClient({
   },
 });
 
+// Root route with layout
 const rootRoute = createRootRoute({
+  component: () => <Outlet />,
+});
+
+// Login route (no layout)
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/login',
+  component: LoginPage,
+});
+
+// Layout wrapper route
+const layoutRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  id: 'layout',
   component: () => (
     <Layout>
       <Outlet />
@@ -44,147 +59,131 @@ const rootRoute = createRootRoute({
   ),
 });
 
+// Index redirect
 const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/",
+  getParentRoute: () => layoutRoute,
+  path: '/',
   beforeLoad: () => {
-    throw redirect({ to: "/dashboard" });
+    throw redirect({ to: '/dashboard' });
   },
+  component: () => null,
 });
 
 const dashboardRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/dashboard",
+  getParentRoute: () => layoutRoute,
+  path: '/dashboard',
   component: DashboardPage,
 });
 
-const salesRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/sales",
-  component: SalesPage,
-});
-
 const inventoryRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/inventory",
+  getParentRoute: () => layoutRoute,
+  path: '/inventory',
   component: InventoryPage,
 });
 
+const salesRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/sales',
+  component: SalesPage,
+});
+
 const menuRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/menu",
+  getParentRoute: () => layoutRoute,
+  path: '/menu',
   component: MenuPage,
 });
 
 const customersRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/customers",
+  getParentRoute: () => layoutRoute,
+  path: '/customers',
   component: CustomersPage,
 });
 
-const combosRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/combos",
-  component: CombosPage,
-});
-
 const suppliersRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/suppliers",
+  getParentRoute: () => layoutRoute,
+  path: '/suppliers',
   component: SuppliersPage,
 });
 
 const purchaseOrdersRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/purchase-orders",
+  getParentRoute: () => layoutRoute,
+  path: '/purchase-orders',
   component: PurchaseOrdersPage,
 });
 
-const subscriptionsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/subscriptions",
-  component: SubscriptionsPage,
-});
-
-const deliveryCalendarRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/delivery-calendar",
-  component: DeliveryCalendarPage,
-});
-
-const discountsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/discounts",
-  component: DiscountsPage,
-});
-
-const taxConfigRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/tax-config",
-  component: TaxConfigPage,
-});
-
-const staffAccountsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/staff-accounts",
-  component: StaffAccountsPage,
-});
-
 const wasteLogRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/waste-log",
+  getParentRoute: () => layoutRoute,
+  path: '/waste-log',
   component: WasteLogPage,
 });
 
 const alertsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/alerts",
+  getParentRoute: () => layoutRoute,
+  path: '/alerts',
   component: AlertsPage,
 });
 
+const discountsRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/discounts',
+  component: DiscountsPage,
+});
+
+const taxConfigRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/tax-config',
+  component: TaxConfigPage,
+});
+
 const salesReportsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/sales-reports",
+  getParentRoute: () => layoutRoute,
+  path: '/sales-reports',
   component: SalesReportsPage,
 });
 
-const auditLogRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/audit-log",
-  component: AuditLogPage,
+const combosRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/combos',
+  component: CombosPage,
 });
 
-const adminSettingsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/admin-settings",
-  component: AdminSettingsPage,
+const subscriptionsRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/subscriptions',
+  component: SubscriptionsPage,
+});
+
+const deliveryCalendarRoute = createRoute({
+  getParentRoute: () => layoutRoute,
+  path: '/delivery-calendar',
+  component: DeliveryCalendarPage,
 });
 
 const routeTree = rootRoute.addChildren([
-  indexRoute,
-  dashboardRoute,
-  salesRoute,
-  inventoryRoute,
-  menuRoute,
-  customersRoute,
-  combosRoute,
-  suppliersRoute,
-  purchaseOrdersRoute,
-  subscriptionsRoute,
-  deliveryCalendarRoute,
-  discountsRoute,
-  taxConfigRoute,
-  staffAccountsRoute,
-  wasteLogRoute,
-  alertsRoute,
-  salesReportsRoute,
-  auditLogRoute,
-  adminSettingsRoute,
+  loginRoute,
+  layoutRoute.addChildren([
+    indexRoute,
+    dashboardRoute,
+    inventoryRoute,
+    salesRoute,
+    menuRoute,
+    customersRoute,
+    suppliersRoute,
+    purchaseOrdersRoute,
+    wasteLogRoute,
+    alertsRoute,
+    discountsRoute,
+    taxConfigRoute,
+    salesReportsRoute,
+    combosRoute,
+    subscriptionsRoute,
+    deliveryCalendarRoute,
+  ]),
 ]);
 
 const router = createRouter({ routeTree });
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router;
   }
@@ -194,6 +193,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
+      <Toaster richColors position="top-right" />
     </QueryClientProvider>
   );
 }

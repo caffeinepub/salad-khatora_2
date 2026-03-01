@@ -1,233 +1,27 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Cross-check and fix all project issues",
+  "title": "Fix 'Actor not available' error when adding a customer",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Audit and fix the SalesPage layout and styling to ensure cart, menu grid, checkout button, and discount/customer selectors are correctly laid out with consistent spacing, typography, and color tokens from the design system",
+      "summary": "Fix the 'Actor not available' error that occurs when submitting the Add Customer form by ensuring the backend actor is fully initialized before the create customer mutation is invoked, adding proper loading/guard states, and displaying user-friendly error messages.",
       "acceptanceCriteria": [
-        "SalesPage renders without layout overflow or broken grid",
-        "All interactive elements (add-to-cart, discount, customer select) are clearly visible and functional",
-        "Typography and colors use defined CSS custom properties consistently"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/SalesPage.tsx",
-          "operation": "modify",
-          "description": "Audit and fix layout issues in SalesPage: verify the menu grid (columns, gaps, responsive breakpoints), cart display (item list, totals section), discount code and customer selector positioning, and checkout button placement. Ensure all typography uses DM Sans/Plus Jakarta Sans from tailwind.config.js. Replace any hardcoded color values with OKLCH-based CSS custom properties from index.css (e.g., var(--primary), var(--background), var(--foreground)). Fix any overflow issues on mobile and desktop viewports. Verify add-to-cart buttons, discount application, and customer selection controls are visually accessible and correctly trigger their respective handlers."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Audit and fix the SalesReportsPage to ensure daily/weekly toggle, summary stat cards, and report table are properly styled, aligned, and display accurate data without visual regressions",
-      "acceptanceCriteria": [
-        "Toggle between daily and weekly views works correctly",
-        "Summary stat cards display revenue, orders, and average revenue with proper formatting",
-        "Report table rows align correctly and are readable in both light and dark modes"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/SalesReportsPage.tsx",
-          "operation": "modify",
-          "description": "Audit and fix SalesReportsPage layout and styling: verify the daily/weekly toggle buttons function correctly and update the displayed data. Check summary stat cards (total revenue, total orders, average revenue) for proper number formatting, alignment, and spacing. Ensure the report table rows and columns align correctly with consistent padding and borders. Replace any hardcoded colors with OKLCH-based CSS custom properties from index.css. Test readability in both light and dark modes. Verify no visual overflow or misalignment issues on different screen sizes."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Audit and fix BillReceiptView to ensure the print layout correctly renders order items, subtotal, discount, tax breakdown, total, payment mode, and customer name without overlapping or missing elements, and that window.print() produces a clean receipt",
-      "acceptanceCriteria": [
-        "All bill fields (items, subtotal, discount, taxes, total, payment mode, customer) are shown correctly",
-        "Print stylesheet produces a clean, correctly formatted receipt",
-        "No layout overflow or hidden content when printing"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/BillReceiptView.tsx",
-          "operation": "modify",
-          "description": "Audit and fix BillReceiptView print layout: verify all order line items, subtotal, discount amount, tax breakdown (name, rate, amount per tax), total, payment mode, and customer name are rendered correctly without overlapping or missing elements. Check that the print stylesheet (defined in index.css under @media print) produces a clean, correctly formatted receipt when window.print() is triggered. Ensure no content is hidden or cut off during printing. Test for proper alignment, font sizes, and spacing in the print preview. Verify the dialog opens and closes correctly and the print button is clearly visible."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Audit and fix CheckoutDialog to ensure cart items list, pricing breakdown (subtotal, discount, taxes, total), and payment method selector (cash, card, UPI) are correctly displayed and styled, with the confirm button clearly accessible",
-      "acceptanceCriteria": [
-        "All pricing breakdown lines render with correct labels and values",
-        "Payment method options are clearly selectable with active state indication",
-        "Confirm order button is visible and triggers the mutation correctly"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/CheckoutDialog.tsx",
-          "operation": "modify",
-          "description": "Audit and fix CheckoutDialog layout and functionality: verify cart items are listed with correct names, quantities, and prices. Check that the pricing breakdown section displays subtotal, discount amount, tax breakdown (each tax with name, rate, amount), and final total with correct labels and formatting. Ensure payment method options (cash, card, UPI) are clearly displayed with radio buttons or similar selectors, and the active/selected state is visually distinct. Verify the confirm order button is visible, properly styled, and triggers the createSaleOrder mutation correctly. Replace any hardcoded colors with OKLCH-based CSS custom properties. Test dialog opening, closing, and responsiveness on mobile and desktop."
-        }
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "summary": "Audit and fix the sidebar navigation in Layout.tsx to ensure all navigation links are grouped correctly, styled consistently, the active route is visually highlighted, and mobile hamburger menu toggle behavior works correctly",
-      "acceptanceCriteria": [
-        "All navigation links are present and route correctly",
-        "Active route link is visually distinguished",
-        "Mobile sidebar opens and closes correctly via the hamburger button",
-        "Dark mode toggle works in both mobile and desktop sidebar"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/Layout.tsx",
-          "operation": "modify",
-          "description": "Audit and fix Layout.tsx sidebar navigation: verify all navigation links (dashboard, sales, inventory, menu, customers, combos, suppliers, purchase orders, subscriptions, delivery calendar, discounts, tax config, staff accounts, waste log, alerts, sales reports, audit log, admin settings) are present, correctly grouped (e.g., by category), and route to their respective pages. Ensure consistent styling across all links using OKLCH-based CSS custom properties for colors. Verify the active route is visually highlighted (e.g., with a different background or border color). Test the mobile hamburger menu: ensure it toggles the sidebar open/closed correctly on click, and that the sidebar is accessible and usable on mobile devices. Verify the dark mode toggle button works in both mobile and desktop views and correctly applies the dark theme class to the document root."
-        }
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "summary": "Audit global design token consistency across all pages to verify that all pages use the OKLCH-based CSS custom properties defined in index.css for colors, typography uses DM Sans/Plus Jakarta Sans fonts from tailwind.config.js, and dark mode works correctly on every page",
-      "acceptanceCriteria": [
-        "No hardcoded color values that conflict with the design token system",
-        "Dark mode toggles correctly on all pages without broken contrast",
-        "Font families are applied consistently across headings and body text on all pages",
-        "No pages have layout-breaking issues in either light or dark mode"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/DashboardPage.tsx",
-          "operation": "modify",
-          "description": "Audit DashboardPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties from index.css (e.g., var(--primary), var(--background), var(--foreground), var(--card), var(--muted)). Verify typography uses DM Sans or Plus Jakarta Sans fonts. Test dark mode rendering to ensure all text and backgrounds have proper contrast and no visual regressions."
-        },
-        {
-          "path": "frontend/src/pages/InventoryPage.tsx",
-          "operation": "modify",
-          "description": "Audit InventoryPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify font families and test dark mode for proper contrast and readability. Ensure low-stock and expiring-soon item highlights use design tokens."
-        },
-        {
-          "path": "frontend/src/pages/MenuPage.tsx",
-          "operation": "modify",
-          "description": "Audit MenuPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography uses DM Sans or Plus Jakarta Sans. Test dark mode rendering for menu items, search/filter controls, and availability toggles."
-        },
-        {
-          "path": "frontend/src/pages/CustomersPage.tsx",
-          "operation": "modify",
-          "description": "Audit CustomersPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for customer table and dialogs."
-        },
-        {
-          "path": "frontend/src/pages/CombosPage.tsx",
-          "operation": "modify",
-          "description": "Audit CombosPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for combo cards and dialogs."
-        },
-        {
-          "path": "frontend/src/pages/SuppliersPage.tsx",
-          "operation": "modify",
-          "description": "Audit SuppliersPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for supplier table and dialogs."
-        },
-        {
-          "path": "frontend/src/pages/PurchaseOrdersPage.tsx",
-          "operation": "modify",
-          "description": "Audit PurchaseOrdersPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for purchase order table and dialogs."
-        },
-        {
-          "path": "frontend/src/pages/SubscriptionsPage.tsx",
-          "operation": "modify",
-          "description": "Audit SubscriptionsPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for subscription table, dialogs, and status badges."
-        },
-        {
-          "path": "frontend/src/pages/DeliveryCalendarPage.tsx",
-          "operation": "modify",
-          "description": "Audit DeliveryCalendarPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for delivery calendar view and navigation controls."
-        },
-        {
-          "path": "frontend/src/pages/DiscountsPage.tsx",
-          "operation": "modify",
-          "description": "Audit DiscountsPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for discount code list and dialogs."
-        },
-        {
-          "path": "frontend/src/pages/TaxConfigPage.tsx",
-          "operation": "modify",
-          "description": "Audit TaxConfigPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for tax config table and dialogs."
-        },
-        {
-          "path": "frontend/src/pages/StaffAccountsPage.tsx",
-          "operation": "modify",
-          "description": "Audit StaffAccountsPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for staff account table and dialogs."
-        },
-        {
-          "path": "frontend/src/pages/WasteLogPage.tsx",
-          "operation": "modify",
-          "description": "Audit WasteLogPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for waste log table and submission form."
-        },
-        {
-          "path": "frontend/src/pages/AlertsPage.tsx",
-          "operation": "modify",
-          "description": "Audit AlertsPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for alert list and action buttons."
-        },
-        {
-          "path": "frontend/src/pages/AuditLogPage.tsx",
-          "operation": "modify",
-          "description": "Audit AuditLogPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for audit log table and pagination controls."
-        },
-        {
-          "path": "frontend/src/pages/AdminSettingsPage.tsx",
-          "operation": "modify",
-          "description": "Audit AdminSettingsPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for role display and claim admin button."
-        }
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "summary": "Audit useQueries.ts for any broken query/mutation hooks to verify that all hooks correctly reference backend actor methods, handle loading/error states, and invalidate the correct query keys after mutations",
-      "acceptanceCriteria": [
-        "All useQuery hooks have correct queryKey arrays and fetcher functions",
-        "All useMutation hooks invalidate the appropriate dependent queries on success",
-        "Error states are handled gracefully and surface meaningful messages to the user"
+        "Opening the Add Customer dialog and submitting the form does not produce an 'Actor not available' error.",
+        "The Add Customer submit button is disabled while the actor is still initializing.",
+        "If the actor fails to initialize, a descriptive error message is shown to the user.",
+        "Successfully adding a customer updates the customer list without page reload."
       ],
       "file_operations": [
         {
           "path": "frontend/src/hooks/useQueries.ts",
           "operation": "modify",
-          "description": "Audit useQueries.ts for correctness: verify that all useQuery hooks have correct queryKey arrays (e.g., ['menuItems'], ['customers'], ['discountCodes']) and that fetcher functions correctly reference backend actor methods from the backend interface. Check that all useMutation hooks invalidate the appropriate dependent query keys on success (e.g., createMenuItem mutation invalidates ['menuItems']). Ensure error states are properly handled and surfaced to the UI with meaningful error messages. Verify that all hooks are properly typed using the TypeScript types from backend.d.ts. Fix any broken references, incorrect query keys, or missing invalidation logic."
-        }
-      ]
-    },
-    {
-      "id": "REQ-9",
-      "summary": "Fix the empty ProfileSetupModal.tsx component — either implement it with appropriate profile setup fields (username/display name) or remove its import/usage from the app if it is not needed",
-      "acceptanceCriteria": [
-        "ProfileSetupModal.tsx is either a functional component or cleanly removed with no broken imports"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/components/ProfileSetupModal.tsx",
-          "operation": "modify",
-          "description": "Implement ProfileSetupModal as a functional component that prompts the user for their name when they log in for the first time. Use the authorization component's getCallerUserProfile and saveCallerUserProfile methods. Display a modal dialog with a text input field for the user's name and a submit button. On submit, call saveCallerUserProfile with the entered name. Follow the usage instructions from the authorization component to prevent modal flash by checking if the user profile is null before showing the modal. Ensure the modal is styled using OKLCH-based CSS custom properties and works in both light and dark modes. If the BuildRequest or app flow indicates that profile setup is not needed, delete this file and remove any imports/usage of ProfileSetupModal from other components (search the codebase for references)."
+          "description": "Update the useCreateCustomer mutation hook to properly handle actor availability by adding enabled/ready state checking based on the useActor hook's isFetching state. Ensure the mutation function checks for actor availability before attempting to call actor.addCustomer and throws a descriptive error if the actor is null or unavailable."
         },
         {
-          "path": "frontend/src/App.tsx",
+          "path": "frontend/src/pages/CustomersPage.tsx",
           "operation": "modify",
-          "description": "If ProfileSetupModal is implemented, ensure it is correctly imported and conditionally rendered in App.tsx or the appropriate parent component (e.g., after authentication check). Use the pattern from the authorization component usage instructions: show the modal only when isAuthenticated is true, profileLoading is false, isFetched is true, and userProfile is null. If ProfileSetupModal is removed, ensure no broken imports or references remain in App.tsx."
-        }
-      ]
-    },
-    {
-      "id": "REQ-10",
-      "summary": "Fix the empty LoginPage.tsx — either implement a proper login page that triggers Internet Identity login via the useInternetIdentity hook and redirects authenticated users to the dashboard, or remove it if authentication is handled inline elsewhere",
-      "acceptanceCriteria": [
-        "LoginPage either renders a functional login UI with Internet Identity or is cleanly removed with no broken routes",
-        "Authenticated users are redirected to the dashboard automatically"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/pages/LoginPage.tsx",
-          "operation": "modify",
-          "description": "Implement LoginPage as a functional component that renders a login UI using Internet Identity. Import useInternetIdentity hook and display a login button that calls the login() method. Follow the usage instructions from the authorization component: show 'Logging in...' during loginStatus === 'logging-in', and redirect authenticated users (identity is not null) to the dashboard route automatically using React Router's useNavigate or similar. Style the page using OKLCH-based CSS custom properties and ensure it works in both light and dark modes. If the BuildRequest or app flow indicates that authentication is handled inline elsewhere (e.g., in Layout or App), delete this file and remove the LoginPage route from App.tsx."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "If LoginPage is implemented, ensure the route for LoginPage (e.g., '/login') is correctly defined in the router configuration in App.tsx. If LoginPage is removed, ensure the '/login' route is also removed and there are no broken route references. Verify that authenticated users are redirected from the root or login route to the dashboard automatically."
+          "description": "Add actor readiness checking to the Add Customer form by integrating the isFetching state from useActor. Disable the submit button when the actor is still initializing (actorFetching is true) or when the mutation is pending. Display a loading indicator or disabled state message on the submit button to inform users that the system is initializing. Add error handling to display user-friendly error messages if actor initialization fails or if the mutation throws an 'Actor not available' error, ensuring the error is shown in the UI rather than crashing silently."
         }
       ]
     }

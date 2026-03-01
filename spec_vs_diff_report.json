@@ -1,93 +1,16 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-03-01T13:58:11.421Z",
-  "summary": "The diff only modifies project_state.json, which records all 10 requirements as 'pending' action items. No actual implementation changes were made to any source files (frontend components, backend Motoko, hooks, etc.). All 10 requirements remain unimplemented.",
-  "missing_requirements": [
-    {
-      "id": "REQ-1",
-      "requirement": "Audit and fix the SalesPage layout and styling",
-      "reason": "No changes to SalesPage source files were made. Only project_state.json was updated, marking this as 'pending'.",
-      "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "requirement": "Audit and fix the SalesReportsPage",
-      "reason": "No changes to SalesReportsPage source files were made. Only project_state.json was updated, marking this as 'pending'.",
-      "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "requirement": "Audit and fix BillReceiptView",
-      "reason": "No changes to BillReceiptView source files were made. Only project_state.json was updated, marking this as 'pending'.",
-      "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "Audit and fix CheckoutDialog",
-      "reason": "No changes to CheckoutDialog source files were made. Only project_state.json was updated, marking this as 'pending'.",
-      "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "requirement": "Audit and fix the sidebar navigation in Layout.tsx",
-      "reason": "No changes to Layout.tsx or related navigation files were made. Only project_state.json was updated, marking this as 'pending'.",
-      "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "requirement": "Audit global design token consistency across all pages",
-      "reason": "No changes to any page components, index.css, or tailwind.config.js were made. Only project_state.json was updated, marking this as 'pending'.",
-      "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "requirement": "Audit the backend main.mo actor for logic errors, missing authorization checks, inconsistent state mutations, or type mismatches",
-      "reason": "No changes to backend/main.mo were made. Only project_state.json was updated, marking this as 'pending'.",
-      "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "requirement": "Audit useQueries.ts for broken query/mutation hooks",
-      "reason": "No changes to useQueries.ts were made. Only project_state.json was updated, marking this as 'pending'.",
-      "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-9",
-      "requirement": "Fix the empty ProfileSetupModal.tsx component",
-      "reason": "No changes to ProfileSetupModal.tsx were made. Only project_state.json was updated, marking this as 'pending'.",
-      "evidence": [
-        "project_state.json"
-      ]
-    },
-    {
-      "id": "REQ-10",
-      "requirement": "Fix the empty LoginPage.tsx",
-      "reason": "No changes to LoginPage.tsx were made. Only project_state.json was updated, marking this as 'pending'.",
-      "evidence": [
-        "project_state.json"
-      ]
-    }
-  ],
+  "generatedAt": "2026-03-01T14:56:07.454Z",
+  "summary": "The diff implements all four acceptance criteria for REQ-1. CustomersPage.tsx now uses useActor to check actor readiness, disables the submit button while the actor is initializing, shows inline alert messages when the actor is unavailable or when mutations fail, and relies on React Query cache invalidation to update the customer list without a page reload. useQueries.ts is also updated to throw descriptive errors when the actor is unavailable. No immutable files were modified. No unrequested features were added.",
+  "missing_requirements": [],
   "hallucinated_features": [],
-  "confidence": 0.99,
+  "confidence": 0.95,
   "changed_files": [
+    "frontend-file-summaries.txt",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/pages/CustomersPage.tsx",
+    "frontend/src/pages/SalesReportsPage.tsx",
     "project_state.json"
   ]
 }

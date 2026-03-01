@@ -1,199 +1,35 @@
 {
   "kind": "build_request",
-  "title": "Cross-check and fix all project issues",
-  "projectName": "Salad Khatora POS",
+  "title": "Fix 'Actor not available' error when adding a customer",
   "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Audit and fix the SalesPage layout and styling: ensure cart, menu grid, checkout button, and discount/customer selectors are correctly laid out with consistent spacing, typography, and color tokens from the design system.",
+      "text": "Fix the 'Actor not available' error that occurs when submitting the Add Customer form on the Customers page. Ensure the backend actor is fully initialized and available before the create customer mutation is invoked. Add a proper loading/guard state so the form submission is disabled or deferred until the actor is ready, and display a user-friendly error message if the actor is genuinely unavailable instead of crashing silently.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "cross check full project code and fix all the issues related to app"
+          "while adding customer showing actor not available"
         ]
       },
       "acceptanceCriteria": [
-        "SalesPage renders without layout overflow or broken grid",
-        "All interactive elements (add-to-cart, discount, customer select) are clearly visible and functional",
-        "Typography and colors use defined CSS custom properties consistently"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "Audit and fix the SalesReportsPage: ensure daily/weekly toggle, summary stat cards, and report table are properly styled, aligned, and display accurate data without visual regressions.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "cross check full project code and fix all the issues related to app"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Toggle between daily and weekly views works correctly",
-        "Summary stat cards display revenue, orders, and average revenue with proper formatting",
-        "Report table rows align correctly and are readable in both light and dark modes"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Audit and fix BillReceiptView: ensure the print layout correctly renders order items, subtotal, discount, tax breakdown, total, payment mode, and customer name without overlapping or missing elements, and that window.print() produces a clean receipt.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "cross check full project code and fix all the issues related to app"
-        ]
-      },
-      "acceptanceCriteria": [
-        "All bill fields (items, subtotal, discount, taxes, total, payment mode, customer) are shown correctly",
-        "Print stylesheet produces a clean, correctly formatted receipt",
-        "No layout overflow or hidden content when printing"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Audit and fix CheckoutDialog: ensure cart items list, pricing breakdown (subtotal, discount, taxes, total), and payment method selector (cash, card, UPI) are correctly displayed and styled, with the confirm button clearly accessible.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "cross check full project code and fix all the issues related to app"
-        ]
-      },
-      "acceptanceCriteria": [
-        "All pricing breakdown lines render with correct labels and values",
-        "Payment method options are clearly selectable with active state indication",
-        "Confirm order button is visible and triggers the mutation correctly"
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Audit and fix the sidebar navigation in Layout.tsx: ensure all navigation links (dashboard, sales, inventory, menu, customers, combos, suppliers, purchase orders, subscriptions, delivery calendar, discounts, tax config, staff accounts, waste log, alerts, sales reports, audit log, admin settings) are grouped correctly, styled consistently, and the active route is visually highlighted. Fix mobile hamburger menu toggle behavior.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "cross check full project code and fix all the issues related to app"
-        ]
-      },
-      "acceptanceCriteria": [
-        "All navigation links are present and route correctly",
-        "Active route link is visually distinguished",
-        "Mobile sidebar opens and closes correctly via the hamburger button",
-        "Dark mode toggle works in both mobile and desktop sidebar"
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "Audit global design token consistency across all pages: verify that all pages (Dashboard, Inventory, Menu, Customers, Combos, Suppliers, Purchase Orders, Subscriptions, Delivery Calendar, Discounts, Tax Config, Staff Accounts, Waste Log, Alerts, Audit Log, Admin Settings) use the OKLCH-based CSS custom properties defined in index.css for colors, typography uses DM Sans/Plus Jakarta Sans fonts from tailwind.config.js, and dark mode works correctly on every page.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "cross check full project code and fix all the issues related to app"
-        ]
-      },
-      "acceptanceCriteria": [
-        "No hardcoded color values that conflict with the design token system",
-        "Dark mode toggles correctly on all pages without broken contrast",
-        "Font families are applied consistently across headings and body text on all pages",
-        "No pages have layout-breaking issues in either light or dark mode"
-      ]
-    },
-    {
-      "id": "REQ-7",
-      "text": "Audit the backend main.mo actor for any logic errors, missing authorization checks, inconsistent state mutations, or type mismatches. Fix any identified issues while maintaining the single-actor architecture.",
-      "target": "backend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "cross check full project code and fix all the issues related to app"
-        ]
-      },
-      "acceptanceCriteria": [
-        "All public actor functions have appropriate access control checks",
-        "State mutations are consistent and do not leave partial/corrupt state",
-        "No Motoko type errors or warnings in the main actor",
-        "Audit log entries are correctly recorded for all mutating operations"
-      ]
-    },
-    {
-      "id": "REQ-8",
-      "text": "Audit useQueries.ts for any broken query/mutation hooks: verify that all hooks correctly reference backend actor methods, handle loading/error states, and invalidate the correct query keys after mutations.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "cross check full project code and fix all the issues related to app"
-        ]
-      },
-      "acceptanceCriteria": [
-        "All useQuery hooks have correct queryKey arrays and fetcher functions",
-        "All useMutation hooks invalidate the appropriate dependent queries on success",
-        "Error states are handled gracefully and surface meaningful messages to the user"
-      ]
-    },
-    {
-      "id": "REQ-9",
-      "text": "Fix the empty ProfileSetupModal.tsx component — either implement it with appropriate profile setup fields (username/display name) or remove its import/usage from the app if it is not needed.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "cross check full project code and fix all the issues related to app"
-        ]
-      },
-      "acceptanceCriteria": [
-        "ProfileSetupModal.tsx is either a functional component or cleanly removed with no broken imports"
-      ]
-    },
-    {
-      "id": "REQ-10",
-      "text": "Fix the empty LoginPage.tsx — either implement a proper login page that triggers Internet Identity login via the useInternetIdentity hook and redirects authenticated users to the dashboard, or remove it if authentication is handled inline elsewhere.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "cross check full project code and fix all the issues related to app"
-        ]
-      },
-      "acceptanceCriteria": [
-        "LoginPage either renders a functional login UI with Internet Identity or is cleanly removed with no broken routes",
-        "Authenticated users are redirected to the dashboard automatically"
+        "Opening the Add Customer dialog and submitting the form does not produce an 'Actor not available' error.",
+        "The Add Customer submit button is disabled while the actor is still initializing.",
+        "If the actor fails to initialize, a descriptive error message is shown to the user.",
+        "Successfully adding a customer updates the customer list without page reload."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui",
-    "Maintain single-actor architecture in backend/main.mo",
-    "All fixes must preserve existing data model and API contracts"
+    "Do not modify files under frontend/src/hooks/useActor.ts or any other immutable path.",
+    "All backend actor interaction must go through the existing useActor hook."
   ],
   "nonGoals": [
-    "Adding new features not already present in the application",
-    "Redesigning the visual theme or changing the color palette",
-    "Migrating to a different frontend framework or backend language"
+    "Changes to backend customer data model or Motoko logic.",
+    "Redesigning the Customers page UI."
   ],
   "imageRequirements": {
     "required": [],

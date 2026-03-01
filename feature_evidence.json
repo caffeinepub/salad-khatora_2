@@ -1,4 +1,25 @@
 {
   "kind": "feature_evidence_report",
-  "features": []
+  "features": [
+    {
+      "featureId": "feature-fix-the-actor-not-available-error-that-occurs-when-submitting-the-add-customer-form-on-the-customers-page-ensure-the-backend-actor-is-fully-initialized-and-available-before-the-create-customer-mutation-is-invoked-add-a-proper-loading-guard-state-so-the-form-submission-is-disabled-or-deferred-until-the-actor-is-ready-and-display-a-user-friendly-error-message-if-the-actor-is-genuinely-unavailable-instead-of-crashing-silently",
+      "featureTitle": "Fix the 'Actor not available' error that occurs when submitting the Add Customer form on the Customers page. Ensure the backend actor is fully initialized and available before the create customer mutation is invoked. Add a proper loading/guard state so the form submission is disabled or deferred until the actor is ready, and display a user-friendly error message if the actor is genuinely unavailable instead of crashing silently.",
+      "files": [
+        "frontend/src/hooks/useQueries.ts",
+        "frontend/src/pages/CustomersPage.tsx"
+      ],
+      "components": [
+        "authorization@4.0.0",
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    }
+  ]
 }

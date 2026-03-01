@@ -15,7 +15,6 @@ export default function SalesReportsPage() {
 
   const { data: report = [], isLoading, isError, error } = useSalesReport(period);
 
-  // Use the non-optional `revenue` and `orders` fields (totalRevenue/totalOrders are optional aliases)
   const totalRevenue = report.reduce((sum, r) => sum + r.revenue, 0);
   const totalOrders = report.reduce((sum, r) => sum + r.orders, 0);
   const avgRevenue = report.length > 0 ? totalRevenue / report.length : 0;

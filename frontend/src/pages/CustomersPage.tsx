@@ -1,23 +1,17 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Search, User } from 'lucide-react';
-import {
-  useCustomers,
-  useCreateCustomer,
-  useUpdateCustomer,
-  useDeleteCustomer,
-} from '../hooks/useQueries';
-import { Customer } from '../backend';
+import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from '../hooks/useQueries';
+import { useActor } from '../hooks/useActor';
+import type { Customer } from '../backend';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -29,24 +23,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { UserPlus, Search, Edit, Trash2, Eye, Loader2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import CustomerDetailView from '../components/CustomerDetailView';
 
-type CustomerForm = {
+interface CustomerFormData {
   name: string;
   mobileNo: string;
   email: string;
   preference: string;
   address: string;
-};
+}
 
-const defaultForm: CustomerForm = {
+const emptyForm: CustomerFormData = {
   name: '',
   mobileNo: '',
   email: '',
@@ -54,42 +44,52 @@ const defaultForm: CustomerForm = {
   address: '',
 };
 
-function extractErrorMessage(err: unknown): string {
-  const msg = (err as Error)?.message ?? String(err);
-  const match = msg.match(/Reject text: (.+)/);
-  return match ? match[1] : msg;
+function extractErrorMessage(error: unknown): string {
+  if (!error) return 'An unknown error occurred';
+  const msg = error instanceof Error ? error.message : String(error);
+  const match = msg.match(/Reject text: (.+)$/s);
+  if (match) return match[1].trim();
+  return msg;
 }
 
 export default function CustomersPage() {
+  const { actor, isFetching: actorFetching } = useActor();
+  const actorReady = !!actor && !actorFetching;
+
   const { data: customers = [], isLoading } = useCustomers();
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
   const deleteCustomer = useDeleteCustomer();
 
   const [search, setSearch] = useState('');
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-  const [deletingId, setDeletingId] = useState<bigint | null>(null);
-  const [form, setForm] = useState<CustomerForm>(defaultForm);
+  const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [detailCustomerId, setDetailCustomerId] = useState<bigint | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [formData, setFormData] = useState<CustomerFormData>(emptyForm);
 
-  const filtered = customers.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.mobileNo.includes(search)
+  const filtered = customers.filter(
+    (c) =>
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.mobileNo.includes(search) ||
+      (c.email ?? '').toLowerCase().includes(search.toLowerCase()),
   );
 
-  function openAddDialog() {
-    setForm(defaultForm);
+  const openAddDialog = () => {
+    setFormData(emptyForm);
     createCustomer.reset();
-    setShowAddDialog(true);
-  }
+    setAddOpen(true);
+  };
 
-  function closeAddDialog() {
-    setShowAddDialog(false);
+  const closeAddDialog = () => {
+    setAddOpen(false);
     createCustomer.reset();
-  }
+  };
 
-  function openEdit(customer: Customer) {
-    setForm({
+  const openEdit = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setFormData({
       name: customer.name,
       mobileNo: customer.mobileNo,
       email: customer.email ?? '',
@@ -97,225 +97,433 @@ export default function CustomersPage() {
       address: customer.address,
     });
     updateCustomer.reset();
-    setEditingCustomer(customer);
-  }
+    setEditOpen(true);
+  };
 
-  function closeEditDialog() {
-    setEditingCustomer(null);
+  const closeEditDialog = () => {
+    setEditOpen(false);
     updateCustomer.reset();
-  }
+  };
 
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault();
-    await createCustomer.mutateAsync({
-      name: form.name.trim(),
-      mobileNo: form.mobileNo.trim(),
-      email: form.email.trim() || null,
-      preference: form.preference.trim(),
-      address: form.address.trim(),
-    });
-    closeAddDialog();
-  }
-
-  async function handleEdit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!editingCustomer) return;
-    await updateCustomer.mutateAsync({
-      id: editingCustomer.id,
-      name: form.name.trim(),
-      mobileNo: form.mobileNo.trim(),
-      email: form.email.trim() || null,
-      preference: form.preference.trim(),
-      address: form.address.trim(),
-    });
-    closeEditDialog();
-  }
-
-  async function handleDelete() {
-    if (deletingId !== null) {
-      await deleteCustomer.mutateAsync(deletingId);
-      setDeletingId(null);
+  const handleAdd = async () => {
+    if (!actorReady) return;
+    try {
+      await createCustomer.mutateAsync({
+        name: formData.name,
+        mobileNo: formData.mobileNo,
+        email: formData.email.trim() || null,
+        preference: formData.preference,
+        address: formData.address,
+      });
+      closeAddDialog();
+    } catch {
+      // error shown in UI
     }
-  }
+  };
 
-  if (isLoading) {
+  const handleEdit = async () => {
+    if (!selectedCustomer || !actorReady) return;
+    try {
+      await updateCustomer.mutateAsync({
+        id: selectedCustomer.id,
+        name: formData.name,
+        mobileNo: formData.mobileNo,
+        email: formData.email.trim() || null,
+        preference: formData.preference,
+        address: formData.address,
+      });
+      closeEditDialog();
+    } catch {
+      // error shown in UI
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedCustomer) return;
+    try {
+      await deleteCustomer.mutateAsync(selectedCustomer.id);
+      setDeleteOpen(false);
+      setSelectedCustomer(null);
+    } catch {
+      // error shown in UI
+    }
+  };
+
+  const handleFormChange = (field: keyof CustomerFormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Show detail view if a customer is selected
+  if (detailCustomerId !== null) {
     return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-3">
-          {[1, 2, 3].map(i => <div key={i} className="h-12 bg-muted rounded" />)}
-        </div>
-      </div>
+      <CustomerDetailView
+        customerId={detailCustomerId}
+        onBack={() => setDetailCustomerId(null)}
+      />
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <div className="p-4 md:p-6 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Customers</h1>
-          <p className="text-muted-foreground">Manage your customer database.</p>
+          <p className="text-muted-foreground text-sm mt-1">Manage your customer database and loyalty points</p>
         </div>
-        <Button onClick={openAddDialog}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Customer
+        <Button
+          onClick={openAddDialog}
+          disabled={!actorReady}
+          className="flex items-center gap-2"
+        >
+          {actorFetching ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <UserPlus className="h-4 w-4" />
+          )}
+          {actorFetching ? 'Initializing...' : 'Add Customer'}
         </Button>
       </div>
 
-      <div className="relative max-w-sm">
+      {/* Search */}
+      <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          className="pl-9"
-          placeholder="Search by name or phone..."
+          placeholder="Search by name, phone, or email..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
         />
       </div>
 
-      {filtered.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <User className="h-12 w-12 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">
-              {search ? 'No customers match your search.' : 'No customers yet.'}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="rounded-md border overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Mobile</TableHead>
-                <TableHead className="hidden md:table-cell">Email</TableHead>
-                <TableHead className="hidden md:table-cell">Loyalty Points</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map(customer => (
-                <TableRow key={customer.id.toString()}>
-                  <TableCell className="font-medium">{customer.name}</TableCell>
-                  <TableCell>{customer.mobileNo}</TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground">
-                    {customer.email ?? '—'}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    <Badge variant="secondary">{Number(customer.loyaltyPoints)} pts</Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(customer)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-destructive"
-                        onClick={() => setDeletingId(customer.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+      {/* Actor not ready warning */}
+      {actorFetching && (
+        <Alert>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <AlertDescription>Connecting to the backend, please wait...</AlertDescription>
+        </Alert>
       )}
 
-      {/* Add Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={open => !open && closeAddDialog()}>
-        <DialogContent>
+      {/* Table */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          {search ? 'No customers match your search.' : 'No customers yet. Add your first customer!'}
+        </div>
+      ) : (
+        <>
+          {/* Desktop Table */}
+          <div className="hidden md:block rounded-lg border border-border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Name</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Mobile</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Email</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Loyalty Points</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Preference</th>
+                  <th className="text-right px-4 py-3 font-medium text-muted-foreground">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filtered.map((customer) => (
+                  <tr key={customer.id.toString()} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-3 font-medium">{customer.name}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{customer.mobileNo}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{customer.email ?? '—'}</td>
+                    <td className="px-4 py-3">
+                      <Badge variant="secondary" className="bg-primary/10 text-primary">
+                        {customer.loyaltyPoints.toString()} pts
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{customer.preference || '—'}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDetailCustomerId(customer.id)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => openEdit(customer)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => {
+                            setSelectedCustomer(customer);
+                            setDeleteOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-3">
+            {filtered.map((customer) => (
+              <div key={customer.id.toString()} className="rounded-lg border border-border p-4 space-y-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-medium">{customer.name}</p>
+                    <p className="text-sm text-muted-foreground">{customer.mobileNo}</p>
+                    {customer.email && <p className="text-sm text-muted-foreground">{customer.email}</p>}
+                  </div>
+                  <Badge variant="secondary" className="bg-primary/10 text-primary">
+                    {customer.loyaltyPoints.toString()} pts
+                  </Badge>
+                </div>
+                {customer.preference && (
+                  <p className="text-sm text-muted-foreground">Pref: {customer.preference}</p>
+                )}
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setDetailCustomerId(customer.id)}
+                  >
+                    <Eye className="h-3 w-3 mr-1" /> View
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => openEdit(customer)}>
+                    <Edit className="h-3 w-3 mr-1" /> Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                    onClick={() => {
+                      setSelectedCustomer(customer);
+                      setDeleteOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" /> Delete
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Add Customer Dialog */}
+      <Dialog open={addOpen} onOpenChange={(open) => { if (!open) closeAddDialog(); }}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add Customer</DialogTitle>
+            <DialogDescription>Fill in the customer details below.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleAdd} className="space-y-4">
-            <div>
-              <Label>Name</Label>
-              <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required />
+
+          {!actorReady && (
+            <Alert>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <AlertDescription>Connecting to backend, please wait before submitting...</AlertDescription>
+            </Alert>
+          )}
+
+          {createCustomer.isError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{extractErrorMessage(createCustomer.error)}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="add-name">Name *</Label>
+              <Input
+                id="add-name"
+                value={formData.name}
+                onChange={(e) => handleFormChange('name', e.target.value)}
+                placeholder="Customer name"
+              />
             </div>
-            <div>
-              <Label>Mobile No.</Label>
-              <Input value={form.mobileNo} onChange={e => setForm(p => ({ ...p, mobileNo: e.target.value }))} required />
+            <div className="space-y-1.5">
+              <Label htmlFor="add-mobile">Mobile No *</Label>
+              <Input
+                id="add-mobile"
+                value={formData.mobileNo}
+                onChange={(e) => handleFormChange('mobileNo', e.target.value)}
+                placeholder="Mobile number"
+              />
             </div>
-            <div>
-              <Label>Email (optional)</Label>
-              <Input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
+            <div className="space-y-1.5">
+              <Label htmlFor="add-email">Email</Label>
+              <Input
+                id="add-email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleFormChange('email', e.target.value)}
+                placeholder="Email address (optional)"
+              />
             </div>
-            <div>
-              <Label>Preference</Label>
-              <Input value={form.preference} onChange={e => setForm(p => ({ ...p, preference: e.target.value }))} />
+            <div className="space-y-1.5">
+              <Label htmlFor="add-preference">Preference</Label>
+              <Input
+                id="add-preference"
+                value={formData.preference}
+                onChange={(e) => handleFormChange('preference', e.target.value)}
+                placeholder="e.g. Veg, Non-veg"
+              />
             </div>
-            <div>
-              <Label>Address</Label>
-              <Input value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} />
+            <div className="space-y-1.5">
+              <Label htmlFor="add-address">Address</Label>
+              <Input
+                id="add-address"
+                value={formData.address}
+                onChange={(e) => handleFormChange('address', e.target.value)}
+                placeholder="Address"
+              />
             </div>
-            {createCustomer.isError && (
-              <p className="text-destructive text-sm">{extractErrorMessage(createCustomer.error)}</p>
-            )}
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={closeAddDialog}>Cancel</Button>
-              <Button type="submit" disabled={createCustomer.isPending}>
-                {createCustomer.isPending ? 'Adding...' : 'Add Customer'}
-              </Button>
-            </DialogFooter>
-          </form>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={closeAddDialog} disabled={createCustomer.isPending}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAdd}
+              disabled={!actorReady || createCustomer.isPending || !formData.name || !formData.mobileNo}
+            >
+              {createCustomer.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Adding...
+                </>
+              ) : !actorReady ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Initializing...
+                </>
+              ) : (
+                'Add Customer'
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
-      <Dialog open={!!editingCustomer} onOpenChange={open => !open && closeEditDialog()}>
-        <DialogContent>
+      {/* Edit Customer Dialog */}
+      <Dialog open={editOpen} onOpenChange={(open) => { if (!open) closeEditDialog(); }}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Customer</DialogTitle>
+            <DialogDescription>Update the customer details below.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleEdit} className="space-y-4">
-            <div>
-              <Label>Name</Label>
-              <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required />
+
+          {updateCustomer.isError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{extractErrorMessage(updateCustomer.error)}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-name">Name *</Label>
+              <Input
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) => handleFormChange('name', e.target.value)}
+                placeholder="Customer name"
+              />
             </div>
-            <div>
-              <Label>Mobile No.</Label>
-              <Input value={form.mobileNo} onChange={e => setForm(p => ({ ...p, mobileNo: e.target.value }))} required />
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-mobile">Mobile No *</Label>
+              <Input
+                id="edit-mobile"
+                value={formData.mobileNo}
+                onChange={(e) => handleFormChange('mobileNo', e.target.value)}
+                placeholder="Mobile number"
+              />
             </div>
-            <div>
-              <Label>Email (optional)</Label>
-              <Input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleFormChange('email', e.target.value)}
+                placeholder="Email address (optional)"
+              />
             </div>
-            <div>
-              <Label>Preference</Label>
-              <Input value={form.preference} onChange={e => setForm(p => ({ ...p, preference: e.target.value }))} />
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-preference">Preference</Label>
+              <Input
+                id="edit-preference"
+                value={formData.preference}
+                onChange={(e) => handleFormChange('preference', e.target.value)}
+                placeholder="e.g. Veg, Non-veg"
+              />
             </div>
-            <div>
-              <Label>Address</Label>
-              <Input value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} />
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-address">Address</Label>
+              <Input
+                id="edit-address"
+                value={formData.address}
+                onChange={(e) => handleFormChange('address', e.target.value)}
+                placeholder="Address"
+              />
             </div>
-            {updateCustomer.isError && (
-              <p className="text-destructive text-sm">{extractErrorMessage(updateCustomer.error)}</p>
-            )}
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={closeEditDialog}>Cancel</Button>
-              <Button type="submit" disabled={updateCustomer.isPending}>
-                {updateCustomer.isPending ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </DialogFooter>
-          </form>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={closeEditDialog} disabled={updateCustomer.isPending}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEdit}
+              disabled={!actorReady || updateCustomer.isPending || !formData.name || !formData.mobileNo}
+            >
+              {updateCustomer.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation */}
-      <AlertDialog open={deletingId !== null} onOpenChange={open => !open && setDeletingId(null)}>
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Customer?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+            <AlertDialogTitle>Delete Customer</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{selectedCustomer?.name}</strong>? This action cannot be undone.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Delete
+            <AlertDialogCancel disabled={deleteCustomer.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleteCustomer.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteCustomer.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

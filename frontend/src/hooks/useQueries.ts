@@ -606,18 +606,298 @@ export function useCancelSubscription() {
   });
 }
 
-export function useDeleteSubscription() {
+// ─── User Profile ─────────────────────────────────────────────────────────────
+export function useGetCallerUserProfile() {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  const query = useQuery<UserProfile | null>({
+    queryKey: ['currentUserProfile'],
+    queryFn: async () => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.getCallerUserProfile();
+    },
+    enabled: !!actor && !actorFetching,
+    retry: false,
+  });
+
+  return {
+    ...query,
+    isLoading: actorFetching || query.isLoading,
+    isFetched: !!actor && query.isFetched,
+  };
+}
+
+export function useSaveCallerUserProfile() {
+  const { actor } = useActor();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: number) => {
-      const subs = lsGet<Subscription[]>('subscriptions', []);
-      lsSet('subscriptions', subs.filter(s => s.id !== id));
+    mutationFn: async (profile: UserProfile) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.saveCallerUserProfile(profile);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['subscriptions'] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['currentUserProfile'] }),
   });
 }
 
-// ─── Sale Orders (backend) ─────────────────────────────────────────────────────
+// ─── Customers ────────────────────────────────────────────────────────────────
+export function useCustomers() {
+  const { actor, isFetching } = useActor();
+  return useQuery<Customer[]>({
+    queryKey: ['customers'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getCustomers();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useCreateCustomer() {
+  const { actor, isFetching } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      name: string;
+      mobileNo: string;
+      email: string | null;
+      preference: string;
+      address: string;
+    }) => {
+      if (!actor || isFetching) throw new Error('Actor not available. Please wait for initialization or refresh the page.');
+      return actor.addCustomer(params.name, params.mobileNo, params.email, params.preference, params.address);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['customers'] }),
+  });
+}
+
+export function useUpdateCustomer() {
+  const { actor, isFetching } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: {
+      id: bigint;
+      name: string;
+      mobileNo: string;
+      email: string | null;
+      preference: string;
+      address: string;
+    }) => {
+      if (!actor || isFetching) throw new Error('Actor not available. Please wait for initialization or refresh the page.');
+      return actor.updateCustomer(params.id, params.name, params.mobileNo, params.email, params.preference, params.address);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['customers'] }),
+  });
+}
+
+export function useDeleteCustomer() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.deleteCustomer(id);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['customers'] }),
+  });
+}
+
+// ─── Loyalty ──────────────────────────────────────────────────────────────────
+export function useLoyaltyBalance(customerId: bigint) {
+  const { actor, isFetching } = useActor();
+  return useQuery<bigint>({
+    queryKey: ['loyaltyBalance', customerId.toString()],
+    queryFn: async () => {
+      if (!actor) return BigInt(0);
+      return actor.getLoyaltyBalance(customerId);
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useLoyaltyTransactions(customerId: bigint) {
+  const { actor, isFetching } = useActor();
+  return useQuery<LoyaltyTransaction[]>({
+    queryKey: ['loyaltyTransactions', customerId.toString()],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getLoyaltyTransactions(customerId);
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useRedeemLoyaltyPoints() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { customerId: bigint; points: bigint; discountAmount: number }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.redeemLoyaltyPoints(params.customerId, params.points, params.discountAmount);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customers'] });
+      qc.invalidateQueries({ queryKey: ['loyaltyBalance'] });
+      qc.invalidateQueries({ queryKey: ['loyaltyTransactions'] });
+    },
+  });
+}
+
+// ─── Customer Order History ───────────────────────────────────────────────────
+export function useCustomerOrderHistory(customerId: bigint) {
+  const { actor, isFetching } = useActor();
+  return useQuery<SaleOrder[]>({
+    queryKey: ['customerOrderHistory', customerId.toString()],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getCustomerOrderHistory(customerId);
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+// ─── Discount Codes ───────────────────────────────────────────────────────────
+export function useDiscountCodes() {
+  const { actor, isFetching } = useActor();
+  return useQuery<DiscountCode[]>({
+    queryKey: ['discountCodes'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getDiscountCodes();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useCreateDiscountCode() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: DiscountCodeInput) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.createDiscountCode(input);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['discountCodes'] }),
+  });
+}
+
+export function useUpdateDiscountCode() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { id: bigint; input: DiscountCodeInput }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateDiscountCode(params.id, params.input);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['discountCodes'] }),
+  });
+}
+
+export function useToggleDiscountCode() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.toggleDiscountCode(id);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['discountCodes'] }),
+  });
+}
+
+export function useDeleteDiscountCode() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.deleteDiscountCode(id);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['discountCodes'] }),
+  });
+}
+
+export function useApplyDiscountCode() {
+  const { actor } = useActor();
+  return useMutation({
+    mutationFn: async (params: { code: string; orderTotal: number }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.applyDiscountCode(params.code, params.orderTotal);
+    },
+  });
+}
+
+// ─── Tax Configs ──────────────────────────────────────────────────────────────
+export function useTaxConfigs() {
+  const { actor, isFetching } = useActor();
+  return useQuery<TaxConfig[]>({
+    queryKey: ['taxConfigs'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getTaxConfigs();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useCreateTaxConfig() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: TaxConfigInput) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.createTaxConfig(input);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['taxConfigs'] }),
+  });
+}
+
+export function useUpdateTaxConfig() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { id: bigint; input: TaxConfigInput }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.updateTaxConfig(params.id, params.input);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['taxConfigs'] }),
+  });
+}
+
+export function useToggleTaxConfig() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.toggleTaxConfig(id);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['taxConfigs'] }),
+  });
+}
+
+export function useDeleteTaxConfig() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.deleteTaxConfig(id);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['taxConfigs'] }),
+  });
+}
+
+export function useCalculateTax() {
+  const { actor } = useActor();
+  return useMutation({
+    mutationFn: async (params: { subtotal: number; targetType: string }) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.calculateTax(params.subtotal, params.targetType);
+    },
+  });
+}
+
+// ─── Sale Orders ──────────────────────────────────────────────────────────────
 export function useSaleOrders() {
   const { actor, isFetching } = useActor();
   return useQuery<SaleOrder[]>({
@@ -660,299 +940,59 @@ export function useCreateSaleOrder() {
         params.paymentType,
       );
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['saleOrders'] });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['saleOrders'] }),
   });
 }
 
-// ─── Sales Report ──────────────────────────────────────────────────────────────
+export function useDeleteSaleOrder() {
+  const { actor } = useActor();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: bigint) => {
+      if (!actor) throw new Error('Actor not available');
+      return actor.deleteSaleOrder(id);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['saleOrders'] }),
+  });
+}
+
+// ─── Sales Report ─────────────────────────────────────────────────────────────
 export function useSalesReport(period: SalesReportPeriod = 'daily') {
-  const { data: orders = [] } = useSaleOrders();
+  const { data: orders = [], isLoading, isError, error } = useSaleOrders();
 
-  return useQuery<SalesReportEntry[]>({
-    queryKey: ['salesReport', period, orders.length],
-    queryFn: () => {
-      const now = Date.now();
-      const msPerDay = 86400000;
-      const days = period === 'daily' ? 7 : 28;
+  const reportMap = new Map<string, SalesReportEntry>();
 
-      const buckets: Record<string, { revenue: number; orders: number }> = {};
+  for (const order of orders) {
+    const dateObj = new Date(Number(order.createdAt) / 1_000_000);
+    let key: string;
+    if (period === 'weekly') {
+      // Group by ISO week: year-Www
+      const jan1 = new Date(dateObj.getFullYear(), 0, 1);
+      const weekNum = Math.ceil(((dateObj.getTime() - jan1.getTime()) / 86400000 + jan1.getDay() + 1) / 7);
+      key = `${dateObj.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+    } else {
+      key = dateObj.toISOString().split('T')[0];
+    }
+    const existing = reportMap.get(key) ?? { date: key, revenue: 0, orders: 0, avgOrderValue: 0 };
+    reportMap.set(key, {
+      date: key,
+      revenue: existing.revenue + order.totalAmount,
+      orders: existing.orders + 1,
+      avgOrderValue: 0, // computed below
+    });
+  }
 
-      for (let i = days - 1; i >= 0; i--) {
-        const d = new Date(now - i * msPerDay);
-        const key = d.toISOString().split('T')[0];
-        buckets[key] = { revenue: 0, orders: 0 };
-      }
+  const data = Array.from(reportMap.values())
+    .map(entry => ({
+      ...entry,
+      avgOrderValue: entry.orders > 0 ? entry.revenue / entry.orders : 0,
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
 
-      for (const order of orders) {
-        const ts = typeof order.createdAt === 'bigint' ? Number(order.createdAt) / 1_000_000 : Number(order.createdAt);
-        const key = new Date(ts).toISOString().split('T')[0];
-        if (buckets[key]) {
-          buckets[key].revenue += order.totalAmount;
-          buckets[key].orders += 1;
-        }
-      }
-
-      return Object.entries(buckets).map(([date, { revenue, orders: cnt }]) => ({
-        date,
-        revenue,
-        totalRevenue: revenue,
-        orders: cnt,
-        totalOrders: cnt,
-        avgOrderValue: cnt > 0 ? revenue / cnt : 0,
-      }));
-    },
-  });
+  return { data, isLoading, isError, error };
 }
 
-// Alias
-export const useSalesStats = useSalesReport;
-
-// ─── Customers (backend) ───────────────────────────────────────────────────────
-export function useCustomers() {
-  const { actor, isFetching } = useActor();
-  return useQuery<Customer[]>({
-    queryKey: ['customers'],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getCustomers();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useCreateCustomer() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (params: { name: string; mobileNo: string; email: string | null; preference: string; address: string }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.addCustomer(params.name, params.mobileNo, params.email, params.preference, params.address);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['customers'] }),
-  });
-}
-
-export function useUpdateCustomer() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (params: { id: bigint; name: string; mobileNo: string; email: string | null; preference: string; address: string }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.updateCustomer(params.id, params.name, params.mobileNo, params.email, params.preference, params.address);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['customers'] }),
-  });
-}
-
-export function useDeleteCustomer() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.deleteCustomer(id);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['customers'] }),
-  });
-}
-
-export function useLoyaltyBalance(customerId: bigint) {
-  const { actor, isFetching } = useActor();
-  return useQuery<bigint>({
-    queryKey: ['loyaltyBalance', customerId.toString()],
-    queryFn: async () => {
-      if (!actor) return BigInt(0);
-      return actor.getLoyaltyBalance(customerId);
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useLoyaltyTransactions(customerId: bigint) {
-  const { actor, isFetching } = useActor();
-  return useQuery<LoyaltyTransaction[]>({
-    queryKey: ['loyaltyTransactions', customerId.toString()],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getLoyaltyTransactions(customerId);
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useRedeemLoyaltyPoints() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (params: { customerId: bigint; points: bigint; discountAmount: number }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.redeemLoyaltyPoints(params.customerId, params.points, params.discountAmount);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['customers'] });
-      qc.invalidateQueries({ queryKey: ['loyaltyBalance'] });
-      qc.invalidateQueries({ queryKey: ['loyaltyTransactions'] });
-    },
-  });
-}
-
-export function useCustomerOrderHistory(customerId: bigint) {
-  const { actor, isFetching } = useActor();
-  return useQuery<SaleOrder[]>({
-    queryKey: ['customerOrderHistory', customerId.toString()],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getCustomerOrderHistory(customerId);
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-// ─── Discount Codes (backend) ──────────────────────────────────────────────────
-export function useDiscountCodes() {
-  const { actor, isFetching } = useActor();
-  return useQuery<DiscountCode[]>({
-    queryKey: ['discountCodes'],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getDiscountCodes();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useCreateDiscountCode() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: DiscountCodeInput) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.createDiscountCode(input);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['discountCodes'] }),
-  });
-}
-
-export function useUpdateDiscountCode() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, input }: { id: bigint; input: DiscountCodeInput }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.updateDiscountCode(id, input);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['discountCodes'] }),
-  });
-}
-
-export function useToggleDiscountCode() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.toggleDiscountCode(id);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['discountCodes'] }),
-  });
-}
-
-export function useDeleteDiscountCode() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.deleteDiscountCode(id);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['discountCodes'] }),
-  });
-}
-
-export function useApplyDiscountCode() {
-  const { actor } = useActor();
-  return useMutation({
-    mutationFn: async ({ code, orderTotal }: { code: string; orderTotal: number }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.applyDiscountCode(code, orderTotal);
-    },
-  });
-}
-
-// ─── Tax Configs (backend) ─────────────────────────────────────────────────────
-export function useTaxConfigs() {
-  const { actor, isFetching } = useActor();
-  return useQuery<TaxConfig[]>({
-    queryKey: ['taxConfigs'],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getTaxConfigs();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useCreateTaxConfig() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (input: TaxConfigInput) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.createTaxConfig(input);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['taxConfigs'] }),
-  });
-}
-
-export function useUpdateTaxConfig() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, input }: { id: bigint; input: TaxConfigInput }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.updateTaxConfig(id, input);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['taxConfigs'] }),
-  });
-}
-
-export function useToggleTaxConfig() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.toggleTaxConfig(id);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['taxConfigs'] }),
-  });
-}
-
-export function useDeleteTaxConfig() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: bigint) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.deleteTaxConfig(id);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['taxConfigs'] }),
-  });
-}
-
-export function useCalculateTax() {
-  const { actor } = useActor();
-  return useMutation({
-    mutationFn: async ({ subtotal, targetType }: { subtotal: number; targetType: string }) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.calculateTax(subtotal, targetType);
-    },
-  });
-}
-
-// ─── Staff Accounts (backend) ──────────────────────────────────────────────────
+// ─── Staff Accounts ───────────────────────────────────────────────────────────
 export function useStaffAccounts() {
   const { actor, isFetching } = useActor();
   return useQuery<StaffAccount[]>({
@@ -1001,7 +1041,19 @@ export function useDeleteStaffAccount() {
   });
 }
 
-// ─── Audit Logs (backend) ──────────────────────────────────────────────────────
+export function useMyRole() {
+  const { actor, isFetching } = useActor();
+  return useQuery<StaffRole | null>({
+    queryKey: ['myRole'],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.getMyRole();
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+// ─── Audit Logs ───────────────────────────────────────────────────────────────
 export function useAuditLogs(limit: number, offset: number) {
   const { actor, isFetching } = useActor();
   return useQuery<AuditLog[]>({
@@ -1014,7 +1066,7 @@ export function useAuditLogs(limit: number, offset: number) {
   });
 }
 
-// ─── Admin / Role checks (backend) ────────────────────────────────────────────
+// ─── Admin ────────────────────────────────────────────────────────────────────
 export function useIsCallerAdmin() {
   const { actor, isFetching } = useActor();
   return useQuery<boolean>({
@@ -1036,38 +1088,5 @@ export function useGetCallerUserRole() {
       return actor.getCallerUserRole();
     },
     enabled: !!actor && !isFetching,
-  });
-}
-
-// ─── User Profile (backend) ────────────────────────────────────────────────────
-export function useGetCallerUserProfile() {
-  const { actor, isFetching: actorFetching } = useActor();
-
-  const query = useQuery<UserProfile | null>({
-    queryKey: ['currentUserProfile'],
-    queryFn: async () => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.getCallerUserProfile();
-    },
-    enabled: !!actor && !actorFetching,
-    retry: false,
-  });
-
-  return {
-    ...query,
-    isLoading: actorFetching || query.isLoading,
-    isFetched: !!actor && query.isFetched,
-  };
-}
-
-export function useSaveCallerUserProfile() {
-  const { actor } = useActor();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (profile: UserProfile) => {
-      if (!actor) throw new Error('Actor not available');
-      return actor.saveCallerUserProfile(profile);
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['currentUserProfile'] }),
   });
 }
