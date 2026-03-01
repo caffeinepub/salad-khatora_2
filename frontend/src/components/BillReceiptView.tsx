@@ -1,55 +1,41 @@
-import React, { useRef } from 'react';
-import { Printer, CheckCircle2, ShoppingBag } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import type { TaxBreakdown } from '../backend';
-import type { PaymentModeKey } from './CheckoutDialog';
-import type { MenuItem } from '../hooks/useQueries';
-import type { Customer } from '../backend';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Printer, ShoppingBag } from "lucide-react";
+import type { MenuItem } from "../hooks/useQueries";
+import type { TaxBreakdown, PaymentMode } from "../backend";
 
-interface OrderLine {
+interface CartLine {
   menuItem: MenuItem;
   quantity: number;
 }
 
-interface AppliedDiscount {
-  discountAmount: number;
-  discountCode: { code: string };
-}
-
 interface BillReceiptViewProps {
   open: boolean;
-  orderId: bigint;
-  lines: OrderLine[];
+  orderId: bigint | null;
+  lines: CartLine[];
   subtotal: number;
   discountAmount: number;
-  total: number;
   taxBreakdown: TaxBreakdown[];
   taxTotal: number;
-  appliedDiscount: AppliedDiscount | null;
-  note: string;
-  customer: Customer | null;
-  paymentMode: PaymentModeKey;
-  createdAt: Date;
+  totalAmount: number;
+  paymentMode: PaymentMode | null;
+  customerName?: string;
+  note?: string;
   onNewSale: () => void;
 }
 
-function formatCurrency(v: number) {
-  return `$${v.toFixed(2)}`;
+function formatCurrency(amount: number) {
+  return `₹${amount.toFixed(2)}`;
 }
 
-function paymentModeLabel(mode: PaymentModeKey): string {
-  switch (mode) {
-    case 'cash': return 'Cash';
-    case 'card': return 'Card';
-    case 'upi': return 'UPI / Online';
-    default: return mode;
+function paymentModeLabel(mode: PaymentMode | null): string {
+  if (!mode) return "—";
+  switch (mode.__kind__) {
+    case "cash": return "Cash";
+    case "card": return "Card";
+    case "upi": return "UPI / Online";
+    case "other": return mode.other;
+    default: return "—";
   }
 }
 
@@ -59,160 +45,125 @@ export default function BillReceiptView({
   lines,
   subtotal,
   discountAmount,
-  total,
   taxBreakdown,
   taxTotal,
-  appliedDiscount,
-  note,
-  customer,
+  totalAmount,
   paymentMode,
-  createdAt,
+  customerName,
+  note,
   onNewSale,
 }: BillReceiptViewProps) {
-  const printRef = useRef<HTMLDivElement>(null);
+  const handlePrint = () => window.print();
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const formattedDate = createdAt.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   });
-  const formattedTime = createdAt.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
+  const timeStr = now.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent
-        className="max-w-sm max-h-[95vh] overflow-y-auto p-0"
-        onInteractOutside={(e) => e.preventDefault()}
-      >
-        <DialogHeader className="px-6 pt-6 pb-0">
-          <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-            <CheckCircle2 className="h-5 w-5" />
-            <DialogTitle className="text-base font-heading">Order Confirmed!</DialogTitle>
-          </div>
+    <Dialog open={open}>
+      <DialogContent className="max-w-sm no-print">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShoppingBag size={18} className="text-primary" />
+            Order Confirmed!
+          </DialogTitle>
         </DialogHeader>
 
-        {/* Printable receipt area */}
-        <div ref={printRef} id="bill-receipt" className="px-6 py-4 space-y-4">
+        {/* Receipt */}
+        <div id="bill-receipt" className="font-mono text-xs space-y-2 border border-border rounded-lg p-4 bg-card">
           {/* Header */}
-          <div className="text-center space-y-1">
-            <div className="flex items-center justify-center gap-2">
-              <ShoppingBag className="h-5 w-5 text-primary" />
-              <span className="font-heading font-bold text-lg">KitchenOS</span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {formattedDate} · {formattedTime}
-            </p>
-            <p className="text-xs font-mono text-muted-foreground">
-              Order #{orderId.toString()}
-            </p>
+          <div className="text-center space-y-0.5">
+            <p className="font-bold text-base text-foreground">🥗 Salad Khatora</p>
+            <p className="text-muted-foreground">Fresh & Healthy</p>
+            <p className="text-muted-foreground">{dateStr} {timeStr}</p>
+            {orderId && (
+              <p className="text-muted-foreground">Order #{orderId.toString()}</p>
+            )}
           </div>
 
-          <Separator />
+          <div className="border-t border-dashed border-border" />
 
           {/* Customer */}
-          {customer && (
-            <div className="text-sm">
-              <span className="text-muted-foreground">Customer: </span>
-              <span className="font-medium">{customer.name}</span>
-            </div>
+          {customerName && (
+            <p className="text-foreground">Customer: {customerName}</p>
           )}
 
           {/* Items */}
-          <div className="space-y-1.5">
-            {lines.map(line => (
-              <div key={line.menuItem.id} className="flex justify-between text-sm">
-                <span className="flex-1 pr-2">
-                  {line.menuItem.name}
-                  <span className="text-muted-foreground text-xs ml-1">
-                    × {line.quantity} @ {formatCurrency(line.menuItem.sellingPrice)}
-                  </span>
+          <div className="space-y-1">
+            {lines.map((line, idx) => (
+              <div key={idx} className="flex justify-between gap-2">
+                <span className="flex-1 truncate text-foreground">
+                  {line.menuItem.name} × {line.quantity} @ {formatCurrency(line.menuItem.sellingPrice ?? line.menuItem.price)}
                 </span>
-                <span className="tabular-nums font-medium">
-                  {formatCurrency(line.menuItem.sellingPrice * line.quantity)}
+                <span className="shrink-0 text-foreground">
+                  {formatCurrency((line.menuItem.sellingPrice ?? line.menuItem.price) * line.quantity)}
                 </span>
               </div>
             ))}
           </div>
 
-          <Separator />
+          <div className="border-t border-dashed border-border" />
 
           {/* Totals */}
-          <div className="space-y-1.5 text-sm">
+          <div className="space-y-0.5">
             <div className="flex justify-between text-muted-foreground">
               <span>Subtotal</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
-
-            {appliedDiscount && (
+            {discountAmount > 0 && (
               <div className="flex justify-between text-green-600 dark:text-green-400">
-                <span>Discount ({appliedDiscount.discountCode.code})</span>
+                <span>Discount</span>
                 <span>-{formatCurrency(discountAmount)}</span>
               </div>
             )}
-
-            {taxBreakdown.length > 0 && taxBreakdown.map((tax, i) => (
+            {taxBreakdown.map((tb, i) => (
               <div key={i} className="flex justify-between text-muted-foreground">
-                <span>{tax.name} ({tax.rate}%)</span>
-                <span>{formatCurrency(tax.amount)}</span>
+                <span>{tb.name} ({tb.rate}%)</span>
+                <span>{formatCurrency(tb.amount)}</span>
               </div>
             ))}
-
             {taxTotal > 0 && (
               <div className="flex justify-between text-muted-foreground">
-                <span>Tax Total</span>
+                <span>Total Tax</span>
                 <span>{formatCurrency(taxTotal)}</span>
               </div>
             )}
-
-            <Separator />
-
-            <div className="flex justify-between font-bold text-base">
-              <span>Total</span>
-              <span className="text-primary">{formatCurrency(total)}</span>
-            </div>
           </div>
 
-          {/* Payment Mode */}
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Payment</span>
-            <span className="font-semibold">{paymentModeLabel(paymentMode)}</span>
+          <div className="border-t border-border" />
+
+          <div className="flex justify-between font-bold text-sm text-foreground">
+            <span>TOTAL</span>
+            <span>{formatCurrency(totalAmount)}</span>
           </div>
 
-          {/* Note */}
+          <div className="flex justify-between text-muted-foreground">
+            <span>Payment</span>
+            <span>{paymentModeLabel(paymentMode)}</span>
+          </div>
+
           {note && (
-            <div className="text-xs text-muted-foreground bg-muted rounded px-3 py-2">
-              Note: {note}
-            </div>
+            <p className="text-muted-foreground">Note: {note}</p>
           )}
 
-          <Separator />
-
-          <p className="text-center text-xs text-muted-foreground">
-            Thank you for your order!
-          </p>
+          <div className="border-t border-dashed border-border" />
+          <p className="text-center text-muted-foreground">Thank you! Visit again 🙏</p>
         </div>
 
-        {/* Action buttons — hidden during print */}
-        <div className="no-print px-6 pb-6 flex gap-2">
-          <Button
-            variant="outline"
-            className="flex-1 gap-2"
-            onClick={handlePrint}
-          >
-            <Printer className="h-4 w-4" />
+        {/* Actions */}
+        <div className="flex gap-2 pt-2">
+          <Button variant="outline" className="flex-1" onClick={handlePrint}>
+            <Printer size={16} className="mr-2" />
             Print Bill
           </Button>
-          <Button
-            className="flex-1"
-            onClick={onNewSale}
-          >
+          <Button className="flex-1" onClick={onNewSale}>
             New Sale
           </Button>
         </div>

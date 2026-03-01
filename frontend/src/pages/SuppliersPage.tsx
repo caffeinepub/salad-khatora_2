@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, Zap, Loader2 } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,18 +32,18 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   useSuppliers,
   useCreateSupplier,
   useUpdateSupplier,
   useDeleteSupplier,
-  useAutoGeneratePurchaseOrders,
+  Supplier,
 } from '../hooks/useQueries';
-import type { Supplier } from '../hooks/useQueries';
 
 interface SupplierFormData {
   name: string;
-  contactPerson: string;
+  contactName: string;
   email: string;
   phone: string;
   address: string;
@@ -53,17 +53,17 @@ interface SupplierFormData {
 
 const emptyForm: SupplierFormData = {
   name: '',
-  contactPerson: '',
+  contactName: '',
   email: '',
   phone: '',
   address: '',
-  leadTimeDays: '',
+  leadTimeDays: '3',
   notes: '',
 };
 
 function validateForm(form: SupplierFormData): string | null {
   if (!form.name.trim()) return 'Name is required';
-  if (!form.contactPerson.trim()) return 'Contact person is required';
+  if (!form.contactName.trim()) return 'Contact name is required';
   if (!form.email.trim()) return 'Email is required';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return 'Invalid email address';
   if (!form.phone.trim()) return 'Phone is required';
@@ -74,11 +74,10 @@ function validateForm(form: SupplierFormData): string | null {
 }
 
 export default function SuppliersPage() {
-  const { data: suppliers, isLoading, error } = useSuppliers();
+  const { data: suppliers, isLoading } = useSuppliers();
   const createSupplier = useCreateSupplier();
   const updateSupplier = useUpdateSupplier();
   const deleteSupplier = useDeleteSupplier();
-  const autoGenerate = useAutoGeneratePurchaseOrders();
 
   const [search, setSearch] = useState('');
   const [addOpen, setAddOpen] = useState(false);
@@ -101,12 +100,12 @@ export default function SuppliersPage() {
     setEditSupplier(supplier);
     setForm({
       name: supplier.name,
-      contactPerson: supplier.contactPerson,
+      contactName: supplier.contactName ?? supplier.contactPerson ?? '',
       email: supplier.email,
       phone: supplier.phone,
       address: supplier.address,
-      leadTimeDays: supplier.leadTimeDays.toString(),
-      notes: supplier.notes,
+      leadTimeDays: (supplier.leadTimeDays ?? 3).toString(),
+      notes: supplier.notes ?? '',
     });
     setFormError(null);
   };
@@ -117,12 +116,13 @@ export default function SuppliersPage() {
     try {
       await createSupplier.mutateAsync({
         name: form.name.trim(),
-        contactPerson: form.contactPerson.trim(),
+        contactName: form.contactName.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
         address: form.address.trim(),
         leadTimeDays: Math.round(Number(form.leadTimeDays)),
         notes: form.notes.trim(),
+        ingredients: [],
       });
       toast.success('Supplier added successfully');
       setAddOpen(false);
@@ -137,20 +137,21 @@ export default function SuppliersPage() {
     const err = validateForm(form);
     if (err) { setFormError(err); return; }
     try {
-      // Pass the full Supplier object including createdAt from the original
       await updateSupplier.mutateAsync({
         id: editSupplier.id,
         name: form.name.trim(),
-        contactPerson: form.contactPerson.trim(),
+        contactName: form.contactName.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
         address: form.address.trim(),
         leadTimeDays: Math.round(Number(form.leadTimeDays)),
         notes: form.notes.trim(),
+        ingredients: editSupplier.ingredients ?? [],
         createdAt: editSupplier.createdAt,
       });
       toast.success('Supplier updated successfully');
       setEditSupplier(null);
+      setForm(emptyForm);
     } catch (e: any) {
       toast.error(e?.message ?? 'Failed to update supplier');
     }
@@ -167,230 +168,157 @@ export default function SuppliersPage() {
     }
   };
 
-  const handleAutoGenerate = async () => {
-    try {
-      await autoGenerate.mutateAsync();
-      toast.success('Purchase orders generated for low-stock ingredients');
-    } catch (e: any) {
-      toast.error(e?.message ?? 'Failed to generate purchase orders');
-    }
-  };
-
-  const SupplierFormFields = () => (
-    <div className="grid gap-4 py-2">
+  const SupplierForm = () => (
+    <div className="space-y-4 py-2">
       {formError && (
         <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{formError}</p>
       )}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor="name">Name *</Label>
-          <Input
-            id="name"
-            value={form.name}
-            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-            placeholder="Supplier name"
-          />
+          <Label>Name *</Label>
+          <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Supplier name" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="contactPerson">Contact Person *</Label>
-          <Input
-            id="contactPerson"
-            value={form.contactPerson}
-            onChange={e => setForm(f => ({ ...f, contactPerson: e.target.value }))}
-            placeholder="Contact name"
-          />
+          <Label>Contact Name *</Label>
+          <Input value={form.contactName} onChange={e => setForm(p => ({ ...p, contactName: e.target.value }))} placeholder="Contact person" />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor="email">Email *</Label>
-          <Input
-            id="email"
-            type="email"
-            value={form.email}
-            onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-            placeholder="email@example.com"
-          />
+          <Label>Email *</Label>
+          <Input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="email@example.com" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="phone">Phone *</Label>
-          <Input
-            id="phone"
-            value={form.phone}
-            onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-            placeholder="+1 234 567 8900"
-          />
+          <Label>Phone *</Label>
+          <Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="+91 ..." />
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="address">Address *</Label>
-        <Input
-          id="address"
-          value={form.address}
-          onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-          placeholder="Full address"
-        />
+        <Label>Address *</Label>
+        <Input value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} placeholder="Full address" />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="leadTimeDays">Lead Time (days) *</Label>
-        <Input
-          id="leadTimeDays"
-          type="number"
-          min="0"
-          value={form.leadTimeDays}
-          onChange={e => setForm(f => ({ ...f, leadTimeDays: e.target.value }))}
-          placeholder="e.g. 3"
-        />
+        <Label>Lead Time (days)</Label>
+        <Input type="number" min={0} value={form.leadTimeDays} onChange={e => setForm(p => ({ ...p, leadTimeDays: e.target.value }))} />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="notes">Notes</Label>
-        <Textarea
-          id="notes"
-          value={form.notes}
-          onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-          placeholder="Optional notes..."
-          rows={2}
-        />
+        <Label>Notes</Label>
+        <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2} placeholder="Optional notes..." />
       </div>
     </div>
   );
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Suppliers</h1>
-          <p className="text-muted-foreground text-sm mt-1">Manage your ingredient suppliers and generate purchase orders</p>
+          <p className="text-muted-foreground mt-1">Manage your ingredient suppliers.</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            onClick={handleAutoGenerate}
-            disabled={autoGenerate.isPending}
-            className="gap-2"
-          >
-            {autoGenerate.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-            Generate Purchase Orders
-          </Button>
-          <Button onClick={openAdd} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Supplier
-          </Button>
-        </div>
+        <Button onClick={openAdd}>
+          <Plus size={16} className="mr-2" />
+          Add Supplier
+        </Button>
       </div>
 
-      {/* Search */}
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
+          className="pl-9"
           placeholder="Search suppliers..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="pl-9"
         />
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead>Name</TableHead>
-              <TableHead>Contact Person</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Lead Time</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <TableRow key={i}>
-                  {Array.from({ length: 6 }).map((_, j) => (
-                    <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : error ? (
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
+        </div>
+      ) : filtered.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <p className="text-muted-foreground">
+              {search ? 'No suppliers match your search.' : 'No suppliers yet.'}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="rounded-md border overflow-x-auto">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-destructive py-8">
-                  Failed to load suppliers
-                </TableCell>
+                <TableHead>Name</TableHead>
+                <TableHead className="hidden md:table-cell">Contact</TableHead>
+                <TableHead className="hidden md:table-cell">Email</TableHead>
+                <TableHead className="hidden md:table-cell">Phone</TableHead>
+                <TableHead className="hidden lg:table-cell">Lead Time</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-12">
-                  {search ? 'No suppliers match your search' : 'No suppliers yet. Add your first supplier!'}
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map(supplier => (
-                <TableRow key={supplier.id.toString()} className="hover:bg-muted/30">
+            </TableHeader>
+            <TableBody>
+              {filtered.map(supplier => (
+                <TableRow key={supplier.id}>
                   <TableCell className="font-medium">{supplier.name}</TableCell>
-                  <TableCell>{supplier.contactPerson}</TableCell>
-                  <TableCell className="text-muted-foreground">{supplier.email}</TableCell>
-                  <TableCell>{supplier.phone}</TableCell>
-                  <TableCell>{supplier.leadTimeDays.toString()} days</TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground">
+                    {supplier.contactName ?? supplier.contactPerson ?? '—'}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground">{supplier.email}</TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground">{supplier.phone}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-muted-foreground">
+                    {supplier.leadTimeDays != null ? `${supplier.leadTimeDays}d` : '—'}
+                  </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEdit(supplier)}
-                        className="h-8 w-8"
-                      >
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(supplier)}>
                         <Edit2 className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="text-destructive"
                         onClick={() => setDeleteId(supplier.id)}
-                        className="h-8 w-8 text-destructive hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {/* Add Dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-lg">
+      <Dialog open={addOpen} onOpenChange={open => { setAddOpen(open); if (!open) setFormError(null); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Supplier</DialogTitle>
-            <DialogDescription>Fill in the supplier details below.</DialogDescription>
+            <DialogDescription>Add a new ingredient supplier.</DialogDescription>
           </DialogHeader>
-          <SupplierFormFields />
+          <SupplierForm />
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
             <Button onClick={handleAddSubmit} disabled={createSupplier.isPending}>
-              {createSupplier.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Add Supplier
+              {createSupplier.isPending ? <><Loader2 size={14} className="animate-spin mr-2" />Adding...</> : 'Add Supplier'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={!!editSupplier} onOpenChange={open => !open && setEditSupplier(null)}>
-        <DialogContent className="max-w-lg">
+      <Dialog open={!!editSupplier} onOpenChange={open => { if (!open) { setEditSupplier(null); setFormError(null); } }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Supplier</DialogTitle>
-            <DialogDescription>Update the supplier details below.</DialogDescription>
+            <DialogDescription>Update supplier information.</DialogDescription>
           </DialogHeader>
-          <SupplierFormFields />
+          <SupplierForm />
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditSupplier(null)}>Cancel</Button>
             <Button onClick={handleEditSubmit} disabled={updateSupplier.isPending}>
-              {updateSupplier.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Save Changes
+              {updateSupplier.isPending ? <><Loader2 size={14} className="animate-spin mr-2" />Saving...</> : 'Save Changes'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -400,18 +328,12 @@ export default function SuppliersPage() {
       <AlertDialog open={deleteId !== null} onOpenChange={open => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Supplier</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this supplier? This action cannot be undone.
-            </AlertDialogDescription>
+            <AlertDialogTitle>Delete Supplier?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteSupplier.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

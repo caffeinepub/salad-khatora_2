@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ShoppingCart, Plus, Minus, Trash2, Tag, Users } from 'lucide-react';
+import { useState } from 'react';
+import { ShoppingCart, Plus, Minus, Trash2, Tag, Users, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,10 +10,10 @@ import {
   useCustomers,
 } from '../hooks/useQueries';
 import type { MenuItem } from '../hooks/useQueries';
-import type { DiscountCode, Customer } from '../backend';
+import type { DiscountCode, Customer, PaymentMode, SaleOrderItem } from '../backend';
 import { toast } from 'sonner';
 import { useActor } from '../hooks/useActor';
-import CheckoutDialog, { type PaymentModeKey } from '../components/CheckoutDialog';
+import CheckoutDialog from '../components/CheckoutDialog';
 import BillReceiptView from '../components/BillReceiptView';
 
 interface OrderLine {
@@ -28,7 +28,7 @@ interface AppliedDiscount {
 
 interface CompletedOrder {
   orderId: bigint;
-  paymentMode: PaymentModeKey;
+  paymentMode: PaymentMode;
   createdAt: Date;
 }
 
@@ -43,6 +43,8 @@ function extractErrorMessage(err: unknown): string {
   return cleanMsg || 'Failed to place order';
 }
 
+function formatCurrency(v: number) { return `₹${v.toFixed(2)}`; }
+
 export default function SalesPage() {
   const { actor, isFetching: actorFetching } = useActor();
   const { data: menuItems = [] } = useMenuItems();
@@ -55,17 +57,13 @@ export default function SalesPage() {
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<bigint | null>(null);
   const [applyingDiscount, setApplyingDiscount] = useState(false);
-
-  // Checkout dialog state
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-
-  // Bill receipt state
   const [completedOrder, setCompletedOrder] = useState<CompletedOrder | null>(null);
   const [billOpen, setBillOpen] = useState(false);
 
-  const subtotal = lines.reduce((sum, l) => sum + l.menuItem.sellingPrice * l.quantity, 0);
+  const subtotal = lines.reduce((sum, l) => sum + (l.menuItem.sellingPrice ?? l.menuItem.price) * l.quantity, 0);
   const discountAmount = appliedDiscount?.discountAmount ?? 0;
-  const total = subtotal - discountAmount;
+  const totalAmount = subtotal - discountAmount;
 
   const selectedCustomer: Customer | null =
     selectedCustomerId !== null
@@ -122,48 +120,41 @@ export default function SalesPage() {
     setCheckoutOpen(true);
   };
 
-  const handleConfirmOrder = async (paymentMode: PaymentModeKey) => {
+  const handleConfirmOrder = async (paymentMode: PaymentMode) => {
     if (!actor) {
       toast.error('System is initializing, please try again.');
       return;
     }
 
-    const backendItems = lines.map(l => ({
-      itemId: l.menuItem.id,
-      quantity: l.quantity,
-      price: l.menuItem.sellingPrice,
+    // Build SaleOrderItem[] with bigint itemId and bigint quantity
+    const backendItems: SaleOrderItem[] = lines.map(l => ({
+      itemId: BigInt(l.menuItem.id),
+      quantity: BigInt(l.quantity),
+      price: l.menuItem.sellingPrice ?? l.menuItem.price,
     }));
 
-    const discountCodeId = appliedDiscount
-      ? Number(appliedDiscount.discountCode.id)
-      : undefined;
+    // discountCodeId must be bigint | null
+    const discountCodeId: bigint | null = appliedDiscount
+      ? appliedDiscount.discountCode.id
+      : null;
 
-    const customerIdNum = selectedCustomerId !== null
-      ? Number(selectedCustomerId)
-      : undefined;
-
-    // Map PaymentModeKey to backend PaymentMode type
-    const paymentType = paymentMode === 'cash'
-      ? { __kind__: 'cash' as const, cash: null }
-      : paymentMode === 'card'
-        ? { __kind__: 'card' as const, card: null }
-        : { __kind__: 'upi' as const, upi: null };
+    // customerId must be bigint | null
+    const customerId: bigint | null = selectedCustomerId;
 
     try {
       const orderId = await createOrder.mutateAsync({
         items: backendItems,
         subtotal,
-        totalAmount: total,
+        totalAmount,
         discountAmount,
         taxBreakdown: [],
         taxTotal: 0,
         note,
         discountCodeId,
-        customerId: customerIdNum,
-        paymentType,
+        customerId,
+        paymentType: paymentMode,
       });
 
-      // Close checkout dialog and show bill
       setCheckoutOpen(false);
       setCompletedOrder({
         orderId,
@@ -178,7 +169,6 @@ export default function SalesPage() {
   };
 
   const handleNewSale = () => {
-    // Clear everything only after bill is dismissed
     setBillOpen(false);
     setCompletedOrder(null);
     setLines([]);
@@ -206,7 +196,9 @@ export default function SalesPage() {
               <CardContent className="p-3">
                 <p className="font-medium text-sm truncate">{item.name}</p>
                 <p className="text-xs text-muted-foreground truncate">{item.description}</p>
-                <p className="text-xs text-primary font-semibold mt-1">{formatCurrency(item.sellingPrice)}</p>
+                <p className="text-xs text-primary font-semibold mt-1">
+                  {formatCurrency(item.sellingPrice ?? item.price)}
+                </p>
               </CardContent>
             </Card>
           ))}
@@ -243,7 +235,7 @@ export default function SalesPage() {
                       <Plus className="h-3 w-3" />
                     </Button>
                     <span className="text-sm font-medium w-16 text-right">
-                      {formatCurrency(line.menuItem.sellingPrice * line.quantity)}
+                      {formatCurrency((line.menuItem.sellingPrice ?? line.menuItem.price) * line.quantity)}
                     </span>
                     <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => removeItem(line.menuItem.id)}>
                       <Trash2 className="h-3 w-3" />
@@ -264,7 +256,7 @@ export default function SalesPage() {
                 </div>
               )}
               <div className="flex justify-between font-bold">
-                <span>Total</span><span>{formatCurrency(total)}</span>
+                <span>Total</span><span>{formatCurrency(totalAmount)}</span>
               </div>
             </div>
 
@@ -306,7 +298,7 @@ export default function SalesPage() {
                   onClick={handleApplyDiscount}
                   disabled={applyingDiscount || !discountCode.trim()}
                 >
-                  {applyingDiscount ? '...' : 'Apply'}
+                  {applyingDiscount ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Apply'}
                 </Button>
               </div>
             </div>
@@ -329,7 +321,7 @@ export default function SalesPage() {
             >
               {actorFetching
                 ? 'Initializing...'
-                : `Checkout ${formatCurrency(total)}`}
+                : `Checkout ${formatCurrency(totalAmount)}`}
             </Button>
           </CardContent>
         </Card>
@@ -342,10 +334,12 @@ export default function SalesPage() {
         lines={lines}
         subtotal={subtotal}
         discountAmount={discountAmount}
-        total={total}
-        appliedDiscount={appliedDiscount}
+        taxBreakdown={[]}
+        taxTotal={0}
+        totalAmount={totalAmount}
+        customerName={selectedCustomer?.name}
+        discountCode={appliedDiscount?.discountCode.code}
         note={note}
-        customer={selectedCustomer}
         isProcessing={createOrder.isPending}
         onConfirm={handleConfirmOrder}
       />
@@ -358,19 +352,15 @@ export default function SalesPage() {
           lines={lines}
           subtotal={subtotal}
           discountAmount={discountAmount}
-          total={total}
           taxBreakdown={[]}
           taxTotal={0}
-          appliedDiscount={appliedDiscount}
-          note={note}
-          customer={selectedCustomer}
+          totalAmount={totalAmount}
           paymentMode={completedOrder.paymentMode}
-          createdAt={completedOrder.createdAt}
+          customerName={selectedCustomer?.name}
+          note={note}
           onNewSale={handleNewSale}
         />
       )}
     </div>
   );
 }
-
-function formatCurrency(v: number) { return `$${v.toFixed(2)}`; }

@@ -1,123 +1,126 @@
-import React, { useState } from 'react';
+import { useState } from "react";
+import { ArrowLeft, Gift, ShoppingBag, Loader2, Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   useCustomers,
-  useCustomerOrderHistory,
-  useLoyaltyTransactions,
   useLoyaltyBalance,
+  useLoyaltyTransactions,
   useRedeemLoyaltyPoints,
-} from '../hooks/useQueries';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { User, Phone, Mail, MapPin, Star, ShoppingBag, Gift, Loader2 } from 'lucide-react';
+  useCustomerOrderHistory,
+} from "../hooks/useQueries";
 
 interface CustomerDetailViewProps {
   customerId: bigint;
-  /** Called when the user wants to go back / close the detail view */
-  onBack?: () => void;
-  /** Alias for onBack */
-  onClose?: () => void;
+  onBack: () => void;
 }
 
-export default function CustomerDetailView({ customerId, onBack, onClose }: CustomerDetailViewProps) {
-  const { data: customers = [], isLoading: customerLoading } = useCustomers();
-  const customer = customers.find((c) => c.id === customerId) ?? null;
+export default function CustomerDetailView({ customerId, onBack }: CustomerDetailViewProps) {
+  const { data: customers = [] } = useCustomers();
+  const customer = customers.find((c) => c.id === customerId);
 
-  const { data: orders = [], isLoading: ordersLoading } = useCustomerOrderHistory(customerId);
-  const { data: loyaltyBalance } = useLoyaltyBalance(customerId);
-  const { data: loyaltyTxns = [], isLoading: txnsLoading } = useLoyaltyTransactions(customerId);
+  const { data: loyaltyBalance = BigInt(0) } = useLoyaltyBalance(customerId);
+  const { data: loyaltyTxns = [] } = useLoyaltyTransactions(customerId);
+  const { data: orderHistory = [] } = useCustomerOrderHistory(customerId);
   const redeemPoints = useRedeemLoyaltyPoints();
 
-  const [showRedeem, setShowRedeem] = useState(false);
-  const [redeemPts, setRedeemPts] = useState('');
-  const [redeemDiscount, setRedeemDiscount] = useState('');
-
-  // Support both onBack and onClose as the dismiss callback
-  const handleDismiss = onBack ?? onClose;
+  const [showRedeemDialog, setShowRedeemDialog] = useState(false);
+  const [redeemPointsInput, setRedeemPointsInput] = useState("");
+  const [redeemError, setRedeemError] = useState<string | null>(null);
 
   const handleRedeem = async () => {
-    const pts = parseInt(redeemPts, 10);
-    const discount = parseFloat(redeemDiscount);
-    if (isNaN(pts) || pts <= 0 || isNaN(discount) || discount <= 0) return;
+    setRedeemError(null);
+    const pts = Number(redeemPointsInput);
+    if (!pts || pts <= 0) {
+      setRedeemError("Enter a valid number of points");
+      return;
+    }
+    if (BigInt(pts) > loyaltyBalance) {
+      setRedeemError("Insufficient loyalty points");
+      return;
+    }
     try {
       await redeemPoints.mutateAsync({
         customerId,
         points: BigInt(pts),
-        discountAmount: discount,
+        discountAmount: pts * 0.1, // 1 point = ₹0.10
       });
-      setShowRedeem(false);
-      setRedeemPts('');
-      setRedeemDiscount('');
-    } catch {
-      // error handled by mutation state
+      setShowRedeemDialog(false);
+      setRedeemPointsInput("");
+    } catch (err: any) {
+      const msg = err?.message ?? String(err);
+      setRedeemError(msg.replace(/^.*?Reject text:\s*/i, "").trim());
     }
   };
 
-  if (customerLoading) {
-    return (
-      <div className="space-y-4 p-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-48 w-full" />
-      </div>
-    );
-  }
-
   if (!customer) {
     return (
-      <div className="p-6 text-center text-muted-foreground">
-        Customer not found.
+      <div className="p-6">
+        <Button variant="ghost" onClick={onBack} className="mb-4">
+          <ArrowLeft size={16} className="mr-2" />
+          Back
+        </Button>
+        <p className="text-muted-foreground">Customer not found.</p>
       </div>
     );
   }
 
-  const balance = loyaltyBalance !== undefined ? Number(loyaltyBalance) : Number(customer.loyaltyPoints);
-
   return (
-    <div className="space-y-6 p-6">
-      {/* Back button */}
-      {handleDismiss && (
-        <Button variant="ghost" size="sm" onClick={handleDismiss} className="gap-2 -ml-2">
-          ← Back to Customers
-        </Button>
-      )}
+    <div className="p-6 space-y-6">
+      {/* Back */}
+      <Button variant="ghost" onClick={onBack} className="-ml-2">
+        <ArrowLeft size={16} className="mr-2" />
+        Back to Customers
+      </Button>
 
-      {/* Profile Card */}
+      {/* Profile */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5 text-primary" />
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
+              {customer.name.charAt(0).toUpperCase()}
+            </div>
             {customer.name}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-2 text-sm">
-            <Phone className="w-4 h-4 text-muted-foreground" />
-            <span>{customer.mobileNo}</span>
+        <CardContent className="space-y-2 text-sm">
+          <div className="flex gap-2">
+            <span className="text-muted-foreground w-24">Mobile:</span>
+            <span className="text-foreground">{customer.mobileNo}</span>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Mail className="w-4 h-4 text-muted-foreground" />
-            <span>{customer.email ?? 'Not provided'}</span>
-          </div>
+          {customer.email && (
+            <div className="flex gap-2">
+              <span className="text-muted-foreground w-24">Email:</span>
+              <span className="text-foreground">{customer.email}</span>
+            </div>
+          )}
           {customer.address && (
-            <div className="flex items-center gap-2 text-sm">
-              <MapPin className="w-4 h-4 text-muted-foreground" />
-              <span>{customer.address}</span>
+            <div className="flex gap-2">
+              <span className="text-muted-foreground w-24">Address:</span>
+              <span className="text-foreground">{customer.address}</span>
             </div>
           )}
           {customer.preference && (
-            <div className="flex items-center gap-2 text-sm">
-              <Star className="w-4 h-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Preference:</span>
-              <span>{customer.preference}</span>
+            <div className="flex gap-2">
+              <span className="text-muted-foreground w-24">Preference:</span>
+              <span className="text-foreground">{customer.preference}</span>
             </div>
           )}
-          <div className="text-xs text-muted-foreground">
-            Member since {new Date(Number(customer.createdAt) / 1_000_000).toLocaleDateString()}
+          <div className="flex gap-2">
+            <span className="text-muted-foreground w-24">Member since:</span>
+            <span className="text-foreground">
+              {new Date(Number(customer.createdAt) / 1_000_000).toLocaleDateString()}
+            </span>
           </div>
         </CardContent>
       </Card>
@@ -126,42 +129,47 @@ export default function CustomerDetailView({ customerId, onBack, onClose }: Cust
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Gift className="w-4 h-4 text-primary" />
+            <Star size={16} className="text-primary" />
             Loyalty Points
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <div>
-              <div className="text-3xl font-bold text-primary">{balance}</div>
-              <div className="text-xs text-muted-foreground">Available points</div>
+              <p className="text-3xl font-bold text-primary">{loyaltyBalance.toString()}</p>
+              <p className="text-sm text-muted-foreground">points available</p>
             </div>
             <Button
-              size="sm"
               variant="outline"
-              onClick={() => setShowRedeem(true)}
-              disabled={balance === 0}
+              onClick={() => setShowRedeemDialog(true)}
+              disabled={loyaltyBalance === BigInt(0)}
             >
-              Redeem Points
+              <Gift size={16} className="mr-2" />
+              Redeem
             </Button>
           </div>
 
-          {txnsLoading ? (
-            <Skeleton className="h-20 w-full" />
-          ) : loyaltyTxns.length > 0 ? (
-            <div className="space-y-2">
-              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Recent Transactions</div>
+          {/* Loyalty Transactions */}
+          {loyaltyTxns.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Transaction History
+              </p>
               {loyaltyTxns.slice(0, 5).map((txn) => (
                 <div key={txn.id.toString()} className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{txn.reason}</span>
-                  <Badge variant={Number(txn.points) >= 0 ? 'default' : 'destructive'}>
-                    {Number(txn.points) >= 0 ? '+' : ''}{Number(txn.points)} pts
-                  </Badge>
+                  <span
+                    className={
+                      Number(txn.points) >= 0
+                        ? "text-green-600 dark:text-green-400 font-medium"
+                        : "text-destructive font-medium"
+                    }
+                  >
+                    {Number(txn.points) >= 0 ? "+" : ""}{txn.points.toString()} pts
+                  </span>
                 </div>
               ))}
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No loyalty transactions yet.</p>
           )}
         </CardContent>
       </Card>
@@ -170,33 +178,31 @@ export default function CustomerDetailView({ customerId, onBack, onClose }: Cust
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <ShoppingBag className="w-4 h-4 text-primary" />
+            <ShoppingBag size={16} className="text-primary" />
             Order History
-            <Badge variant="secondary" className="ml-auto">{orders.length}</Badge>
+            <Badge variant="secondary" className="ml-auto">{orderHistory.length}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {ordersLoading ? (
-            <Skeleton className="h-24 w-full" />
-          ) : orders.length === 0 ? (
+          {orderHistory.length === 0 ? (
             <p className="text-sm text-muted-foreground">No orders yet.</p>
           ) : (
             <div className="space-y-3">
-              {orders.slice(0, 10).map((order) => (
+              {orderHistory.map((order) => (
                 <div
                   key={order.id.toString()}
                   className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0 last:pb-0"
                 >
                   <div>
-                    <div className="font-medium">Order #{order.id.toString()}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(Number(order.createdAt) / 1_000_000).toLocaleDateString()}
-                    </div>
+                    <p className="font-medium text-foreground">Order #{order.id.toString()}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(Number(order.createdAt) / 1_000_000).toLocaleDateString()} ·{" "}
+                      {order.items.length} item(s)
+                    </p>
                   </div>
-                  <div className="text-right">
-                    <div className="font-semibold">${order.totalAmount.toFixed(2)}</div>
-                    <div className="text-xs text-muted-foreground">{order.items.length} item(s)</div>
-                  </div>
+                  <span className="font-semibold text-foreground">
+                    ₹{order.totalAmount.toFixed(2)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -205,52 +211,47 @@ export default function CustomerDetailView({ customerId, onBack, onClose }: Cust
       </Card>
 
       {/* Redeem Dialog */}
-      <Dialog open={showRedeem} onOpenChange={setShowRedeem}>
+      <Dialog open={showRedeemDialog} onOpenChange={setShowRedeemDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Redeem Loyalty Points</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">
+              Available: <span className="font-semibold text-foreground">{loyaltyBalance.toString()} points</span>
+              {" "}(1 point = ₹0.10 discount)
+            </p>
+            <div className="space-y-1.5">
               <Label>Points to Redeem</Label>
               <Input
                 type="number"
                 min={1}
-                max={balance}
-                value={redeemPts}
-                onChange={(e) => setRedeemPts(e.target.value)}
-                placeholder={`Max: ${balance}`}
+                max={Number(loyaltyBalance)}
+                value={redeemPointsInput}
+                onChange={(e) => setRedeemPointsInput(e.target.value)}
+                placeholder="Enter points"
               />
             </div>
-            <div className="space-y-1">
-              <Label>Discount Amount ($)</Label>
-              <Input
-                type="number"
-                min={0.01}
-                step="0.01"
-                value={redeemDiscount}
-                onChange={(e) => setRedeemDiscount(e.target.value)}
-                placeholder="e.g. 5.00"
-              />
-            </div>
-            {redeemPoints.isError && (
-              <p className="text-sm text-destructive">
-                {redeemPoints.error instanceof Error
-                  ? redeemPoints.error.message
-                  : 'Failed to redeem points'}
+            {redeemPointsInput && Number(redeemPointsInput) > 0 && (
+              <p className="text-sm text-green-600 dark:text-green-400">
+                Discount: ₹{(Number(redeemPointsInput) * 0.1).toFixed(2)}
               </p>
+            )}
+            {redeemError && (
+              <p className="text-sm text-destructive">{redeemError}</p>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRedeem(false)}>
+            <Button variant="outline" onClick={() => setShowRedeemDialog(false)}>
               Cancel
             </Button>
             <Button
               onClick={handleRedeem}
-              disabled={redeemPoints.isPending || !redeemPts || !redeemDiscount}
+              disabled={redeemPoints.isPending || !redeemPointsInput}
             >
-              {redeemPoints.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Redeem
+              {redeemPoints.isPending ? (
+                <><Loader2 size={16} className="animate-spin mr-2" />Redeeming...</>
+              ) : "Redeem Points"}
             </Button>
           </DialogFooter>
         </DialogContent>

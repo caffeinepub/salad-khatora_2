@@ -1,14 +1,24 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Shield, User, Briefcase, Loader2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Shield, User, Loader2 } from 'lucide-react';
+import { Principal } from '@dfinity/principal';
+import {
+  useStaffAccounts,
+  useCreateStaffAccount,
+  useUpdateStaffAccount,
+  useDeleteStaffAccount,
+} from '../hooks/useQueries';
+import { StaffAccount, StaffRole } from '../backend';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -20,307 +30,310 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
-  useStaffAccounts,
-  useCreateStaffAccount,
-  useUpdateStaffAccount,
-  useDeleteStaffAccount,
-} from '@/hooks/useQueries';
-import type { StaffAccount } from '../backend';
-import { StaffRole } from '../backend';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Switch } from '@/components/ui/switch';
 
-function truncatePrincipal(p: string): string {
-  if (p.length <= 16) return p;
-  return p.slice(0, 8) + '...' + p.slice(-6);
-}
+const ROLES: StaffRole[] = [StaffRole.cashier, StaffRole.manager, StaffRole.admin];
 
-function formatDate(ts: bigint): string {
-  const ms = Number(ts) / 1_000_000;
-  return new Date(ms).toLocaleDateString();
-}
-
-function getRoleBadge(role: StaffRole) {
+function roleBadgeVariant(role: StaffRole): 'default' | 'secondary' | 'outline' {
   switch (role) {
-    case StaffRole.admin:
-      return <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 border-0"><Shield className="w-3 h-3 mr-1" />Admin</Badge>;
-    case StaffRole.manager:
-      return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-0"><Briefcase className="w-3 h-3 mr-1" />Manager</Badge>;
-    case StaffRole.cashier:
-      return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-0"><User className="w-3 h-3 mr-1" />Cashier</Badge>;
-    default:
-      return <Badge variant="secondary">{String(role)}</Badge>;
+    case StaffRole.admin: return 'default';
+    case StaffRole.manager: return 'secondary';
+    default: return 'outline';
   }
 }
 
-interface AddFormData {
-  principal: string;
-  name: string;
-  role: StaffRole;
-}
-
-interface EditFormData {
-  name: string;
-  role: StaffRole;
-  isActive: boolean;
+function extractError(err: unknown): string {
+  const msg = (err as Error)?.message ?? String(err);
+  const match = msg.match(/Reject text: (.+)/);
+  return match ? match[1] : msg;
 }
 
 export default function StaffAccountsPage() {
-  const { data: accounts, isLoading } = useStaffAccounts();
+  const { data: accounts = [], isLoading } = useStaffAccounts();
   const createAccount = useCreateStaffAccount();
   const updateAccount = useUpdateStaffAccount();
   const deleteAccount = useDeleteStaffAccount();
 
-  const [showAdd, setShowAdd] = useState(false);
-  const [editTarget, setEditTarget] = useState<StaffAccount | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<StaffAccount | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<StaffAccount | null>(null);
+  const [deletingId, setDeletingId] = useState<bigint | null>(null);
 
-  const [addForm, setAddForm] = useState<AddFormData>({ principal: '', name: '', role: StaffRole.cashier });
-  const [editForm, setEditForm] = useState<EditFormData>({ name: '', role: StaffRole.cashier, isActive: true });
+  const [formPrincipal, setFormPrincipal] = useState('');
+  const [formName, setFormName] = useState('');
+  const [formRole, setFormRole] = useState<StaffRole>(StaffRole.cashier);
+  const [formIsActive, setFormIsActive] = useState(true);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const handleAdd = async () => {
-    if (!addForm.principal.trim() || !addForm.name.trim()) return;
+  function openAdd() {
+    setFormPrincipal('');
+    setFormName('');
+    setFormRole(StaffRole.cashier);
+    setFormIsActive(true);
+    setFormError(null);
+    createAccount.reset();
+    setShowAddDialog(true);
+  }
+
+  function openEdit(account: StaffAccount) {
+    setFormName(account.name);
+    setFormRole(account.role);
+    setFormIsActive(account.isActive);
+    setFormError(null);
+    updateAccount.reset();
+    setEditingAccount(account);
+  }
+
+  function closeDialogs() {
+    setShowAddDialog(false);
+    setEditingAccount(null);
+  }
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    setFormError(null);
     try {
-      await createAccount.mutateAsync({ principal: addForm.principal.trim(), name: addForm.name.trim(), role: addForm.role });
-      setShowAdd(false);
-      setAddForm({ principal: '', name: '', role: StaffRole.cashier });
-    } catch {
-      // error handled by mutation
+      const principal = Principal.fromText(formPrincipal.trim());
+      await createAccount.mutateAsync({
+        principal,
+        name: formName.trim(),
+        role: formRole,
+      });
+      closeDialogs();
+    } catch (err) {
+      setFormError(extractError(err));
     }
-  };
+  }
 
-  const openEdit = (account: StaffAccount) => {
-    setEditTarget(account);
-    setEditForm({ name: account.name, role: account.role, isActive: account.isActive });
-  };
-
-  const handleEdit = async () => {
-    if (!editTarget) return;
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingAccount) return;
+    setFormError(null);
     try {
-      await updateAccount.mutateAsync({ id: editTarget.id, name: editForm.name, role: editForm.role, isActive: editForm.isActive });
-      setEditTarget(null);
-    } catch {
-      // error handled by mutation
+      await updateAccount.mutateAsync({
+        id: editingAccount.id,
+        name: formName.trim(),
+        role: formRole,
+        isActive: formIsActive,
+      });
+      closeDialogs();
+    } catch (err) {
+      setFormError(extractError(err));
     }
-  };
+  }
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    try {
-      await deleteAccount.mutateAsync(deleteTarget.id);
-      setDeleteTarget(null);
-    } catch {
-      // error handled by mutation
+  async function handleDelete() {
+    if (deletingId !== null) {
+      await deleteAccount.mutateAsync(deletingId);
+      setDeletingId(null);
     }
-  };
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse space-y-3">
+          {[1, 2, 3].map(i => <div key={i} className="h-12 bg-muted rounded" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <TooltipProvider>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Staff Accounts</h1>
-            <p className="text-muted-foreground text-sm mt-1">Manage staff roles and access</p>
-          </div>
-          <Button onClick={() => setShowAdd(true)} className="gap-2">
-            <Plus className="w-4 h-4" />
-            Add Staff Account
-          </Button>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Staff Accounts</h1>
+          <p className="text-muted-foreground">Manage staff access and roles.</p>
         </div>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center h-40">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="rounded-lg border border-border bg-card overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Principal</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(accounts ?? []).length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
-                      No staff accounts yet. Add one to get started.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  (accounts ?? []).map(account => (
-                    <TableRow key={account.id.toString()}>
-                      <TableCell className="font-medium">{account.name}</TableCell>
-                      <TableCell>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="font-mono text-xs cursor-default text-muted-foreground">
-                              {truncatePrincipal(account.principal.toString())}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className="font-mono text-xs">{account.principal.toString()}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell>{getRoleBadge(account.role)}</TableCell>
-                      <TableCell>
-                        {account.isActive ? (
-                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-0">Active</Badge>
-                        ) : (
-                          <Badge variant="secondary">Inactive</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{formatDate(account.createdAt)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => openEdit(account)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(account)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {/* Add Dialog */}
-        <Dialog open={showAdd} onOpenChange={setShowAdd}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Staff Account</DialogTitle>
-              <DialogDescription>Enter the principal ID, name, and role for the new staff member.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-2">
-              <div className="space-y-1">
-                <Label htmlFor="principal">Principal ID</Label>
-                <Input
-                  id="principal"
-                  placeholder="e.g. aaaaa-aa or full principal"
-                  value={addForm.principal}
-                  onChange={e => setAddForm(f => ({ ...f, principal: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  placeholder="Staff member name"
-                  value={addForm.name}
-                  onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="role">Role</Label>
-                <Select value={addForm.role} onValueChange={v => setAddForm(f => ({ ...f, role: v as StaffRole }))}>
-                  <SelectTrigger id="role">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={StaffRole.cashier}>Cashier</SelectItem>
-                    <SelectItem value={StaffRole.manager}>Manager</SelectItem>
-                    <SelectItem value={StaffRole.admin}>Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-              <Button onClick={handleAdd} disabled={createAccount.isPending || !addForm.principal.trim() || !addForm.name.trim()}>
-                {createAccount.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Add Account
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Dialog */}
-        <Dialog open={!!editTarget} onOpenChange={open => !open && setEditTarget(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Staff Account</DialogTitle>
-              <DialogDescription>Update the name, role, or status of this staff member.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-2">
-              <div className="space-y-1">
-                <Label htmlFor="edit-name">Name</Label>
-                <Input
-                  id="edit-name"
-                  value={editForm.name}
-                  onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="edit-role">Role</Label>
-                <Select value={editForm.role} onValueChange={v => setEditForm(f => ({ ...f, role: v as StaffRole }))}>
-                  <SelectTrigger id="edit-role">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={StaffRole.cashier}>Cashier</SelectItem>
-                    <SelectItem value={StaffRole.manager}>Manager</SelectItem>
-                    <SelectItem value={StaffRole.admin}>Admin</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-3">
-                <Switch
-                  id="edit-active"
-                  checked={editForm.isActive}
-                  onCheckedChange={v => setEditForm(f => ({ ...f, isActive: v }))}
-                />
-                <Label htmlFor="edit-active">Active</Label>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setEditTarget(null)}>Cancel</Button>
-              <Button onClick={handleEdit} disabled={updateAccount.isPending || !editForm.name.trim()}>
-                {updateAccount.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Save Changes
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete Confirmation */}
-        <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Staff Account</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                onClick={handleDelete}
-                disabled={deleteAccount.isPending}
-              >
-                {deleteAccount.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <Button onClick={openAdd}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Staff
+        </Button>
       </div>
-    </TooltipProvider>
+
+      {accounts.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <User className="h-12 w-12 text-muted-foreground mb-3" />
+            <p className="text-muted-foreground">No staff accounts yet.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="rounded-md border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Principal</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {accounts.map(account => (
+                <TableRow key={account.id.toString()}>
+                  <TableCell className="font-medium">{account.name}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs font-mono">
+                    {account.principal.toString().slice(0, 20)}...
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={roleBadgeVariant(account.role)} className="capitalize">
+                      {account.role}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={account.isActive ? 'default' : 'secondary'}>
+                      {account.isActive ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(account)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive"
+                        onClick={() => setDeletingId(account.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {/* Add Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={open => !open && closeDialogs()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Staff Account</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAdd} className="space-y-4">
+            <div>
+              <Label>Principal ID</Label>
+              <Input
+                value={formPrincipal}
+                onChange={e => setFormPrincipal(e.target.value)}
+                placeholder="aaaaa-aa..."
+                required
+              />
+            </div>
+            <div>
+              <Label>Name</Label>
+              <Input
+                value={formName}
+                onChange={e => setFormName(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <Label>Role</Label>
+              <Select value={formRole} onValueChange={val => setFormRole(val as StaffRole)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLES.map(r => (
+                    <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {formError && <p className="text-destructive text-sm">{formError}</p>}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closeDialogs}>Cancel</Button>
+              <Button type="submit" disabled={createAccount.isPending}>
+                {createAccount.isPending ? 'Adding...' : 'Add Staff'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingAccount} onOpenChange={open => !open && closeDialogs()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Staff Account</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4">
+            <div>
+              <Label>Name</Label>
+              <Input
+                value={formName}
+                onChange={e => setFormName(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <Label>Role</Label>
+              <Select value={formRole} onValueChange={val => setFormRole(val as StaffRole)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLES.map(r => (
+                    <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={formIsActive}
+                onCheckedChange={setFormIsActive}
+                id="is-active"
+              />
+              <Label htmlFor="is-active">Active</Label>
+            </div>
+            {formError && <p className="text-destructive text-sm">{formError}</p>}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closeDialogs}>Cancel</Button>
+              <Button type="submit" disabled={updateAccount.isPending}>
+                {updateAccount.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deletingId !== null} onOpenChange={open => !open && setDeletingId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Staff Account?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }

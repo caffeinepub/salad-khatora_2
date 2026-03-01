@@ -1,282 +1,349 @@
 import React, { useState } from 'react';
+import { Plus, Edit, Trash2, ToggleLeft, ToggleRight, Package } from 'lucide-react';
 import {
   useCombos,
-  useCreateComboDeal,
-  useUpdateComboDeal,
-  useDeleteComboDeal,
+  useCreateCombo,
+  useUpdateCombo,
+  useDeleteCombo,
   useToggleComboDealAvailability,
   useMenuItems,
+  Combo,
 } from '../hooks/useQueries';
-import type { ComboDeal, MenuItem } from '../hooks/useQueries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Edit, Trash2, Tag, Loader2 } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 
-interface ComboForm {
+function formatCurrency(amount: number) {
+  return `₹${amount.toFixed(2)}`;
+}
+
+type ComboFormData = {
   name: string;
   description: string;
-  menuItemIds: number[];
-  bundlePrice: number;
+  price: number;
+  items: { menuItemId: number; quantity: number }[];
   isAvailable: boolean;
-}
-
-const emptyForm: ComboForm = {
-  name: '',
-  description: '',
-  menuItemIds: [],
-  bundlePrice: 0,
-  isAvailable: true,
 };
 
-function formatCurrency(v: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v);
-}
+const defaultForm: ComboFormData = {
+  name: '',
+  description: '',
+  price: 0,
+  items: [],
+  isAvailable: true,
+};
 
 export default function CombosPage() {
   const { data: combos = [], isLoading } = useCombos();
   const { data: menuItems = [] } = useMenuItems();
-  const createCombo = useCreateComboDeal();
-  const updateCombo = useUpdateComboDeal();
-  const deleteCombo = useDeleteComboDeal();
-  const toggleCombo = useToggleComboDealAvailability();
+  const createCombo = useCreateCombo();
+  const updateCombo = useUpdateCombo();
+  const deleteCombo = useDeleteCombo();
+  const toggleAvailability = useToggleComboDealAvailability();
 
-  const [showAdd, setShowAdd] = useState(false);
-  const [editingCombo, setEditingCombo] = useState<ComboDeal | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<ComboDeal | null>(null);
-  const [form, setForm] = useState<ComboForm>(emptyForm);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editingCombo, setEditingCombo] = useState<Combo | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [form, setForm] = useState<ComboFormData>(defaultForm);
 
-  const getMenuItemById = (id: number): MenuItem | undefined =>
-    menuItems.find(m => m.id === id);
+  const menuItemMap = new Map(menuItems.map(m => [m.id, m]));
 
-  const calcTotalIndividualPrice = (ids: number[]) =>
-    ids.reduce((sum, id) => sum + (getMenuItemById(id)?.sellingPrice ?? 0), 0);
+  function openAdd() {
+    setForm(defaultForm);
+    setShowAddDialog(true);
+  }
 
-  const openAdd = () => {
-    setForm(emptyForm);
-    setShowAdd(true);
-  };
-
-  const openEdit = (combo: ComboDeal) => {
-    setEditingCombo(combo);
+  function openEdit(combo: Combo) {
     setForm({
       name: combo.name,
       description: combo.description,
-      menuItemIds: combo.menuItemIds,
-      bundlePrice: combo.bundlePrice,
+      price: combo.price,
+      items: combo.items,
       isAvailable: combo.isAvailable,
     });
-  };
+    setEditingCombo(combo);
+  }
 
-  const handleSave = async () => {
-    if (!form.name.trim()) return;
-    const totalIndividualPrice = calcTotalIndividualPrice(form.menuItemIds);
-    const savings = Math.max(0, totalIndividualPrice - form.bundlePrice);
-    try {
-      if (editingCombo) {
-        await updateCombo.mutateAsync({
-          ...editingCombo,
-          ...form,
-          totalIndividualPrice,
-          savings,
-        });
-        setEditingCombo(null);
+  function closeDialogs() {
+    setShowAddDialog(false);
+    setEditingCombo(null);
+  }
+
+  function toggleMenuItem(menuItemId: number) {
+    setForm(prev => {
+      const exists = prev.items.find(i => i.menuItemId === menuItemId);
+      if (exists) {
+        return { ...prev, items: prev.items.filter(i => i.menuItemId !== menuItemId) };
       } else {
-        await createCombo.mutateAsync({
-          ...form,
-          totalIndividualPrice,
-          savings,
-        });
-        setShowAdd(false);
+        return { ...prev, items: [...prev.items, { menuItemId, quantity: 1 }] };
       }
-      setForm(emptyForm);
-    } catch {
-      // handled by mutation
-    }
-  };
+    });
+  }
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    await deleteCombo.mutateAsync(deleteTarget.id);
-    setDeleteTarget(null);
-  };
-
-  const toggleMenuItem = (id: number) => {
-    setForm(f => ({
-      ...f,
-      menuItemIds: f.menuItemIds.includes(id)
-        ? f.menuItemIds.filter(i => i !== id)
-        : [...f.menuItemIds, id],
+  function updateItemQty(menuItemId: number, qty: number) {
+    setForm(prev => ({
+      ...prev,
+      items: prev.items.map(i => i.menuItemId === menuItemId ? { ...i, quantity: qty } : i),
     }));
-  };
+  }
 
+  // Calculate total individual price
+  const totalIndividualPrice = form.items.reduce((sum, item) => {
+    const mi = menuItemMap.get(item.menuItemId);
+    return sum + (mi ? (mi.sellingPrice ?? mi.price) * item.quantity : 0);
+  }, 0);
+
+  async function handleSave() {
+    if (editingCombo) {
+      await updateCombo.mutateAsync({
+        ...editingCombo,
+        ...form,
+        menuItemIds: form.items.map(i => i.menuItemId),
+        bundlePrice: form.price,
+        savings: Math.max(0, totalIndividualPrice - form.price),
+        totalIndividualPrice,
+      });
+    } else {
+      await createCombo.mutateAsync({
+        ...form,
+        menuItemIds: form.items.map(i => i.menuItemId),
+        bundlePrice: form.price,
+        savings: Math.max(0, totalIndividualPrice - form.price),
+        totalIndividualPrice,
+        imageUrl: undefined,
+      });
+    }
+    closeDialogs();
+  }
+
+  async function handleDelete() {
+    if (deletingId !== null) {
+      await deleteCombo.mutateAsync(deletingId);
+      setDeletingId(null);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => <div key={i} className="h-48 bg-muted rounded-lg" />)}
+        </div>
+      </div>
+    );
+  }
+
+  const isDialogOpen = showAddDialog || !!editingCombo;
   const isSaving = createCombo.isPending || updateCombo.isPending;
-  const previewTotal = calcTotalIndividualPrice(form.menuItemIds);
-  const previewSavings = Math.max(0, previewTotal - form.bundlePrice);
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Combo Deals</h1>
-          <p className="text-muted-foreground text-sm mt-1">Create and manage bundle deals</p>
+          <p className="text-muted-foreground">Create and manage combo meal deals.</p>
         </div>
-        <Button onClick={openAdd} className="gap-2">
-          <Plus className="w-4 h-4" />
+        <Button onClick={openAdd}>
+          <Plus className="h-4 w-4 mr-2" />
           Add Combo
         </Button>
       </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-48 rounded-xl" />)}
-        </div>
-      ) : combos.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Tag className="h-12 w-12 text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">No combo deals yet. Create your first one!</p>
-        </div>
+      {combos.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <Package className="h-12 w-12 text-muted-foreground mb-3" />
+            <p className="text-muted-foreground">No combo deals yet. Create your first combo!</p>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {combos.map(combo => (
-            <Card key={combo.id} className={`border-border ${!combo.isAvailable ? 'opacity-60' : ''}`}>
-              <CardContent className="pt-4 space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-foreground truncate">{combo.name}</p>
-                    {combo.description && (
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{combo.description}</p>
-                    )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {combos.map(combo => {
+            const comboMenuItemIds = combo.menuItemIds ?? combo.items.map(i => i.menuItemId);
+            const savings = combo.savings ?? 0;
+            const bundlePrice = combo.bundlePrice ?? combo.price;
+            const indivPrice = combo.totalIndividualPrice ?? 0;
+
+            return (
+              <Card key={combo.id} className={!combo.isAvailable ? 'opacity-60' : ''}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-base">{combo.name}</CardTitle>
+                    <div className="flex gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => toggleAvailability.mutate(combo.id)}
+                      >
+                        {combo.isAvailable
+                          ? <ToggleRight className="h-4 w-4 text-primary" />
+                          : <ToggleLeft className="h-4 w-4 text-muted-foreground" />}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => openEdit(combo)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive"
+                        onClick={() => setDeletingId(combo.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <Switch
-                    checked={combo.isAvailable}
-                    onCheckedChange={() => toggleCombo.mutate(combo.id)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-bold text-primary">{formatCurrency(combo.bundlePrice)}</span>
-                  {combo.savings > 0 && (
-                    <Badge variant="secondary" className="text-xs text-green-700">
-                      Save {formatCurrency(combo.savings)}
-                    </Badge>
+                  {combo.description && (
+                    <p className="text-sm text-muted-foreground">{combo.description}</p>
                   )}
-                </div>
-
-                <p className="text-xs text-muted-foreground">
-                  {combo.menuItemIds.length} item{combo.menuItemIds.length !== 1 ? 's' : ''}
-                  {combo.totalIndividualPrice > 0 && ` · ${formatCurrency(combo.totalIndividualPrice)} individually`}
-                </p>
-
-                <div className="flex gap-2 pt-1">
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => openEdit(combo)}>
-                    <Edit className="w-3 h-3 mr-1" /> Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => setDeleteTarget(combo)}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex flex-wrap gap-1">
+                    {comboMenuItemIds.map((id) => {
+                      const mi = menuItemMap.get(id);
+                      return mi ? (
+                        <Badge key={id} variant="secondary" className="text-xs">{mi.name}</Badge>
+                      ) : null;
+                    })}
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <div>
+                      {savings > 0 && (
+                        <span className="text-xs text-primary font-medium">
+                          Save {formatCurrency(savings)}
+                        </span>
+                      )}
+                      {indivPrice > 0 && (
+                        <span className="text-xs text-muted-foreground ml-2">
+                          {formatCurrency(indivPrice)} individually
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-bold text-primary">{formatCurrency(bundlePrice)}</span>
+                  </div>
+                  {!combo.isAvailable && (
+                    <Badge variant="outline" className="text-xs">Unavailable</Badge>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
       {/* Add/Edit Dialog */}
-      <Dialog open={showAdd || !!editingCombo} onOpenChange={open => { if (!open) { setShowAdd(false); setEditingCombo(null); } }}>
-        <DialogContent className="max-w-lg">
+      <Dialog open={isDialogOpen} onOpenChange={open => !open && closeDialogs()}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingCombo ? 'Edit Combo Deal' : 'Add Combo Deal'}</DialogTitle>
-            <DialogDescription>Configure the combo bundle details.</DialogDescription>
+            <DialogTitle>{editingCombo ? 'Edit Combo' : 'Add Combo Deal'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto pr-1">
-            <div className="space-y-1">
-              <Label htmlFor="combo-name">Name *</Label>
-              <Input id="combo-name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+          <div className="space-y-4 py-2">
+            <div>
+              <Label>Name</Label>
+              <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="combo-desc">Description</Label>
-              <Textarea id="combo-desc" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} />
+            <div>
+              <Label>Description</Label>
+              <Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2} />
             </div>
-            <div className="space-y-1">
-              <Label>Menu Items</Label>
-              <div className="space-y-2 max-h-40 overflow-y-auto border border-border rounded-lg p-2">
-                {menuItems.map(item => (
-                  <div key={item.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id={`item-${item.id}`}
-                        checked={form.menuItemIds.includes(item.id)}
-                        onCheckedChange={() => toggleMenuItem(item.id)}
-                      />
-                      <Label htmlFor={`item-${item.id}`} className="text-sm cursor-pointer">{item.name}</Label>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{formatCurrency(item.sellingPrice)}</span>
-                  </div>
-                ))}
-                {menuItems.length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-2">No menu items available.</p>
-                )}
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="bundle-price">Bundle Price *</Label>
+            <div>
+              <Label>Bundle Price (₹)</Label>
               <Input
-                id="bundle-price"
                 type="number"
                 min={0}
                 step="0.01"
-                value={form.bundlePrice}
-                onChange={e => setForm(f => ({ ...f, bundlePrice: parseFloat(e.target.value) || 0 }))}
+                value={form.price}
+                onChange={e => setForm(p => ({ ...p, price: Number(e.target.value) }))}
               />
-              {previewTotal > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Individual total: {formatCurrency(previewTotal)}
-                  {previewSavings > 0 && ` · Saves ${formatCurrency(previewSavings)}`}
+              {totalIndividualPrice > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Individual total: {formatCurrency(totalIndividualPrice)}
+                  {totalIndividualPrice > form.price && (
+                    <span className="text-primary ml-1">
+                      (Save {formatCurrency(totalIndividualPrice - form.price)})
+                    </span>
+                  )}
                 </p>
               )}
             </div>
+            <div>
+              <Label className="mb-2 block">Menu Items</Label>
+              <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-2">
+                {menuItems.map(mi => {
+                  const selected = form.items.find(i => i.menuItemId === mi.id);
+                  return (
+                    <div key={mi.id} className="flex items-center gap-3">
+                      <Checkbox
+                        checked={!!selected}
+                        onCheckedChange={() => toggleMenuItem(mi.id)}
+                        id={`mi-${mi.id}`}
+                      />
+                      <label htmlFor={`mi-${mi.id}`} className="flex-1 text-sm cursor-pointer">
+                        {mi.name} — {formatCurrency(mi.sellingPrice ?? mi.price)}
+                      </label>
+                      {selected && (
+                        <Input
+                          type="number"
+                          min={1}
+                          value={selected.quantity}
+                          onChange={e => updateItemQty(mi.id, Number(e.target.value))}
+                          className="w-16 h-7 text-xs"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+                {menuItems.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-2">No menu items available.</p>
+                )}
+              </div>
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowAdd(false); setEditingCombo(null); }}>Cancel</Button>
-            <Button onClick={handleSave} disabled={isSaving || !form.name.trim()}>
-              {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {editingCombo ? 'Save Changes' : 'Add Combo'}
+            <Button variant="outline" onClick={closeDialogs}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isSaving || !form.name}>
+              {isSaving ? 'Saving...' : editingCombo ? 'Save Changes' : 'Create Combo'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
+      <AlertDialog open={deletingId !== null} onOpenChange={open => !open && setDeletingId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Combo Deal</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete <strong>{deleteTarget?.name}</strong>?
-            </AlertDialogDescription>
+            <AlertDialogTitle>Delete Combo?</AlertDialogTitle>
+            <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={handleDelete}
-              disabled={deleteCombo.isPending}
-            >
-              {deleteCombo.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

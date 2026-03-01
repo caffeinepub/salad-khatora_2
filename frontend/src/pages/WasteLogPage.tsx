@@ -28,7 +28,8 @@ const WASTE_REASONS = ['spoiled', 'overcooked', 'dropped', 'other'];
 export default function WasteLogPage() {
   const { data: ingredients, isLoading: ingredientsLoading } = useIngredients();
   const { data: wasteLogs, isLoading: logsLoading } = useWasteLogs();
-  const { data: wasteStats, isLoading: statsLoading } = useWasteStats();
+  // useWasteStats returns a plain object (not a query), so destructure directly
+  const wasteStats = useWasteStats();
   const createWasteLog = useCreateWasteLog();
 
   const [selectedIngredientId, setSelectedIngredientId] = useState<string>('');
@@ -37,8 +38,9 @@ export default function WasteLogPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const selectedIngredient = ingredients?.find(i => i.id.toString() === selectedIngredientId);
+  // Use costPerUnit (the required field) for cost estimation
   const estimatedCostLoss = selectedIngredient && quantity && !isNaN(Number(quantity))
-    ? selectedIngredient.costPrice * Number(quantity)
+    ? selectedIngredient.costPerUnit * Number(quantity)
     : null;
 
   const handleSubmit = async () => {
@@ -64,10 +66,11 @@ export default function WasteLogPage() {
     }
   };
 
-  const sortedLogs = [...(wasteLogs ?? [])].sort((a, b) => b.loggedAt - a.loggedAt);
+  // Sort by createdAt (the field in WasteLog type)
+  const sortedLogs = [...(wasteLogs ?? [])].sort((a, b) => b.createdAt - a.createdAt);
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-heading font-bold text-foreground">Waste & Spoilage Log</h1>
@@ -84,13 +87,9 @@ export default function WasteLogPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {statsLoading ? (
-              <Skeleton className="h-8 w-24" />
-            ) : (
-              <p className="text-2xl font-bold text-destructive">
-                ${(wasteStats?.totalCostLoss ?? 0).toFixed(2)}
-              </p>
-            )}
+            <p className="text-2xl font-bold text-destructive">
+              ₹{wasteStats.totalCostLoss.toFixed(2)}
+            </p>
           </CardContent>
         </Card>
 
@@ -102,13 +101,9 @@ export default function WasteLogPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {statsLoading ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <p className="text-2xl font-bold">
-                {wasteStats?.totalEntries ?? 0}
-              </p>
-            )}
+            <p className="text-2xl font-bold">
+              {wasteStats.count}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -164,7 +159,7 @@ export default function WasteLogPage() {
               />
               {estimatedCostLoss !== null && (
                 <p className="text-xs text-muted-foreground">
-                  Est. cost loss: ${estimatedCostLoss.toFixed(2)}
+                  Est. cost loss: ₹{estimatedCostLoss.toFixed(2)}
                 </p>
               )}
             </div>
@@ -228,9 +223,9 @@ export default function WasteLogPage() {
                       <TableCell className="font-medium">{log.ingredientName}</TableCell>
                       <TableCell>{log.quantity} {log.unit}</TableCell>
                       <TableCell className="capitalize">{log.reason}</TableCell>
-                      <TableCell className="text-destructive font-medium">${log.costLoss.toFixed(2)}</TableCell>
+                      <TableCell className="text-destructive font-medium">₹{log.costLoss.toFixed(2)}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">
-                        {new Date(log.loggedAt).toLocaleString()}
+                        {new Date(log.createdAt).toLocaleString()}
                       </TableCell>
                     </TableRow>
                   ))}

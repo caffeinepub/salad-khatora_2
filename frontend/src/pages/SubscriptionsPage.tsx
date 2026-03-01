@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   useSubscriptions,
   useCreateSubscription,
@@ -19,7 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Search, Pause, Play, X, CalendarCheck, Loader2 } from 'lucide-react';
+import { Plus, Search, Pause, Play, X, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function formatDate(ts: number): string {
@@ -27,16 +27,16 @@ function formatDate(ts: number): string {
 }
 
 function formatCurrency(v: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v);
+  return `₹${v.toFixed(2)}`;
 }
 
-function getStatusBadge(status: SubscriptionStatus) {
+function getStatusBadge(status: string) {
   switch (status) {
-    case SubscriptionStatus.active:
+    case 'active':
       return <Badge className="bg-green-100 text-green-800 border-0">Active</Badge>;
-    case SubscriptionStatus.paused:
+    case 'paused':
       return <Badge className="bg-yellow-100 text-yellow-800 border-0">Paused</Badge>;
-    case SubscriptionStatus.cancelled:
+    case 'cancelled':
       return <Badge variant="secondary">Cancelled</Badge>;
     default:
       return <Badge variant="outline">{status}</Badge>;
@@ -81,14 +81,14 @@ export default function SubscriptionsPage() {
     const customerName = customerMap.get(s.customerId.toString()) ?? '';
     return (
       customerName.toLowerCase().includes(q) ||
-      s.planName.toLowerCase().includes(q)
+      (s.planName ?? '').toLowerCase().includes(q)
     );
   });
 
   const calcAutoPrice = (ids: number[]) =>
     ids.reduce((sum, id) => {
       const item = menuItems.find(m => m.id === id);
-      return sum + (item?.sellingPrice ?? 0);
+      return sum + (item?.sellingPrice ?? item?.price ?? 0);
     }, 0);
 
   const toggleMenuItem = (id: number) => {
@@ -106,16 +106,21 @@ export default function SubscriptionsPage() {
     const startDate = new Date(form.startDate).getTime();
     const frequencyDays = parseInt(form.frequencyDays) || 7;
     const nextRenewalDate = startDate + frequencyDays * 24 * 60 * 60 * 1000;
+    const customerName = customerMap.get(form.customerId) ?? '';
     try {
       await createSubscription.mutateAsync({
         customerId: parseInt(form.customerId),
+        customerName,
         planName: form.planName.trim(),
         menuItemIds: form.menuItemIds,
+        frequency: 'daily',
         frequencyDays,
         startDate,
         nextRenewalDate,
         status: SubscriptionStatus.active,
+        totalAmount: autoPrice,
         totalPrice: autoPrice,
+        note: '',
       });
       setShowAdd(false);
       setForm(emptyForm);
@@ -180,40 +185,43 @@ export default function SubscriptionsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map(sub => (
-                  <TableRow key={sub.id}>
-                    <TableCell className="font-medium">
-                      {customerMap.get(sub.customerId.toString()) ?? `Customer #${sub.customerId}`}
-                    </TableCell>
-                    <TableCell>{sub.planName}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-                      {sub.menuItemIds.map(id => menuItemMap.get(id.toString()) ?? `#${id}`).join(', ')}
-                    </TableCell>
-                    <TableCell>Every {sub.frequencyDays}d</TableCell>
-                    <TableCell className="text-sm">{formatDate(sub.nextRenewalDate)}</TableCell>
-                    <TableCell>{formatCurrency(sub.totalPrice)}</TableCell>
-                    <TableCell>{getStatusBadge(sub.status)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        {sub.status === SubscriptionStatus.active && (
-                          <Button variant="ghost" size="icon" onClick={() => pauseSubscription.mutate(sub.id)} title="Pause">
-                            <Pause className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {sub.status === SubscriptionStatus.paused && (
-                          <Button variant="ghost" size="icon" onClick={() => resumeSubscription.mutate(sub.id)} title="Resume">
-                            <Play className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {sub.status !== SubscriptionStatus.cancelled && (
-                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setCancelTarget(sub)} title="Cancel">
-                            <X className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                filtered.map(sub => {
+                  const itemIds = sub.menuItemIds ?? [];
+                  return (
+                    <TableRow key={sub.id}>
+                      <TableCell className="font-medium">
+                        {sub.customerName || customerMap.get(sub.customerId.toString()) || `Customer #${sub.customerId}`}
+                      </TableCell>
+                      <TableCell>{sub.planName}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                        {itemIds.map(id => menuItemMap.get(id.toString()) ?? `#${id}`).join(', ')}
+                      </TableCell>
+                      <TableCell>{sub.frequency}</TableCell>
+                      <TableCell className="text-sm">{formatDate(sub.nextRenewalDate)}</TableCell>
+                      <TableCell>{formatCurrency(sub.totalPrice ?? sub.totalAmount)}</TableCell>
+                      <TableCell>{getStatusBadge(sub.status)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {sub.status === SubscriptionStatus.active && (
+                            <Button variant="ghost" size="icon" onClick={() => pauseSubscription.mutate(sub.id)} title="Pause">
+                              <Pause className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {sub.status === SubscriptionStatus.paused && (
+                            <Button variant="ghost" size="icon" onClick={() => resumeSubscription.mutate(sub.id)} title="Resume">
+                              <Play className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {sub.status !== SubscriptionStatus.cancelled && (
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setCancelTarget(sub)} title="Cancel">
+                              <X className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -256,7 +264,7 @@ export default function SubscriptionsPage() {
                       />
                       <Label htmlFor={`sub-item-${item.id}`} className="text-sm cursor-pointer">{item.name}</Label>
                     </div>
-                    <span className="text-xs text-muted-foreground">{formatCurrency(item.sellingPrice)}</span>
+                    <span className="text-xs text-muted-foreground">{formatCurrency(item.sellingPrice ?? item.price)}</span>
                   </div>
                 ))}
                 {menuItems.length === 0 && (

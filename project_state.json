@@ -1,73 +1,94 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Point of Sale application with checkout, billing, and payment functionality",
-  "architectural_notes": [
-    "POS checkout flow: add items → select payment mode → generate bill → print option"
-  ],
-  "known_issues": [
-    "Checkout clears cart and shows 'no item added' instead of generating bill and print option",
-    "Payment mode selection not shown during checkout"
-  ],
+  "summary": "New project",
+  "architectural_notes": [],
+  "known_issues": [],
   "isFixRequest": true,
-  "existing_features": [
-    {
-      "id": "feature-fix-the-checkout-flow-in-salespage-tsx-so-that-pressing-the-checkout-button-does-not-clear-the-cart-prematurely-instead-it-should-open-a-checkout-order-summary-dialog-that-displays-all-added-items-quantities-and-prices-before-completing-the-sale",
-      "title": "Fix the checkout flow in SalesPage.tsx so that pressing the Checkout button does NOT clear the cart prematurely. Instead, it should open a checkout/order summary dialog that displays all added items, quantities, and prices before completing the sale.",
-      "reqIds": [
-        "REQ-1"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-payment-mode-selection-step-inside-the-checkout-dialog-the-user-must-be-able-to-choose-a-payment-method-e-g-cash-card-upi-online-before-confirming-the-order-the-selected-payment-mode-must-be-recorded-with-the-sale-order",
-      "title": "Add a payment mode selection step inside the checkout dialog. The user must be able to choose a payment method (e.g., Cash, Card, UPI/Online) before confirming the order. The selected payment mode must be recorded with the sale order.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-after-the-user-selects-a-payment-mode-and-confirms-the-order-generate-a-bill-receipt-view-inside-the-checkout-dialog-or-a-follow-up-dialog-that-displays-order-id-date-time-list-of-items-with-quantities-and-prices-subtotal-taxes-discounts-and-total-amount-due-along-with-the-selected-payment-mode",
-      "title": "After the user selects a payment mode and confirms the order, generate a bill/receipt view inside the checkout dialog (or a follow-up dialog) that displays: order ID, date/time, list of items with quantities and prices, subtotal, taxes, discounts, and total amount due, along with the selected payment mode.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-print-bill-button-on-the-generated-bill-view-that-triggers-the-browser-s-print-dialog-scoped-to-the-bill-content-only-hiding-all-navigation-and-ui-chrome-during-print",
-      "title": "Add a 'Print Bill' button on the generated bill view that triggers the browser's print dialog scoped to the bill content only, hiding all navigation and UI chrome during print.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-after-the-bill-is-displayed-and-the-user-dismisses-the-bill-dialog-clear-the-cart-and-reset-the-pos-state-selected-customer-discount-code-ready-for-the-next-transaction",
-      "title": "After the bill is displayed and the user dismisses the bill dialog, clear the cart and reset the POS state (selected customer, discount code) ready for the next transaction.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    }
-  ],
+  "existing_features": [],
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "After adding items and pressing checkout, generate a bill with print option instead of clearing items",
-      "reqIds": [],
+      "summary": "Audit and fix the SalesPage layout and styling: ensure cart, menu grid, checkout button, and discount/customer selectors are correctly laid out with consistent spacing, typography, and color tokens from the design system.",
+      "reqIds": [
+        "REQ-1"
+      ],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Show payment mode selection during checkout process",
-      "reqIds": [],
+      "summary": "Audit and fix the SalesReportsPage: ensure daily/weekly toggle, summary stat cards, and report table are properly styled, aligned, and display accurate data without visual regressions.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Audit and fix BillReceiptView: ensure the print layout correctly renders order items, subtotal, discount, tax breakdown, total, payment mode, and customer name without overlapping or missing elements, and that window.print() produces a clean receipt.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Audit and fix CheckoutDialog: ensure cart items list, pricing breakdown (subtotal, discount, taxes, total), and payment method selector (cash, card, UPI) are correctly displayed and styled, with the confirm button clearly accessible.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Audit and fix the sidebar navigation in Layout.tsx: ensure all navigation links (dashboard, sales, inventory, menu, customers, combos, suppliers, purchase orders, subscriptions, delivery calendar, discounts, tax config, staff accounts, waste log, alerts, sales reports, audit log, admin settings) are grouped correctly, styled consistently, and the active route is visually highlighted. Fix mobile hamburger menu toggle behavior.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Audit global design token consistency across all pages: verify that all pages (Dashboard, Inventory, Menu, Customers, Combos, Suppliers, Purchase Orders, Subscriptions, Delivery Calendar, Discounts, Tax Config, Staff Accounts, Waste Log, Alerts, Audit Log, Admin Settings) use the OKLCH-based CSS custom properties defined in index.css for colors, typography uses DM Sans/Plus Jakarta Sans fonts from tailwind.config.js, and dark mode works correctly on every page.",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-7",
+      "summary": "Audit the backend main.mo actor for any logic errors, missing authorization checks, inconsistent state mutations, or type mismatches. Fix any identified issues while maintaining the single-actor architecture.",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Audit useQueries.ts for any broken query/mutation hooks: verify that all hooks correctly reference backend actor methods, handle loading/error states, and invalidate the correct query keys after mutations.",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-9",
+      "summary": "Fix the empty ProfileSetupModal.tsx component — either implement it with appropriate profile setup fields (username/display name) or remove its import/usage from the app if it is not needed.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Fix the empty LoginPage.tsx — either implement a proper login page that triggers Internet Identity login via the useInternetIdentity hook and redirects authenticated users to the dashboard, or remove it if authentication is handled inline elsewhere.",
+      "reqIds": [
+        "REQ-10"
+      ],
       "status": "pending"
     }
   ],
-  "gameProjectType": "none",
-  "projectName": "Point of Sale",
+  "projectName": "Salad Khatora POS",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

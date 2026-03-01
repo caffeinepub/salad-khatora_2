@@ -1,111 +1,233 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix checkout flow: bill generation, print option, and payment mode selection",
+  "title": "Cross-check and fix all project issues",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Prevent cart from clearing prematurely during checkout; show order summary dialog with all items before completing sale",
+      "summary": "Audit and fix the SalesPage layout and styling to ensure cart, menu grid, checkout button, and discount/customer selectors are correctly laid out with consistent spacing, typography, and color tokens from the design system",
       "acceptanceCriteria": [
-        "Clicking Checkout opens a modal/dialog showing all cart items with name, quantity, and price",
-        "Cart items remain visible inside the checkout dialog and are not cleared during processing",
-        "The checkout dialog is dismissible and returns the user to the cart without data loss"
+        "SalesPage renders without layout overflow or broken grid",
+        "All interactive elements (add-to-cart, discount, customer select) are clearly visible and functional",
+        "Typography and colors use defined CSS custom properties consistently"
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/SalesPage.tsx",
           "operation": "modify",
-          "description": "Refactor the checkout flow to open a dialog instead of immediately processing the order. Move the cart-clearing logic so it only executes after successful order confirmation. Add state management for a checkout dialog that displays all cart items with their names, quantities, and prices. Ensure the dialog can be dismissed without losing cart data."
-        },
-        {
-          "path": "frontend/src/components/CheckoutDialog.tsx",
-          "operation": "create",
-          "description": "Create a new dialog component that displays the order summary before confirmation. Show cart items in a table with columns for item name, quantity, unit price, and line total. Include subtotal, discount amount (if any), tax breakdown, and grand total. Provide 'Cancel' and 'Confirm Order' buttons. Accept props for cart items, discount info, tax info, customer, and callbacks for confirm/cancel actions."
+          "description": "Audit and fix layout issues in SalesPage: verify the menu grid (columns, gaps, responsive breakpoints), cart display (item list, totals section), discount code and customer selector positioning, and checkout button placement. Ensure all typography uses DM Sans/Plus Jakarta Sans from tailwind.config.js. Replace any hardcoded color values with OKLCH-based CSS custom properties from index.css (e.g., var(--primary), var(--background), var(--foreground)). Fix any overflow issues on mobile and desktop viewports. Verify add-to-cart buttons, discount application, and customer selection controls are visually accessible and correctly trigger their respective handlers."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Add payment mode selection step inside checkout dialog before order confirmation",
+      "summary": "Audit and fix the SalesReportsPage to ensure daily/weekly toggle, summary stat cards, and report table are properly styled, aligned, and display accurate data without visual regressions",
       "acceptanceCriteria": [
-        "Checkout dialog includes a clearly labeled 'Payment Mode' section with selectable options: Cash, Card, and UPI/Online",
-        "User cannot confirm/complete the order without selecting a payment mode",
-        "Selected payment mode is passed to the backend and stored with the sale order record"
+        "Toggle between daily and weekly views works correctly",
+        "Summary stat cards display revenue, orders, and average revenue with proper formatting",
+        "Report table rows align correctly and are readable in both light and dark modes"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/CheckoutDialog.tsx",
+          "path": "frontend/src/pages/SalesReportsPage.tsx",
           "operation": "modify",
-          "description": "Add a 'Payment Mode' selection section to the CheckoutDialog with radio buttons or a select dropdown for Cash, Card, and UPI/Online options. Add validation to disable the 'Confirm Order' button until a payment mode is selected. Store the selected payment mode in component state and pass it to the confirm callback. Map the selected option to the backend PaymentMode type (cash, card, upi, or other)."
-        },
-        {
-          "path": "frontend/src/pages/SalesPage.tsx",
-          "operation": "modify",
-          "description": "Update the checkout handler to accept the selected payment mode from the CheckoutDialog. Pass the payment mode to the createSaleOrder mutation when confirming the order. Ensure the paymentType parameter matches the backend interface's PaymentMode enum structure."
+          "description": "Audit and fix SalesReportsPage layout and styling: verify the daily/weekly toggle buttons function correctly and update the displayed data. Check summary stat cards (total revenue, total orders, average revenue) for proper number formatting, alignment, and spacing. Ensure the report table rows and columns align correctly with consistent padding and borders. Replace any hardcoded colors with OKLCH-based CSS custom properties from index.css. Test readability in both light and dark modes. Verify no visual overflow or misalignment issues on different screen sizes."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Generate and display a bill/receipt view after successful order confirmation showing order details, items, pricing, taxes, and payment mode",
+      "summary": "Audit and fix BillReceiptView to ensure the print layout correctly renders order items, subtotal, discount, tax breakdown, total, payment mode, and customer name without overlapping or missing elements, and that window.print() produces a clean receipt",
       "acceptanceCriteria": [
-        "Bill view shows order ID, date and time, itemized list with quantities and unit prices, applied discount (if any), tax breakdown, and grand total",
-        "Bill view shows the payment mode used",
-        "Bill is displayed after order confirmation succeeds on the backend"
+        "All bill fields (items, subtotal, discount, taxes, total, payment mode, customer) are shown correctly",
+        "Print stylesheet produces a clean, correctly formatted receipt",
+        "No layout overflow or hidden content when printing"
       ],
       "file_operations": [
         {
           "path": "frontend/src/components/BillReceiptView.tsx",
-          "operation": "create",
-          "description": "Create a new component that renders a formatted bill/receipt. Display the order ID, date/time formatted for readability, customer name (if selected), itemized list of products with quantities and unit prices, subtotal, discount details (code and amount if applied), tax breakdown showing each tax line item, grand total, and payment mode. Use a clean, print-friendly layout with clear section headers and appropriate typography. Accept props for the confirmed order data returned from the backend."
-        },
-        {
-          "path": "frontend/src/pages/SalesPage.tsx",
           "operation": "modify",
-          "description": "Add state management for showing the bill view after successful order creation. When the createSaleOrder mutation succeeds, fetch the created order details (or use the returned order ID to retrieve full data) and transition from the checkout dialog to the bill receipt view. Pass the complete order data including items, totals, tax breakdown, discount info, customer, and payment mode to the BillReceiptView component."
+          "description": "Audit and fix BillReceiptView print layout: verify all order line items, subtotal, discount amount, tax breakdown (name, rate, amount per tax), total, payment mode, and customer name are rendered correctly without overlapping or missing elements. Check that the print stylesheet (defined in index.css under @media print) produces a clean, correctly formatted receipt when window.print() is triggered. Ensure no content is hidden or cut off during printing. Test for proper alignment, font sizes, and spacing in the print preview. Verify the dialog opens and closes correctly and the print button is clearly visible."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Add a 'Print Bill' button that triggers the browser print dialog for the bill content only",
+      "summary": "Audit and fix CheckoutDialog to ensure cart items list, pricing breakdown (subtotal, discount, taxes, total), and payment method selector (cash, card, UPI) are correctly displayed and styled, with the confirm button clearly accessible",
       "acceptanceCriteria": [
-        "A 'Print Bill' button is visible on the bill receipt view",
-        "Clicking Print Bill opens the browser print dialog",
-        "Only the bill content is printed; sidebar, navigation, and other UI elements are hidden via print CSS",
-        "The printed receipt is cleanly formatted and readable"
+        "All pricing breakdown lines render with correct labels and values",
+        "Payment method options are clearly selectable with active state indication",
+        "Confirm order button is visible and triggers the mutation correctly"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/BillReceiptView.tsx",
+          "path": "frontend/src/components/CheckoutDialog.tsx",
           "operation": "modify",
-          "description": "Add a 'Print Bill' button to the BillReceiptView component that calls window.print() when clicked. Wrap the bill content in a container with a print-specific class or ID. Add inline or scoped print media query styles that hide all non-bill UI elements (buttons, navigation, sidebar) and ensure the bill layout is optimized for printing (white background, black text, proper margins)."
-        },
-        {
-          "path": "frontend/src/index.css",
-          "operation": "modify",
-          "description": "Add print media query CSS rules to hide the application layout, sidebar, and navigation during print. Use @media print to target only the bill receipt container for printing. Ensure proper page breaks, margins, and typography for printed receipts. Set background colors to white and text to black for print clarity."
+          "description": "Audit and fix CheckoutDialog layout and functionality: verify cart items are listed with correct names, quantities, and prices. Check that the pricing breakdown section displays subtotal, discount amount, tax breakdown (each tax with name, rate, amount), and final total with correct labels and formatting. Ensure payment method options (cash, card, UPI) are clearly displayed with radio buttons or similar selectors, and the active/selected state is visually distinct. Verify the confirm order button is visible, properly styled, and triggers the createSaleOrder mutation correctly. Replace any hardcoded colors with OKLCH-based CSS custom properties. Test dialog opening, closing, and responsiveness on mobile and desktop."
         }
       ]
     },
     {
       "id": "REQ-5",
-      "summary": "Clear cart and reset POS state only after bill is displayed and dismissed by the user",
+      "summary": "Audit and fix the sidebar navigation in Layout.tsx to ensure all navigation links are grouped correctly, styled consistently, the active route is visually highlighted, and mobile hamburger menu toggle behavior works correctly",
       "acceptanceCriteria": [
-        "Cart is cleared only after successful order confirmation and the bill dialog is closed or a 'New Sale' button is clicked",
-        "Customer selection and discount code fields are reset after cart is cleared",
-        "POS page is in a clean state ready for a new transaction after dismissal"
+        "All navigation links are present and route correctly",
+        "Active route link is visually distinguished",
+        "Mobile sidebar opens and closes correctly via the hamburger button",
+        "Dark mode toggle works in both mobile and desktop sidebar"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/components/BillReceiptView.tsx",
+          "path": "frontend/src/components/Layout.tsx",
           "operation": "modify",
-          "description": "Add a 'Close' or 'New Sale' button to the BillReceiptView that triggers a callback when clicked. This callback will be provided by the parent SalesPage to handle cleanup after the bill is dismissed."
+          "description": "Audit and fix Layout.tsx sidebar navigation: verify all navigation links (dashboard, sales, inventory, menu, customers, combos, suppliers, purchase orders, subscriptions, delivery calendar, discounts, tax config, staff accounts, waste log, alerts, sales reports, audit log, admin settings) are present, correctly grouped (e.g., by category), and route to their respective pages. Ensure consistent styling across all links using OKLCH-based CSS custom properties for colors. Verify the active route is visually highlighted (e.g., with a different background or border color). Test the mobile hamburger menu: ensure it toggles the sidebar open/closed correctly on click, and that the sidebar is accessible and usable on mobile devices. Verify the dark mode toggle button works in both mobile and desktop views and correctly applies the dark theme class to the document root."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Audit global design token consistency across all pages to verify that all pages use the OKLCH-based CSS custom properties defined in index.css for colors, typography uses DM Sans/Plus Jakarta Sans fonts from tailwind.config.js, and dark mode works correctly on every page",
+      "acceptanceCriteria": [
+        "No hardcoded color values that conflict with the design token system",
+        "Dark mode toggles correctly on all pages without broken contrast",
+        "Font families are applied consistently across headings and body text on all pages",
+        "No pages have layout-breaking issues in either light or dark mode"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/DashboardPage.tsx",
+          "operation": "modify",
+          "description": "Audit DashboardPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties from index.css (e.g., var(--primary), var(--background), var(--foreground), var(--card), var(--muted)). Verify typography uses DM Sans or Plus Jakarta Sans fonts. Test dark mode rendering to ensure all text and backgrounds have proper contrast and no visual regressions."
         },
         {
-          "path": "frontend/src/pages/SalesPage.tsx",
+          "path": "frontend/src/pages/InventoryPage.tsx",
           "operation": "modify",
-          "description": "Implement a cleanup handler that clears the cart state, resets the selected customer, clears the applied discount code, and closes the bill view dialog when the user dismisses the bill. Ensure this cleanup only happens after the order is successfully created and the bill has been displayed. Do not clear cart state during checkout processing or if the order creation fails. Reset all POS form fields to their initial empty state."
+          "description": "Audit InventoryPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify font families and test dark mode for proper contrast and readability. Ensure low-stock and expiring-soon item highlights use design tokens."
+        },
+        {
+          "path": "frontend/src/pages/MenuPage.tsx",
+          "operation": "modify",
+          "description": "Audit MenuPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography uses DM Sans or Plus Jakarta Sans. Test dark mode rendering for menu items, search/filter controls, and availability toggles."
+        },
+        {
+          "path": "frontend/src/pages/CustomersPage.tsx",
+          "operation": "modify",
+          "description": "Audit CustomersPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for customer table and dialogs."
+        },
+        {
+          "path": "frontend/src/pages/CombosPage.tsx",
+          "operation": "modify",
+          "description": "Audit CombosPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for combo cards and dialogs."
+        },
+        {
+          "path": "frontend/src/pages/SuppliersPage.tsx",
+          "operation": "modify",
+          "description": "Audit SuppliersPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for supplier table and dialogs."
+        },
+        {
+          "path": "frontend/src/pages/PurchaseOrdersPage.tsx",
+          "operation": "modify",
+          "description": "Audit PurchaseOrdersPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for purchase order table and dialogs."
+        },
+        {
+          "path": "frontend/src/pages/SubscriptionsPage.tsx",
+          "operation": "modify",
+          "description": "Audit SubscriptionsPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for subscription table, dialogs, and status badges."
+        },
+        {
+          "path": "frontend/src/pages/DeliveryCalendarPage.tsx",
+          "operation": "modify",
+          "description": "Audit DeliveryCalendarPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for delivery calendar view and navigation controls."
+        },
+        {
+          "path": "frontend/src/pages/DiscountsPage.tsx",
+          "operation": "modify",
+          "description": "Audit DiscountsPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for discount code list and dialogs."
+        },
+        {
+          "path": "frontend/src/pages/TaxConfigPage.tsx",
+          "operation": "modify",
+          "description": "Audit TaxConfigPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for tax config table and dialogs."
+        },
+        {
+          "path": "frontend/src/pages/StaffAccountsPage.tsx",
+          "operation": "modify",
+          "description": "Audit StaffAccountsPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for staff account table and dialogs."
+        },
+        {
+          "path": "frontend/src/pages/WasteLogPage.tsx",
+          "operation": "modify",
+          "description": "Audit WasteLogPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for waste log table and submission form."
+        },
+        {
+          "path": "frontend/src/pages/AlertsPage.tsx",
+          "operation": "modify",
+          "description": "Audit AlertsPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for alert list and action buttons."
+        },
+        {
+          "path": "frontend/src/pages/AuditLogPage.tsx",
+          "operation": "modify",
+          "description": "Audit AuditLogPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for audit log table and pagination controls."
+        },
+        {
+          "path": "frontend/src/pages/AdminSettingsPage.tsx",
+          "operation": "modify",
+          "description": "Audit AdminSettingsPage for design token consistency: replace any hardcoded color values with OKLCH-based CSS custom properties. Verify typography and test dark mode for role display and claim admin button."
+        }
+      ]
+    },
+    {
+      "id": "REQ-8",
+      "summary": "Audit useQueries.ts for any broken query/mutation hooks to verify that all hooks correctly reference backend actor methods, handle loading/error states, and invalidate the correct query keys after mutations",
+      "acceptanceCriteria": [
+        "All useQuery hooks have correct queryKey arrays and fetcher functions",
+        "All useMutation hooks invalidate the appropriate dependent queries on success",
+        "Error states are handled gracefully and surface meaningful messages to the user"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Audit useQueries.ts for correctness: verify that all useQuery hooks have correct queryKey arrays (e.g., ['menuItems'], ['customers'], ['discountCodes']) and that fetcher functions correctly reference backend actor methods from the backend interface. Check that all useMutation hooks invalidate the appropriate dependent query keys on success (e.g., createMenuItem mutation invalidates ['menuItems']). Ensure error states are properly handled and surfaced to the UI with meaningful error messages. Verify that all hooks are properly typed using the TypeScript types from backend.d.ts. Fix any broken references, incorrect query keys, or missing invalidation logic."
+        }
+      ]
+    },
+    {
+      "id": "REQ-9",
+      "summary": "Fix the empty ProfileSetupModal.tsx component — either implement it with appropriate profile setup fields (username/display name) or remove its import/usage from the app if it is not needed",
+      "acceptanceCriteria": [
+        "ProfileSetupModal.tsx is either a functional component or cleanly removed with no broken imports"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/ProfileSetupModal.tsx",
+          "operation": "modify",
+          "description": "Implement ProfileSetupModal as a functional component that prompts the user for their name when they log in for the first time. Use the authorization component's getCallerUserProfile and saveCallerUserProfile methods. Display a modal dialog with a text input field for the user's name and a submit button. On submit, call saveCallerUserProfile with the entered name. Follow the usage instructions from the authorization component to prevent modal flash by checking if the user profile is null before showing the modal. Ensure the modal is styled using OKLCH-based CSS custom properties and works in both light and dark modes. If the BuildRequest or app flow indicates that profile setup is not needed, delete this file and remove any imports/usage of ProfileSetupModal from other components (search the codebase for references)."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "If ProfileSetupModal is implemented, ensure it is correctly imported and conditionally rendered in App.tsx or the appropriate parent component (e.g., after authentication check). Use the pattern from the authorization component usage instructions: show the modal only when isAuthenticated is true, profileLoading is false, isFetched is true, and userProfile is null. If ProfileSetupModal is removed, ensure no broken imports or references remain in App.tsx."
+        }
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "summary": "Fix the empty LoginPage.tsx — either implement a proper login page that triggers Internet Identity login via the useInternetIdentity hook and redirects authenticated users to the dashboard, or remove it if authentication is handled inline elsewhere",
+      "acceptanceCriteria": [
+        "LoginPage either renders a functional login UI with Internet Identity or is cleanly removed with no broken routes",
+        "Authenticated users are redirected to the dashboard automatically"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/LoginPage.tsx",
+          "operation": "modify",
+          "description": "Implement LoginPage as a functional component that renders a login UI using Internet Identity. Import useInternetIdentity hook and display a login button that calls the login() method. Follow the usage instructions from the authorization component: show 'Logging in...' during loginStatus === 'logging-in', and redirect authenticated users (identity is not null) to the dashboard route automatically using React Router's useNavigate or similar. Style the page using OKLCH-based CSS custom properties and ensure it works in both light and dark modes. If the BuildRequest or app flow indicates that authentication is handled inline elsewhere (e.g., in Layout or App), delete this file and remove the LoginPage route from App.tsx."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "If LoginPage is implemented, ensure the route for LoginPage (e.g., '/login') is correctly defined in the router configuration in App.tsx. If LoginPage is removed, ensure the '/login' route is also removed and there are no broken route references. Verify that authenticated users are redirected from the root or login route to the dashboard automatically."
         }
       ]
     }

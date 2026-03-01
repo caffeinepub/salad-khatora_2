@@ -1,15 +1,18 @@
 # Specification
 
 ## Summary
-**Goal:** Fix the checkout flow in the Salad Khatora POS so that cart items are preserved during checkout, a payment mode can be selected, a bill/receipt is generated after order confirmation, and a print option is available.
+**Goal:** Audit and fix all existing issues across the Salad Khatora POS frontend and backend to ensure every page, component, and data hook works correctly and consistently.
 
 **Planned changes:**
-- Fix the Checkout button in SalesPage.tsx to open a checkout/order summary dialog instead of immediately clearing the cart and processing
-- The checkout dialog displays all cart items with name, quantity, and price, and is dismissible without data loss
-- Add a Payment Mode selection step (Cash, Card, UPI/Online) inside the checkout dialog; order cannot be confirmed without a selection
-- Store the selected payment mode with the sale order on the backend
-- After successful order confirmation, display a bill/receipt view showing order ID, date/time, itemized list, discount, tax breakdown, grand total, and payment mode used
-- Add a "Print Bill" button that triggers the browser print dialog scoped to bill content only, hiding all other UI via print CSS
-- Clear the cart, customer selection, and discount code only after the bill dialog is dismissed or "New Sale" is clicked
+- Fix SalesPage layout: correct cart, menu grid, checkout button, and discount/customer selector spacing, typography, and color token usage
+- Fix SalesReportsPage: correct daily/weekly toggle, stat cards, and report table styling and data display
+- Fix BillReceiptView: ensure all bill fields render correctly and window.print() produces a clean receipt without overflow
+- Fix CheckoutDialog: correct pricing breakdown display, payment method selector active states, and confirm button functionality
+- Fix sidebar navigation in Layout.tsx: ensure all nav links are present, grouped, styled, and active route is highlighted; fix mobile hamburger toggle
+- Audit and enforce global design token consistency (OKLCH CSS custom properties, DM Sans/Plus Jakarta Sans fonts, dark mode) across all pages
+- Fix backend main.mo: resolve logic errors, missing authorization checks, inconsistent state mutations, and type mismatches; ensure audit log entries are recorded for all mutations
+- Fix useQueries.ts: correct broken query/mutation hooks, query key arrays, fetcher functions, mutation invalidations, and error handling
+- Fix ProfileSetupModal.tsx: implement a functional profile setup modal or cleanly remove it and its imports
+- Fix LoginPage.tsx: implement a functional Internet Identity login page with dashboard redirect, or cleanly remove it and its routes
 
-**User-visible outcome:** Cashiers can review cart items, select a payment method, confirm the order, view a formatted bill, and print it — with the cart only clearing after the transaction is fully completed.
+**User-visible outcome:** All pages and features of the POS app render correctly in both light and dark mode, navigation works on desktop and mobile, checkout and billing flows complete without errors, and backend operations are consistent and secure.

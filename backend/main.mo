@@ -10,9 +10,7 @@ import Order "mo:core/Order";
 import Principal "mo:core/Principal";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
-import Migration "migration";
 
-(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -329,7 +327,6 @@ actor {
     logArray.sliceToArray(start, end_);
   };
 
-  // Discount code management is an admin task
   public shared ({ caller }) func createDiscountCode(input : DiscountCodeInput) : async Nat {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can create discount codes");
@@ -774,7 +771,6 @@ actor {
     saleOrders.get(id);
   };
 
-  // createSaleOrder is used by cashiers at the Point of Sale — requires #user (not #admin)
   public shared ({ caller }) func createSaleOrder(
     items : [SaleOrderItem],
     subtotal : Float,

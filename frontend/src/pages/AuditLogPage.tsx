@@ -1,153 +1,144 @@
-import React, { useState } from 'react';
-import { Loader2, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useAuditLogs } from '@/hooks/useQueries';
-import type { AuditLog } from '../backend';
+import { useState } from "react";
+import { ScrollText, Loader2, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useAuditLogs } from "../hooks/useQueries";
+
+const actionColors: Record<string, string> = {
+  create: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+  update: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  delete: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  toggle: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+};
+
+function getActionColor(action: string): string {
+  const lower = action.toLowerCase();
+  for (const [key, cls] of Object.entries(actionColors)) {
+    if (lower.includes(key)) return cls;
+  }
+  return "bg-muted text-muted-foreground";
+}
 
 const PAGE_SIZE = 20;
 
-function truncatePrincipal(p: string): string {
-  if (p.length <= 16) return p;
-  return p.slice(0, 8) + '...' + p.slice(-6);
-}
-
-function formatTimestamp(ts: bigint): string {
-  const ms = Number(ts) / 1_000_000;
-  return new Date(ms).toLocaleString();
-}
-
-function getActionBadgeColor(action: string): string {
-  if (action.startsWith('create')) return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-  if (action.startsWith('update')) return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-  if (action.startsWith('delete')) return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-  if (action.startsWith('toggle')) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-  return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
-}
-
 export default function AuditLogPage() {
-  const [offset, setOffset] = useState(0);
-  const [allLogs, setAllLogs] = useState<AuditLog[]>([]);
-  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const { data: logs = [], isLoading, isFetching } = useAuditLogs(PAGE_SIZE, page * PAGE_SIZE);
 
-  const { data: logs, isLoading, isFetching } = useAuditLogs(PAGE_SIZE, offset);
-
-  // Accumulate logs as we load more
-  React.useEffect(() => {
-    if (logs && logs.length > 0) {
-      if (offset === 0) {
-        setAllLogs(logs);
-      } else {
-        setAllLogs(prev => {
-          const existingIds = new Set(prev.map(l => l.id.toString()));
-          const newLogs = logs.filter(l => !existingIds.has(l.id.toString()));
-          return [...prev, ...newLogs];
-        });
-      }
-      if (logs.length < PAGE_SIZE) {
-        setHasMore(false);
-      }
-    } else if (logs && logs.length === 0 && offset > 0) {
-      setHasMore(false);
-    }
-  }, [logs, offset]);
-
-  const loadMore = () => {
-    setOffset(prev => prev + PAGE_SIZE);
-  };
+  const hasMore = logs.length === PAGE_SIZE;
 
   return (
-    <TooltipProvider>
-      <div className="p-6 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Activity Log</h1>
-          <p className="text-muted-foreground text-sm mt-1">Track all system changes and actions</p>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-heading font-bold text-foreground flex items-center gap-2">
+          <ScrollText size={24} className="text-primary" />
+          Activity Log
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Audit trail of all system actions.
+        </p>
+      </div>
+
+      {/* Table */}
+      {isLoading ? (
+        <div className="flex items-center justify-center h-32">
+          <Loader2 className="animate-spin text-primary" size={28} />
         </div>
-
-        {isLoading && offset === 0 ? (
-          <div className="flex items-center justify-center h-40">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          </div>
-        ) : (
-          <>
-            <div className="rounded-lg border border-border bg-card overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Timestamp</TableHead>
-                    <TableHead>Actor</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Target Type</TableHead>
-                    <TableHead>Target ID</TableHead>
-                    <TableHead>Details</TableHead>
+      ) : logs.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <ScrollText size={40} className="text-muted-foreground mb-3" />
+            <p className="text-muted-foreground">No activity recorded yet.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="rounded-lg border border-border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Actor</TableHead>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Target</TableHead>
+                  <TableHead>Details</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {logs.map((log) => (
+                  <TableRow key={log.id.toString()}>
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      {new Date(Number(log.timestamp) / 1_000_000).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {log.actorPrincipal.length > 12
+                          ? `${log.actorPrincipal.slice(0, 8)}...`
+                          : log.actorPrincipal}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getActionColor(log.action)}`}
+                      >
+                        {log.action}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <span className="text-foreground">{log.targetType}</span>
+                      {log.targetId !== undefined && log.targetId !== null && (
+                        <span className="text-muted-foreground ml-1">#{log.targetId.toString()}</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                      {log.details}
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {allLogs.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
-                        No activity logs yet.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    allLogs.map(log => (
-                      <TableRow key={log.id.toString()}>
-                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
-                          {formatTimestamp(log.timestamp)}
-                        </TableCell>
-                        <TableCell>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="font-mono text-xs cursor-default text-muted-foreground">
-                                {truncatePrincipal(log.actorPrincipal)}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p className="font-mono text-xs">{log.actorPrincipal}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`border-0 text-xs ${getActionBadgeColor(log.action)}`}>
-                            {log.action}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">{log.targetType}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {log.targetId !== undefined && log.targetId !== null ? log.targetId.toString() : '—'}
-                        </TableCell>
-                        <TableCell className="text-sm max-w-xs truncate" title={log.details}>
-                          {log.details}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
-            {hasMore && (
-              <div className="flex justify-center">
+          {/* Pagination */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Showing {page * PAGE_SIZE + 1}–{page * PAGE_SIZE + logs.length} entries
+            </p>
+            <div className="flex gap-2">
+              {page > 0 && (
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p - 1)}>
+                  Previous
+                </Button>
+              )}
+              {hasMore && (
                 <Button
                   variant="outline"
-                  onClick={loadMore}
+                  size="sm"
+                  onClick={() => setPage((p) => p + 1)}
                   disabled={isFetching}
-                  className="gap-2"
                 >
                   {isFetching ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 size={14} className="animate-spin mr-1" />
                   ) : (
-                    <ChevronDown className="w-4 h-4" />
+                    <ChevronDown size={14} className="mr-1" />
                   )}
                   Load More
                 </Button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </TooltipProvider>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

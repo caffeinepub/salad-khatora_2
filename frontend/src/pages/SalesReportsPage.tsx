@@ -7,7 +7,7 @@ import { useSalesReport } from '../hooks/useQueries';
 import type { SalesReportPeriod, SalesReportEntry } from '../hooks/useQueries';
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  return `₹${amount.toFixed(2)}`;
 }
 
 export default function SalesReportsPage() {
@@ -15,8 +15,9 @@ export default function SalesReportsPage() {
 
   const { data: report = [], isLoading, isError, error } = useSalesReport(period);
 
-  const totalRevenue = report.reduce((sum, r) => sum + r.totalRevenue, 0);
-  const totalOrders = report.reduce((sum, r) => sum + r.totalOrders, 0);
+  // Use the non-optional `revenue` and `orders` fields (totalRevenue/totalOrders are optional aliases)
+  const totalRevenue = report.reduce((sum, r) => sum + r.revenue, 0);
+  const totalOrders = report.reduce((sum, r) => sum + r.orders, 0);
   const avgRevenue = report.length > 0 ? totalRevenue / report.length : 0;
 
   return (
@@ -117,10 +118,10 @@ export default function SalesReportsPage() {
               {report.map((row: SalesReportEntry) => (
                 <TableRow key={row.date}>
                   <TableCell className="font-medium">{row.date}</TableCell>
-                  <TableCell className="text-right">{row.totalOrders}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(row.totalRevenue)}</TableCell>
+                  <TableCell className="text-right">{row.orders}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(row.revenue)}</TableCell>
                   <TableCell className="text-right">
-                    {row.totalOrders > 0 ? formatCurrency(row.totalRevenue / row.totalOrders) : '—'}
+                    {row.orders > 0 ? formatCurrency(row.revenue / row.orders) : '—'}
                   </TableCell>
                 </TableRow>
               ))}

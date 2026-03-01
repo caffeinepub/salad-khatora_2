@@ -1,118 +1,152 @@
 import React from 'react';
-import { RefreshCw, TrendingUp, ShoppingCart, Package, AlertTriangle, DollarSign, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { TrendingUp, ShoppingBag, DollarSign, BarChart2 } from 'lucide-react';
+import { useSalesReport, useMenuItems, useIngredients } from '../hooks/useQueries';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useIngredients, useSalesStats } from '../hooks/useQueries';
-import { useQueryClient } from '@tanstack/react-query';
+import { Skeleton } from '@/components/ui/skeleton';
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+function formatCurrency(amount: number) {
+  return `₹${amount.toFixed(2)}`;
+}
+
+interface StatCardProps {
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+  description?: string;
+}
+
+function StatCard({ title, value, icon, description }: StatCardProps) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <div className="text-primary">{icon}</div>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function DashboardPage() {
-  const queryClient = useQueryClient();
+  const { data: report = [], isLoading: statsLoading } = useSalesReport('daily');
+  const { data: menuItems = [], isLoading: menuLoading } = useMenuItems();
+  const { data: ingredients = [], isLoading: ingredientsLoading } = useIngredients();
 
-  const { data: ingredients = [] } = useIngredients();
-  const { data: salesStats, isLoading: salesLoading } = useSalesStats();
+  // Aggregate stats from report entries
+  const totalRevenue = report.reduce((sum, r) => sum + r.revenue, 0);
+  const totalOrders = report.reduce((sum, r) => sum + r.orders, 0);
+  const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-  const totalIngredients = ingredients.length;
-  const totalInventoryValue = ingredients.reduce((sum, i) => sum + i.quantity * i.costPrice, 0);
-  const lowStockItems = ingredients.filter(i => i.quantity <= i.lowStockThreshold).length;
+  const availableItems = menuItems.filter(m => m.isAvailable).length;
+  const lowStockCount = ingredients.filter(
+    i => i.quantity <= (i.minStockLevel ?? 0)
+  ).length;
 
-  const handleRefresh = () => {
-    queryClient.invalidateQueries();
-  };
+  const isLoading = statsLoading || menuLoading || ingredientsLoading;
 
-  const stats = [
-    {
-      title: 'Total Revenue',
-      value: salesLoading ? '...' : formatCurrency(salesStats?.totalRevenue ?? 0),
-      icon: <DollarSign className="w-5 h-5" />,
-      sub: `${salesStats?.totalOrders ?? 0} orders total`,
-      color: 'text-green-600',
-    },
-    {
-      title: 'Avg Order Value',
-      value: salesLoading ? '...' : formatCurrency(salesStats?.avgOrderValue ?? 0),
-      icon: <TrendingUp className="w-5 h-5" />,
-      sub: 'Per order average',
-      color: 'text-blue-600',
-    },
-    {
-      title: 'Total Orders',
-      value: salesLoading ? '...' : String(salesStats?.totalOrders ?? 0),
-      icon: <ShoppingCart className="w-5 h-5" />,
-      sub: 'All time',
-      color: 'text-purple-600',
-    },
-    {
-      title: 'Inventory Items',
-      value: String(totalIngredients),
-      icon: <Package className="w-5 h-5" />,
-      sub: `${formatCurrency(totalInventoryValue)} total value`,
-      color: 'text-orange-600',
-    },
-    {
-      title: 'Low Stock Alerts',
-      value: String(lowStockItems),
-      icon: <AlertTriangle className="w-5 h-5" />,
-      sub: lowStockItems > 0 ? 'Needs attention' : 'All good',
-      color: lowStockItems > 0 ? 'text-red-600' : 'text-green-600',
-    },
-  ];
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div>
+          <Skeleton className="h-8 w-48 mb-2" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-28" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">Here's what's happening in your kitchen today.</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={handleRefresh} className="gap-2">
-          <RefreshCw className="w-4 h-4" />
-          Refresh
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+        <p className="text-muted-foreground">Overview of your restaurant's performance (last 7 days).</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {stats.map(stat => (
-          <Card key={stat.title}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
-                {stat.title}
-                <span className={stat.color}>{stat.icon}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-              <p className="text-xs text-muted-foreground mt-1">{stat.sub}</p>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          title="Total Revenue (7d)"
+          value={formatCurrency(totalRevenue)}
+          icon={<DollarSign className="h-5 w-5" />}
+          description="Last 7 days"
+        />
+        <StatCard
+          title="Total Orders (7d)"
+          value={String(totalOrders)}
+          icon={<ShoppingBag className="h-5 w-5" />}
+          description="Last 7 days"
+        />
+        <StatCard
+          title="Avg Order Value"
+          value={formatCurrency(avgOrderValue)}
+          icon={<TrendingUp className="h-5 w-5" />}
+          description="Last 7 days"
+        />
+        <StatCard
+          title="Menu Items"
+          value={`${availableItems} / ${menuItems.length}`}
+          icon={<BarChart2 className="h-5 w-5" />}
+          description={lowStockCount > 0 ? `${lowStockCount} low stock` : 'Stock OK'}
+        />
       </div>
 
-      {lowStockItems > 0 && (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-destructive">Low Stock Warning</p>
-                <p className="text-xs text-muted-foreground">
-                  {lowStockItems} ingredient{lowStockItems !== 1 ? 's are' : ' is'} running low. Check the Inventory page.
-                </p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Recent Sales (7 days)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {report.length === 0 ? (
+              <p className="text-muted-foreground text-sm">No sales data available.</p>
+            ) : (
+              <div className="space-y-2">
+                {report.slice(-7).map(entry => (
+                  <div key={entry.date} className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{entry.date}</span>
+                    <div className="flex gap-4">
+                      <span>{entry.orders} orders</span>
+                      <span className="font-medium text-primary">{formatCurrency(entry.revenue)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Inventory Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Total Ingredients</span>
+                <span className="font-medium">{ingredients.length}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Low Stock Items</span>
+                <span className={`font-medium ${lowStockCount > 0 ? 'text-destructive' : 'text-primary'}`}>
+                  {lowStockCount}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Available Menu Items</span>
+                <span className="font-medium">{availableItems}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Total Menu Items</span>
+                <span className="font-medium">{menuItems.length}</span>
               </div>
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {salesLoading && (
-        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          Loading sales data...
-        </div>
-      )}
+      </div>
     </div>
   );
 }

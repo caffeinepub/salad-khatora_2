@@ -1,109 +1,120 @@
 import React from 'react';
+import { Bell, CheckCheck, Package, AlertTriangle, ShoppingCart, Info } from 'lucide-react';
 import { useAlerts, useMarkAlertRead, useMarkAllAlertsRead, AlertType } from '../hooks/useQueries';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bell, AlertTriangle, Calendar, Package, CalendarX, CheckCheck, Check } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+
+function getAlertIcon(type?: AlertType) {
+  switch (type) {
+    case 'low_stock': return <Package className="h-4 w-4 text-warning" />;
+    case 'expiry': return <AlertTriangle className="h-4 w-4 text-destructive" />;
+    case 'order': return <ShoppingCart className="h-4 w-4 text-primary" />;
+    default: return <Info className="h-4 w-4 text-muted-foreground" />;
+  }
+}
+
+function getAlertBadge(type?: AlertType) {
+  switch (type) {
+    case 'low_stock': return <Badge variant="outline" className="text-warning border-warning">Low Stock</Badge>;
+    case 'expiry': return <Badge variant="destructive">Expiry</Badge>;
+    case 'order': return <Badge variant="default">Order</Badge>;
+    default: return <Badge variant="secondary">System</Badge>;
+  }
+}
 
 export default function AlertsPage() {
   const { data: alerts = [], isLoading } = useAlerts();
   const markRead = useMarkAlertRead();
   const markAllRead = useMarkAllAlertsRead();
 
-  const unreadCount = alerts.filter(a => !a.isRead).length;
-  const unreadIds = alerts.filter(a => !a.isRead).map(a => a.id);
+  const unreadAlerts = alerts.filter(a => !a.isRead);
+  const unreadIds = unreadAlerts.map(a => a.id);
 
-  const getAlertIcon = (type: AlertType) => {
-    switch (type) {
-      case AlertType.lowStock:
-        return <Package className="h-5 w-5 text-orange-500" />;
-      case AlertType.subscriptionRenewal:
-        return <Calendar className="h-5 w-5 text-blue-500" />;
-      case AlertType.expiryWarning:
-        return <CalendarX className="h-5 w-5 text-orange-500" />;
-      default:
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
-    }
-  };
-
-  const getAlertBadge = (type: AlertType) => {
-    switch (type) {
-      case AlertType.lowStock:
-        return <Badge className="bg-orange-100 text-orange-800 border-orange-200">Low Stock</Badge>;
-      case AlertType.subscriptionRenewal:
-        return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Renewal</Badge>;
-      case AlertType.expiryWarning:
-        return <Badge className="bg-orange-100 text-orange-800 border-orange-200">Expiry Warning</Badge>;
-      default:
-        return <Badge variant="outline">Other</Badge>;
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-20 bg-muted rounded-lg" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 max-w-3xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Bell className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold text-foreground">Alerts</h1>
-          {unreadCount > 0 && (
-            <Badge className="bg-destructive text-destructive-foreground">{unreadCount} unread</Badge>
+          {unreadAlerts.length > 0 && (
+            <Badge>{unreadAlerts.length} unread</Badge>
           )}
         </div>
-        {unreadCount > 0 && (
+        {unreadAlerts.length > 0 && (
           <Button
             variant="outline"
             size="sm"
             onClick={() => markAllRead.mutate(unreadIds)}
             disabled={markAllRead.isPending}
           >
-            <CheckCheck className="mr-2 h-4 w-4" />
-            Mark All Read
+            <CheckCheck className="h-4 w-4 mr-1" />
+            Mark all read
           </Button>
         )}
       </div>
 
-      {isLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
-        </div>
-      ) : alerts.length === 0 ? (
+      {alerts.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Bell className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No alerts at this time.</p>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <Bell className="h-12 w-12 text-muted-foreground mb-3" />
+            <p className="text-muted-foreground">No alerts yet.</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {alerts.map(alert => (
-            <Card key={alert.id} className={alert.isRead ? 'opacity-60' : ''}>
-              <CardContent className="flex items-start gap-4 pt-4">
-                <div className="mt-0.5">{getAlertIcon(alert.alertType)}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    {getAlertBadge(alert.alertType)}
-                    {!alert.isRead && (
-                      <span className="inline-block w-2 h-2 rounded-full bg-primary" />
-                    )}
-                  </div>
-                  <p className="text-sm">{alert.message}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(alert.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                {!alert.isRead && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => markRead.mutate(alert.id)}
-                    disabled={markRead.isPending}
-                  >
-                    <Check className="h-4 w-4" />
-                  </Button>
+        <div className="space-y-2">
+          {alerts.map(alert => {
+            const alertType = alert.alertType ?? alert.type;
+            return (
+              <Card
+                key={alert.id}
+                className={cn(
+                  'transition-colors',
+                  !alert.isRead && 'border-primary/30 bg-primary/5'
                 )}
-              </CardContent>
-            </Card>
-          ))}
+              >
+                <CardContent className="flex items-start gap-3 py-4">
+                  <div className="mt-0.5">{getAlertIcon(alertType)}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-sm">{alert.title}</span>
+                      {getAlertBadge(alertType)}
+                      {!alert.isRead && (
+                        <span className="h-2 w-2 rounded-full bg-primary inline-block" />
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-0.5">{alert.message}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(alert.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  {!alert.isRead && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => markRead.mutate(alert.id)}
+                      disabled={markRead.isPending}
+                    >
+                      Mark read
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
